@@ -1,0 +1,1045 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+  <link rel="manifest" href="manifest.json">
+  <link rel="apple-touch-icon" href="icons/app-icon-192.png">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="楽譜づくり">
+  <meta name="theme-color" content="#FF2D55">
+  <title>楽譜づくり - Sky所持率管理</title>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg:        #F2F2F7;
+      --card:      #FFFFFF;
+      --sep:       rgba(60,60,67,0.12);
+      --pink:      #FF2D55;
+      --pink-d:    #C4003F;
+      --pink-bg:   rgba(255,45,85,0.10);
+      --green:     #34C759;
+      --blue:      #007AFF;
+      --red:       #FF3B30;
+      --text:      #1C1C1E;
+      --text-2:    #8E8E93;
+      --text-3:    #C7C7CC;
+      --r:         16px;
+      --r-sm:      10px;
+      --note-off:  #E5E5EA;
+      --note-on:   #FF2D55;
+    }
+    *, *::before, *::after { margin:0; padding:0; box-sizing:border-box; }
+    a { text-decoration:none; color:inherit; -webkit-tap-highlight-color:transparent; }
+    button { cursor:pointer; border:none; background:none; font-family:inherit; }
+    input, select, textarea { font-family:inherit; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Hiragino Sans', 'Noto Sans JP', sans-serif;
+      background: var(--bg); color: var(--text); min-height: 100vh; padding-bottom: 60px;
+    }
+
+    nav {
+      position: sticky; top: 0; z-index: 20;
+      background: rgba(242,242,247,0.88); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+      border-bottom: 0.5px solid var(--sep); padding: 14px 20px 12px;
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    .nav-title { font-size: 17px; font-weight: 600; letter-spacing: -0.3px; }
+    .sidebar-toggle-btn {
+      background: var(--card); border: 1px solid var(--sep); border-radius: var(--r-sm);
+      padding: 6px 12px; font-size: 13px; font-weight: 600; color: var(--text);
+      display: flex; align-items: center; gap: 6px; white-space: nowrap;
+    }
+    @media (min-width: 850px) { .sidebar-toggle-btn { visibility: hidden; } }
+
+    .sidebar-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.4); z-index: 499; }
+    .sidebar-overlay.show { display: block; }
+
+    .app-layout { max-width: 720px; margin: 0 auto; padding: 0 16px; }
+    @media (min-width: 850px) { .app-layout { max-width: 980px; display: flex; gap: 20px; align-items: flex-start; } }
+    .wrap { flex: 1; min-width: 0; }
+
+    .sidebar {
+      width: 200px; flex-shrink: 0; position: sticky; top: 58px;
+      background: var(--card); border-radius: var(--r); padding: 16px;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.07); display: none; margin-top: 22px;
+    }
+    @media (min-width: 850px) { .sidebar { display: block; } }
+    .sidebar.sidebar-open {
+      display: flex !important; flex-direction: column; position: fixed; top: 0; left: 0;
+      height: 100%; width: 240px; z-index: 500; overflow-y: auto; margin-top: 0;
+      border-radius: 0 12px 12px 0; box-shadow: 4px 0 24px rgba(0,0,0,0.2);
+    }
+    .sidebar-close-btn {
+      background: none; border: none; font-size: 22px; cursor: pointer;
+      color: var(--text-2); padding: 0; line-height: 1; flex-shrink: 0; display: none;
+    }
+    .sidebar.sidebar-open .sidebar-close-btn { display: block; }
+    .sidebar-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
+    .sidebar-section-label { font-size: 11px; font-weight: 700; color: var(--text-2); text-transform: uppercase; }
+    .sidebar-nav-link {
+      display: flex; align-items: center; gap: 9px; padding: 9px 12px; border-radius: var(--r-sm);
+      color: var(--text); font-size: 13.5px; font-weight: 500; margin-bottom: 2px;
+      width: 100%; box-sizing: border-box; white-space: nowrap;
+    }
+    .sidebar-nav-link:hover { background: var(--bg); }
+    .sidebar-nav-link.current-tool { background: var(--pink-bg); color: var(--pink-d); font-weight: 700; }
+
+    .sec-label { font-size: 15px; font-weight: 700; color: var(--text); padding: 20px 4px 10px; display: flex; align-items: center; gap: 6px; }
+    .card { background: var(--card); border-radius: var(--r); padding: 16px; box-shadow: 0 1px 4px rgba(0,0,0,0.07); margin-bottom: 14px; }
+    .card p { font-size: 13px; line-height: 1.8; color: var(--text); }
+    .card a { color: var(--pink-d); text-decoration: underline; text-underline-offset: 2px; }
+    .hint { font-size: 12px; color: var(--text-2); line-height: 1.7; }
+
+    /* ── タブ切替 ─────────────────────────── */
+    .view-tabs { display: flex; gap: 8px; margin-top: 14px; }
+    .view-tab {
+      flex: 1; padding: 10px; border-radius: var(--r-sm); background: var(--card); color: var(--text-2);
+      font-size: 13.5px; font-weight: 700; text-align: center; box-shadow: 0 1px 4px rgba(0,0,0,0.05);
+    }
+    .view-tab.active { background: var(--pink); color: #fff; }
+    .view-section { display: none; }
+    .view-section.active { display: block; }
+
+    /* ── ライブラリ ─────────────────────────── */
+    .lib-toolbar { display: flex; gap: 8px; margin-top: 14px; }
+    .lib-search {
+      flex: 1; background: var(--card); border: 1.5px solid var(--sep); border-radius: var(--r-sm);
+      padding: 10px 12px; font-size: 14px; color: var(--text);
+    }
+    .lib-search:focus { outline: none; border-color: var(--pink); }
+    .new-song-btn {
+      background: var(--pink); color: #fff; font-weight: 700; font-size: 13.5px;
+      padding: 10px 16px; border-radius: var(--r-sm); white-space: nowrap;
+    }
+    .song-list { display: flex; flex-direction: column; gap: 10px; margin-top: 14px; }
+    .song-card { background: var(--card); border-radius: var(--r); padding: 14px; box-shadow: 0 1px 4px rgba(0,0,0,0.07); }
+    .song-card-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+    .song-card-name { font-size: 15px; font-weight: 700; }
+    .song-card-meta { font-size: 12px; color: var(--text-2); margin-top: 3px; }
+    .song-card-btns { display: flex; gap: 6px; margin-top: 10px; flex-wrap: wrap; }
+    .mini-btn {
+      background: var(--bg); color: var(--text); font-size: 12.5px; font-weight: 600;
+      padding: 7px 12px; border-radius: 999px; display: flex; align-items: center; gap: 4px;
+    }
+    .mini-btn.primary { background: var(--pink-bg); color: var(--pink-d); }
+    .mini-btn.danger { background: rgba(255,59,48,0.10); color: var(--red); }
+    .empty-state { text-align: center; padding: 40px 16px; color: var(--text-2); font-size: 13px; }
+
+    /* ── エディタ ─────────────────────────── */
+    .editor-top-row { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 10px; }
+    .editor-top-row input[type=text] {
+      flex: 2 1 160px; background: var(--bg); border: 1.5px solid var(--sep); border-radius: var(--r-sm);
+      padding: 9px 12px; font-size: 14px; color: var(--text);
+    }
+    .editor-top-row select {
+      flex: 1 1 100px; background: var(--bg); border: 1.5px solid var(--sep); border-radius: var(--r-sm);
+      padding: 9px 10px; font-size: 13.5px; color: var(--text);
+    }
+    .editor-top-row input:focus, .editor-top-row select:focus { outline: none; border-color: var(--pink); }
+    .bpm-row { display: flex; align-items: center; gap: 8px; margin-bottom: 12px; }
+    .bpm-row label { font-size: 12.5px; color: var(--text-2); font-weight: 600; white-space: nowrap; }
+    .bpm-row input[type=number] {
+      width: 70px; background: var(--bg); border: 1.5px solid var(--sep); border-radius: var(--r-sm);
+      padding: 7px 8px; font-size: 14px; color: var(--text);
+    }
+    .bpm-row input[type=range] { flex: 1; accent-color: var(--pink); }
+
+    .transport { display: flex; gap: 8px; margin-bottom: 14px; flex-wrap: wrap; }
+    .transport-btn {
+      background: var(--card); border: 1px solid var(--sep); color: var(--text); font-size: 13px; font-weight: 700;
+      padding: 9px 14px; border-radius: var(--r-sm); display: flex; align-items: center; gap: 6px;
+    }
+    .transport-btn.primary { background: var(--pink); color: #fff; border-color: var(--pink); }
+    .transport-btn.active { background: var(--green); color: #fff; border-color: var(--green); }
+
+    .frame-strip { display: flex; flex-wrap: wrap; gap: 8px; padding: 4px 0 12px; }
+    .frame-box {
+      background: var(--card); border: 2px solid var(--sep); border-radius: 10px; padding: 6px;
+      display: grid; grid-template-columns: repeat(5, 1fr); gap: 3px; width: 82px; flex-shrink: 0;
+      position: relative; cursor: pointer;
+    }
+    .frame-box.selected { border-color: var(--pink); }
+    .frame-box.playing { border-color: var(--green); box-shadow: 0 0 0 3px rgba(52,199,89,0.25); }
+    .frame-dot {
+      aspect-ratio: 1; border-radius: 50%; background: var(--note-off); transition: background 0.06s;
+    }
+    .frame-dot.on { background: var(--note-on); }
+    .frame-index {
+      position: absolute; top: -8px; left: -6px; background: var(--text-2); color: #fff;
+      font-size: 9px; font-weight: 700; border-radius: 8px; padding: 1px 5px; line-height: 1.3;
+    }
+    .frame-del-btn {
+      position: absolute; top: -8px; right: -6px; background: var(--red); color: #fff;
+      font-size: 10px; font-weight: 700; border-radius: 50%; width: 16px; height: 16px;
+      display: none; align-items: center; justify-content: center; line-height: 1;
+    }
+    .frame-box:hover .frame-del-btn { display: flex; }
+    .add-frame-btn {
+      width: 82px; flex-shrink: 0; border: 2px dashed var(--sep); border-radius: 10px;
+      display: flex; align-items: center; justify-content: center; color: var(--text-2); font-size: 26px;
+    }
+
+    .current-frame-card {
+      background: var(--card); border-radius: var(--r); padding: 16px; box-shadow: 0 1px 4px rgba(0,0,0,0.07);
+      margin-bottom: 14px;
+    }
+    .current-frame-label { font-size: 12.5px; color: var(--text-2); font-weight: 600; margin-bottom: 10px; }
+    .big-grid {
+      display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; max-width: 320px; margin: 0 auto;
+    }
+    .big-note {
+      aspect-ratio: 1; border-radius: 50%; background: var(--note-off); color: var(--text-2);
+      display: flex; align-items: center; justify-content: center; font-size: 15px; font-weight: 700;
+      transition: background 0.08s, transform 0.08s; user-select: none;
+    }
+    .big-note.on { background: var(--note-on); color: #fff; }
+    .big-note:active { transform: scale(0.9); }
+    .big-note.flash { transform: scale(1.15); }
+
+    .practice-panel { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-top: 12px; }
+    .practice-panel .mini-btn { flex-shrink: 0; }
+
+    /* ── 共有モーダル ─────────────────────────── */
+    .modal-overlay {
+      display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.45); z-index: 600;
+      align-items: center; justify-content: center; padding: 20px;
+    }
+    .modal-overlay.open { display: flex; }
+    .modal-card {
+      background: var(--card); border-radius: var(--r); padding: 20px; max-width: 440px; width: 100%;
+      max-height: 85vh; overflow-y: auto;
+    }
+    .modal-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
+    .modal-title { font-size: 16px; font-weight: 700; }
+    .modal-close { font-size: 20px; color: var(--text-2); line-height: 1; }
+    .modal-card textarea.code-box {
+      width: 100%; box-sizing: border-box; border: 1px solid var(--sep); border-radius: var(--r-sm);
+      padding: 10px 12px; font-size: 11px; font-family: monospace; color: var(--text);
+      resize: vertical; min-height: 90px; background: var(--bg); outline: none; margin-top: 8px;
+    }
+    .modal-card input[type=file] {
+      width: 100%; box-sizing: border-box; font-size: 12.5px; color: var(--text-2);
+      border: 1px dashed var(--sep); border-radius: var(--r-sm); padding: 10px 12px; margin-top: 8px;
+    }
+    .action-btn {
+      display: block; width: 100%; padding: 12px; border-radius: var(--r-sm); font-size: 14px; font-weight: 700;
+      text-align: center; cursor: pointer; margin-top: 10px; box-sizing: border-box;
+    }
+    .action-btn.primary { background: var(--pink); color: #fff; }
+    .action-btn.secondary { background: var(--bg); color: var(--text); border: 1px solid var(--sep); }
+    .status-msg { font-size: 12.5px; color: var(--text-2); margin-top: 8px; line-height: 1.6; }
+    .status-msg.ok { color: var(--green); }
+    .status-msg.err { color: var(--red); }
+
+    input[type="file"].wipe-alike {
+      width: 100%; box-sizing: border-box; font-size: 12.5px; color: var(--text-2);
+      border: 1px dashed var(--sep); border-radius: var(--r-sm); padding: 10px 12px; margin-top: 10px;
+    }
+
+    footer { text-align: center; padding: 24px 16px; color: var(--text-2); font-size: 13px; border-top: 1px solid var(--sep); margin-top: 40px; line-height: 1.6; }
+    footer a { color: var(--pink-d); text-decoration: none; }
+
+    .toast {
+      position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%) translateY(20px);
+      background: rgba(28,28,30,0.92); color: #fff; padding: 10px 18px; border-radius: 999px;
+      font-size: 13px; font-weight: 600; opacity: 0; pointer-events: none; transition: all 0.25s; z-index: 700;
+    }
+    .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+  </style>
+</head>
+<body>
+
+<nav>
+  <div class="nav-title">🎵 楽譜づくり</div>
+  <button class="sidebar-toggle-btn" onclick="toggleSidebar()">☰ ツール</button>
+</nav>
+
+<div class="sidebar-overlay" id="sidebarOverlay" onclick="toggleSidebar()"></div>
+
+<div class="app-layout">
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-head">
+      <div class="sidebar-section-label">🔗 関連ツール</div>
+      <button class="sidebar-close-btn" onclick="toggleSidebar()">✕</button>
+    </div>
+    <a href="https://taipak5000.github.io/tai-item/" class="sidebar-nav-link">🗂️ アイテム所持管理</a>
+    <a href="https://taipak5000.github.io/tai-emote/" class="sidebar-nav-link">🎭 エモート所持率管理</a>
+    <a href="https://taipak5000.github.io/share/" class="sidebar-nav-link">📍 創作物管理ツール</a>
+    <a href="https://taipak5000.github.io/tai-nomacan/" class="sidebar-nav-link">🕯️ ノマキャン計算機</a>
+    <a href="https://taipak5000.github.io/star-candle/" class="sidebar-nav-link">🕯️ 星のキャンドル計算機</a>
+    <a href="https://taipak5000.github.io/companion/" class="sidebar-nav-link">✨ 精霊同行ツール</a>
+    <a href="https://taipak5000.github.io/tai-catalog/" class="sidebar-nav-link">🌳 精霊ツリー管理</a>
+    <a href="https://taipak5000.github.io/wings/" class="sidebar-nav-link">🪽 羽トラッカー</a>
+    <a href="https://taipak5000.github.io/tai-revisit/" class="sidebar-nav-link">🕊️ 再訪精霊データベース</a>
+    <a href="https://taipak5000.github.io/tai-score/" class="sidebar-nav-link current-tool">🎵 楽譜づくり</a>
+    <a href="https://taipak5000.github.io/tai-transfer/" class="sidebar-nav-link">🔄 データ引継ぎ</a>
+  </aside>
+
+  <div class="wrap">
+    <div class="card" style="margin-top:14px;">
+      <p>Skyの5×3マス（ハープ等）の楽器で演奏できる楽譜を、自由に作成・保存・共有・練習できるツールです。
+        <a href="https://sky-music.specy.app/" target="_blank" rel="noopener noreferrer">Sky Music Nightly</a>形式の楽譜ファイルの
+        インポート・エクスポートにも対応しているので、すでに公開されている楽譜もそのまま読み込めます。
+        データはこの端末のブラウザだけに保存され、外部には送信されません。</p>
+    </div>
+
+    <div class="view-tabs">
+      <button class="view-tab active" id="tabLibraryBtn" onclick="switchView('library')">📚 ライブラリ</button>
+      <button class="view-tab" id="tabEditorBtn" onclick="switchView('editor')">✏️ 作成・演奏</button>
+    </div>
+
+    <!-- ▸ ライブラリ -->
+    <section class="view-section active" id="viewLibrary">
+      <div class="lib-toolbar">
+        <input type="search" class="lib-search" id="librarySearch" placeholder="🔍 曲名で検索…" oninput="renderLibrary()">
+        <button class="new-song-btn" onclick="createNewSong()">＋ 新規作成</button>
+      </div>
+      <div class="song-list" id="songList"><!-- JS --></div>
+    </section>
+
+    <!-- ▸ エディタ / プレイヤー -->
+    <section class="view-section" id="viewEditor">
+      <div class="card" style="margin-top:14px;">
+        <div class="editor-top-row">
+          <input type="text" id="songNameInput" placeholder="曲名" oninput="onSongMetaChange()">
+          <select id="songPitchInput" onchange="onSongMetaChange()"></select>
+          <select id="songInstrumentInput" onchange="onSongMetaChange()">
+            <option value="Harp">🎼 ハープ</option>
+            <option value="Piano">🎹 ピアノ</option>
+            <option value="Guitar">🎸 ギター</option>
+            <option value="Bass">🎸 ベース</option>
+            <option value="Drum">🥁 ドラム</option>
+            <option value="Flute">🪈 フルート</option>
+            <option value="Bells">🔔 鐘</option>
+          </select>
+        </div>
+        <div class="bpm-row">
+          <label>BPM</label>
+          <input type="range" id="bpmSlider" min="40" max="300" value="150" oninput="onBpmChange(this.value)">
+          <input type="number" id="bpmNumber" min="40" max="300" value="150" oninput="onBpmChange(this.value)">
+        </div>
+        <div class="transport">
+          <button class="transport-btn primary" id="playBtn" onclick="togglePlayback()">▶️ 再生</button>
+          <button class="transport-btn" id="practiceBtn" onclick="togglePractice()">🐢 練習モード</button>
+          <button class="transport-btn" onclick="stopPlayback()">⏹️ 停止</button>
+          <button class="transport-btn" onclick="openShareModal()">🔗 共有・保存</button>
+        </div>
+        <div class="hint" id="practiceHint" style="display:none;"></div>
+      </div>
+
+      <div class="current-frame-card">
+        <div class="current-frame-label">選択中のマス（クリックで音をON/OFF）</div>
+        <div class="big-grid" id="bigGrid"><!-- JS --></div>
+      </div>
+
+      <div class="sec-label" style="padding-top:4px;">🎼 譜面（クリックでそのマスへ移動）</div>
+      <div class="frame-strip" id="frameStrip"><!-- JS --></div>
+    </section>
+  </div>
+</div>
+
+<!-- ▸ 共有・保存モーダル -->
+<div class="modal-overlay" id="shareModal" onclick="if(event.target===this)closeModal('shareModal')">
+  <div class="modal-card">
+    <div class="modal-header">
+      <span class="modal-title">🔗 共有・保存</span>
+      <button class="modal-close" onclick="closeModal('shareModal')">✕</button>
+    </div>
+    <div class="hint">この楽譜専用のコードを作成し、別の端末やSNSで共有できます。ファイルとしても保存できます。</div>
+    <button type="button" class="action-btn primary" onclick="generateShareCode()">📋 共有コードを作成</button>
+    <div id="shareOutputArea"></div>
+    <div style="height:14px;"></div>
+    <div class="hint">Sky Music Nightly形式で保存すると、他の楽譜ツールでも開けます。</div>
+    <button type="button" class="action-btn secondary" onclick="downloadNativeFile()">⬇️ このサイトの形式でダウンロード</button>
+    <button type="button" class="action-btn secondary" onclick="downloadSpecyFile()">⬇️ Sky Music Nightly形式でダウンロード</button>
+    <div id="shareStatus" class="status-msg"></div>
+  </div>
+</div>
+
+<!-- ▸ インポートモーダル -->
+<div class="modal-overlay" id="importModal" onclick="if(event.target===this)closeModal('importModal')">
+  <div class="modal-card">
+    <div class="modal-header">
+      <span class="modal-title">📥 楽譜を読み込む</span>
+      <button class="modal-close" onclick="closeModal('importModal')">✕</button>
+    </div>
+    <div class="hint">共有コード、またはこのサイト／Sky Music Nightly形式の.jsonファイルを読み込めます。</div>
+    <textarea class="code-box" id="importCodeInput" placeholder="共有コードを貼り付け"></textarea>
+    <button type="button" class="action-btn secondary" onclick="importFromCode()">🔍 コードから読み込む</button>
+    <input type="file" id="importFileInput" accept=".json,.txt" onchange="importFromFile(event)">
+    <div id="importStatus" class="status-msg"></div>
+  </div>
+</div>
+
+<!-- ▸ データバックアップ／復元モーダル -->
+<div class="modal-overlay" id="dmModal" onclick="if(event.target===this)closeModal('dmModal')">
+  <div class="modal-card">
+    <div class="modal-header">
+      <span class="modal-title">💾 データのバックアップ・復元</span>
+      <button class="modal-close" onclick="closeModal('dmModal')">✕</button>
+    </div>
+    <div class="hint">作成した楽譜はすべてこの端末のブラウザだけに保存されています。機種変更やブラウザの変更に備えて、
+      ときどきファイルとしてバックアップすることをおすすめします。</div>
+    <button type="button" class="action-btn primary" onclick="dmExport()">⬇️ バックアップをダウンロード</button>
+    <input type="file" class="wipe-alike" id="dmImportFile" accept=".json" onchange="dmImportFileSelected(event)">
+    <div id="dmImportArea"></div>
+    <div style="height:16px; border-top:1px solid var(--sep); margin-top:16px;"></div>
+    <div id="dmWipeArea" style="margin-top:14px;"></div>
+    <div id="dmStatus" class="status-msg"></div>
+  </div>
+</div>
+
+<footer>
+  このサイトはSky 星を紡ぐ子どもたちの非公式ファンサイトです。thatgamecompanyは一切関与していません。<br>
+  演奏音はすべてブラウザ内で合成しており、ゲームから抽出した音源は使用していません。<br>
+  楽譜ファイルの形式は<a href="https://sky-music.specy.app/" target="_blank" rel="noopener noreferrer">Sky Music Nightly</a>（Specy氏）を参考にしています。<br>
+  作成・ご意見: <a href="https://x.com/Skyzztai" target="_blank" rel="noopener noreferrer">@Skyzztai</a>　／
+  <a href="https://odaibako.net/u/Skyzztai" target="_blank" rel="noopener noreferrer">リクエストフォーム</a><br>
+  <span style="font-size:12px; margin-top:4px; display:inline-block;">
+    <a href="https://taipak5000.github.io/tai-info/" target="_blank" rel="noopener noreferrer">⚙️ 設定・更新情報・クレジット・プライバシーポリシー</a>
+    　／　<button style="color:var(--pink-d); text-decoration:underline; font-size:12px;" onclick="openModal('dmModal')">💾 バックアップ・復元</button>
+  </span>
+</footer>
+
+<div class="toast" id="toast"></div>
+
+<script>
+/* ================================================================
+   基本定数：Skyの5×3（15マス）演奏グリッド
+   MIDIノート番号は Sky Music Nightly (github.com/Specy/genshin-music)
+   のデフォルトハープ配列 [60,62,64,65,67,69,71,72,74,76,77,79,81,83,84] と同一。
+   ================================================================ */
+const NOTE_LABELS = ['ド','レ','ミ','ファ','ソ','ラ','シ','ド','レ','ミ','ファ','ソ','ラ','シ','ド'];
+const NOTE_MIDI = [60,62,64,65,67,69,71,72,74,76,77,79,81,83,84];
+const PITCHES = ["C","Db","D","Eb","E","F","Gb","G","Ab","A","Bb","B"];
+
+function toggleSidebar() {
+  document.getElementById('sidebar').classList.toggle('sidebar-open');
+  document.getElementById('sidebarOverlay').classList.toggle('show');
+}
+function openModal(id) { document.getElementById(id).classList.add('open'); }
+function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(showToast._timer);
+  showToast._timer = setTimeout(() => t.classList.remove('show'), 1800);
+}
+function escapeHtml(str) {
+  return String(str).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+}
+
+/* ================================================================
+   曲データの保存（localStorage）
+   1曲 = { id, name, bpm, pitch, instrument, frames: [[noteIndex,...], ...], updatedAt }
+   ================================================================ */
+const SONGS_KEY = 'taiScoreSongs_v1';
+function loadSongs() {
+  try { return JSON.parse(localStorage.getItem(SONGS_KEY)) || []; }
+  catch (_) { return []; }
+}
+function saveSongs(songs) { localStorage.setItem(SONGS_KEY, JSON.stringify(songs)); }
+function genId() { return Date.now().toString(36) + Math.random().toString(36).slice(2, 8); }
+
+let currentSong = null; // 編集中の曲（保存前はライブラリに存在しない場合もある）
+let selectedFrameIndex = 0;
+
+function createNewSong() {
+  currentSong = {
+    id: genId(), name: '新しい楽譜', bpm: 150, pitch: 'C', instrument: 'Harp',
+    frames: [[], [], [], [], [], [], [], []], updatedAt: Date.now()
+  };
+  selectedFrameIndex = 0;
+  const songs = loadSongs();
+  songs.unshift(currentSong);
+  saveSongs(songs);
+  openEditor(currentSong.id);
+}
+
+function openEditor(id) {
+  const songs = loadSongs();
+  const song = songs.find(s => s.id === id);
+  if (!song) return;
+  currentSong = song;
+  selectedFrameIndex = 0;
+  switchView('editor');
+  renderEditor();
+}
+
+function persistCurrentSong() {
+  if (!currentSong) return;
+  currentSong.updatedAt = Date.now();
+  const songs = loadSongs();
+  const idx = songs.findIndex(s => s.id === currentSong.id);
+  if (idx >= 0) songs[idx] = currentSong; else songs.unshift(currentSong);
+  saveSongs(songs);
+}
+
+function deleteSong(id) {
+  if (!confirm('この楽譜を削除しますか？この操作は取り消せません。')) return;
+  saveSongs(loadSongs().filter(s => s.id !== id));
+  renderLibrary();
+  showToast('削除しました');
+}
+
+function duplicateSong(id) {
+  const songs = loadSongs();
+  const song = songs.find(s => s.id === id);
+  if (!song) return;
+  const clone = JSON.parse(JSON.stringify(song));
+  clone.id = genId();
+  clone.name = song.name + ' のコピー';
+  clone.updatedAt = Date.now();
+  songs.unshift(clone);
+  saveSongs(songs);
+  renderLibrary();
+  showToast('複製しました');
+}
+
+/* ================================================================
+   タブ切替
+   ================================================================ */
+function switchView(view) {
+  document.getElementById('viewLibrary').classList.toggle('active', view === 'library');
+  document.getElementById('viewEditor').classList.toggle('active', view === 'editor');
+  document.getElementById('tabLibraryBtn').classList.toggle('active', view === 'library');
+  document.getElementById('tabEditorBtn').classList.toggle('active', view === 'editor');
+  if (view === 'library') { stopPlayback(); renderLibrary(); }
+}
+
+/* ================================================================
+   ライブラリ描画
+   ================================================================ */
+function renderLibrary() {
+  const q = document.getElementById('librarySearch').value.trim().toLowerCase();
+  let songs = loadSongs().sort((a, b) => b.updatedAt - a.updatedAt);
+  if (q) songs = songs.filter(s => s.name.toLowerCase().includes(q));
+
+  const container = document.getElementById('songList');
+  if (songs.length === 0) {
+    container.innerHTML = `<div class="empty-state">まだ楽譜がありません。「＋ 新規作成」から作ってみましょう。<br><br>
+      <button class="mini-btn primary" onclick="openModal('importModal')">📥 楽譜を読み込む</button></div>`;
+    return;
+  }
+  container.innerHTML = songs.map(s => {
+    const noteCount = s.frames.reduce((sum, f) => sum + f.length, 0);
+    const d = new Date(s.updatedAt);
+    const dateStr = `${d.getFullYear()}/${d.getMonth() + 1}/${d.getDate()}`;
+    return `
+      <div class="song-card">
+        <div class="song-card-head">
+          <div>
+            <div class="song-card-name">${escapeHtml(s.name || '無題')}</div>
+            <div class="song-card-meta">${s.frames.length}マス・${noteCount}音　・　BPM${s.bpm}　・　更新: ${dateStr}</div>
+          </div>
+        </div>
+        <div class="song-card-btns">
+          <button class="mini-btn primary" onclick="openEditor('${s.id}')">✏️ 開く</button>
+          <button class="mini-btn" onclick="duplicateSong('${s.id}')">📄 複製</button>
+          <button class="mini-btn danger" onclick="deleteSong('${s.id}')">🗑️ 削除</button>
+        </div>
+      </div>`;
+  }).join('');
+}
+
+/* ================================================================
+   エディタ描画
+   ================================================================ */
+function populatePitchSelect() {
+  const sel = document.getElementById('songPitchInput');
+  sel.innerHTML = PITCHES.map(p => `<option value="${p}">調: ${p}</option>`).join('');
+}
+
+function renderEditor() {
+  if (!currentSong) return;
+  document.getElementById('songNameInput').value = currentSong.name;
+  document.getElementById('songPitchInput').value = currentSong.pitch;
+  document.getElementById('songInstrumentInput').value = currentSong.instrument;
+  document.getElementById('bpmSlider').value = currentSong.bpm;
+  document.getElementById('bpmNumber').value = currentSong.bpm;
+  if (selectedFrameIndex >= currentSong.frames.length) selectedFrameIndex = Math.max(0, currentSong.frames.length - 1);
+  renderFrameStrip();
+  renderBigGrid();
+}
+
+function renderBigGrid() {
+  const grid = document.getElementById('bigGrid');
+  const frame = currentSong.frames[selectedFrameIndex] || [];
+  grid.innerHTML = NOTE_LABELS.map((label, i) => {
+    const on = frame.includes(i);
+    return `<div class="big-note${on ? ' on' : ''}" data-idx="${i}" onclick="toggleNote(${i})">${label}</div>`;
+  }).join('');
+}
+
+function renderFrameStrip() {
+  const strip = document.getElementById('frameStrip');
+  strip.innerHTML = currentSong.frames.map((frame, fi) => `
+    <div class="frame-box${fi === selectedFrameIndex ? ' selected' : ''}" id="frameBox_${fi}" onclick="selectFrame(${fi})">
+      <span class="frame-index">${fi + 1}</span>
+      <button class="frame-del-btn" onclick="event.stopPropagation(); deleteFrame(${fi})">✕</button>
+      ${NOTE_LABELS.map((_, ni) => `<div class="frame-dot${frame.includes(ni) ? ' on' : ''}"></div>`).join('')}
+    </div>
+  `).join('') + `<button class="add-frame-btn" onclick="addFrame()">＋</button>`;
+}
+
+function selectFrame(fi) {
+  selectedFrameIndex = fi;
+  renderFrameStrip();
+  renderBigGrid();
+}
+
+function toggleNote(noteIndex) {
+  const frame = currentSong.frames[selectedFrameIndex];
+  const pos = frame.indexOf(noteIndex);
+  if (pos >= 0) frame.splice(pos, 1); else frame.push(noteIndex);
+  persistCurrentSong();
+  renderBigGrid();
+  renderFrameStrip();
+  playNote(noteIndex);
+}
+
+function addFrame() {
+  currentSong.frames.push([]);
+  selectedFrameIndex = currentSong.frames.length - 1;
+  persistCurrentSong();
+  renderFrameStrip();
+  renderBigGrid();
+}
+
+function deleteFrame(fi) {
+  if (currentSong.frames.length <= 1) { showToast('最後の1マスは削除できません'); return; }
+  currentSong.frames.splice(fi, 1);
+  if (selectedFrameIndex >= currentSong.frames.length) selectedFrameIndex = currentSong.frames.length - 1;
+  persistCurrentSong();
+  renderFrameStrip();
+  renderBigGrid();
+}
+
+function onSongMetaChange() {
+  if (!currentSong) return;
+  currentSong.name = document.getElementById('songNameInput').value || '無題';
+  currentSong.pitch = document.getElementById('songPitchInput').value;
+  currentSong.instrument = document.getElementById('songInstrumentInput').value;
+  persistCurrentSong();
+}
+
+function onBpmChange(val) {
+  const bpm = Math.max(40, Math.min(300, parseInt(val) || 150));
+  currentSong.bpm = bpm;
+  document.getElementById('bpmSlider').value = bpm;
+  document.getElementById('bpmNumber').value = bpm;
+  persistCurrentSong();
+}
+
+/* ================================================================
+   音声合成（WebAudio。ゲームから抽出した音源は一切使用しない）
+   ================================================================ */
+let audioCtx = null;
+function ensureAudioCtx() {
+  if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  if (audioCtx.state === 'suspended') audioCtx.resume();
+  return audioCtx;
+}
+function midiToFreq(midi) { return 440 * Math.pow(2, (midi - 69) / 12); }
+
+function playNote(noteIndex) {
+  try {
+    const ctx = ensureAudioCtx();
+    const pitchOffset = PITCHES.indexOf((currentSong && currentSong.pitch) || 'C');
+    const midi = NOTE_MIDI[noteIndex] + pitchOffset;
+    const freq = midiToFreq(midi);
+    const instrument = (currentSong && currentSong.instrument) || 'Harp';
+
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+
+    const now = ctx.currentTime;
+    let attack = 0.005, decay = 1.1, peak = 0.28, waveType = 'triangle';
+    if (instrument === 'Drum') { attack = 0.002; decay = 0.18; peak = 0.35; waveType = 'square'; }
+    else if (instrument === 'Bass') { attack = 0.005; decay = 0.6; peak = 0.3; waveType = 'sine'; }
+    else if (instrument === 'Flute') { attack = 0.03; decay = 0.9; peak = 0.22; waveType = 'sine'; }
+    else if (instrument === 'Bells') { attack = 0.002; decay = 1.6; peak = 0.22; waveType = 'sine'; }
+    else if (instrument === 'Piano') { attack = 0.003; decay = 1.3; peak = 0.26; waveType = 'triangle'; }
+    else if (instrument === 'Guitar') { attack = 0.004; decay = 0.9; peak = 0.28; waveType = 'sawtooth'; }
+
+    osc.type = waveType;
+    osc.frequency.setValueAtTime(freq, now);
+    gain.gain.setValueAtTime(0, now);
+    gain.gain.linearRampToValueAtTime(peak, now + attack);
+    gain.gain.exponentialRampToValueAtTime(0.001, now + attack + decay);
+
+    osc.start(now);
+    osc.stop(now + attack + decay + 0.05);
+  } catch (e) { /* オーディオが使えない環境では無視 */ }
+}
+
+function playFrame(frame) { frame.forEach(n => playNote(n)); }
+
+/* ================================================================
+   再生・練習モード
+   ================================================================ */
+let playbackTimer = null;
+let isPlaying = false;
+let isPracticing = false;
+
+function togglePlayback() {
+  if (isPlaying) { stopPlayback(); return; }
+  stopPlayback();
+  isPlaying = true;
+  document.getElementById('playBtn').classList.add('active');
+  document.getElementById('playBtn').textContent = '⏸️ 再生中…';
+  let i = selectedFrameIndex;
+  const intervalMs = 60000 / currentSong.bpm;
+  const step = () => {
+    if (i >= currentSong.frames.length) { stopPlayback(); return; }
+    highlightPlayingFrame(i);
+    playFrame(currentSong.frames[i]);
+    i++;
+    playbackTimer = setTimeout(step, intervalMs);
+  };
+  step();
+}
+
+function stopPlayback() {
+  clearTimeout(playbackTimer);
+  playbackTimer = null;
+  isPlaying = false;
+  isPracticing = false;
+  document.getElementById('playBtn').classList.remove('active');
+  document.getElementById('playBtn').textContent = '▶️ 再生';
+  document.getElementById('practiceBtn').classList.remove('active');
+  document.getElementById('practiceHint').style.display = 'none';
+  clearPlayingHighlight();
+}
+
+function highlightPlayingFrame(i) {
+  clearPlayingHighlight();
+  const el = document.getElementById('frameBox_' + i);
+  if (el) { el.classList.add('playing'); el.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' }); }
+  selectedFrameIndex = i;
+  renderBigGrid();
+  document.querySelectorAll('.frame-box').forEach(b => b.classList.remove('selected'));
+  if (el) el.classList.add('selected');
+}
+function clearPlayingHighlight() {
+  document.querySelectorAll('.frame-box.playing').forEach(b => b.classList.remove('playing'));
+}
+
+// 練習モード：自分のペースで「次へ」を押しながら1マスずつ進む自習モード
+function togglePractice() {
+  if (isPracticing) { stopPlayback(); return; }
+  stopPlayback();
+  isPracticing = true;
+  selectedFrameIndex = 0;
+  document.getElementById('practiceBtn').classList.add('active');
+  document.getElementById('practiceHint').style.display = 'block';
+  renderPracticeStep();
+}
+function renderPracticeStep() {
+  selectFrame(selectedFrameIndex);
+  playFrame(currentSong.frames[selectedFrameIndex]);
+  const hint = document.getElementById('practiceHint');
+  hint.innerHTML = `${selectedFrameIndex + 1} / ${currentSong.frames.length} マス目です。押せたら次へ進みましょう。
+    <button class="mini-btn primary" onclick="practiceNext()" style="margin-left:6px;">次へ ▶</button>
+    <button class="mini-btn" onclick="practicePrev()">◀ 前へ</button>`;
+}
+function practiceNext() {
+  if (selectedFrameIndex < currentSong.frames.length - 1) { selectedFrameIndex++; renderPracticeStep(); }
+  else { showToast('最後まで到達しました！'); stopPlayback(); }
+}
+function practicePrev() {
+  if (selectedFrameIndex > 0) { selectedFrameIndex--; renderPracticeStep(); }
+}
+
+/* ================================================================
+   コードの圧縮/展開 + Base64（データ引継ぎと同じ方式）
+   ================================================================ */
+function bytesToBase64(bytes) {
+  let binString = '';
+  const CHUNK = 8192;
+  for (let i = 0; i < bytes.length; i += CHUNK) binString += String.fromCharCode.apply(null, bytes.subarray(i, i + CHUNK));
+  return btoa(binString);
+}
+function base64ToBytes(b64) {
+  const binString = atob(b64);
+  const bytes = new Uint8Array(binString.length);
+  for (let i = 0; i < binString.length; i++) bytes[i] = binString.charCodeAt(i);
+  return bytes;
+}
+async function encodeShareCode(obj) {
+  const bytes = new TextEncoder().encode(JSON.stringify(obj));
+  if (typeof CompressionStream === 'undefined') return 'U1:' + bytesToBase64(bytes);
+  const cs = new CompressionStream('gzip');
+  const writer = cs.writable.getWriter();
+  writer.write(bytes); writer.close();
+  const compressed = new Uint8Array(await new Response(cs.readable).arrayBuffer());
+  return 'G1:' + bytesToBase64(compressed);
+}
+async function decodeShareCode(code) {
+  const marker = code.slice(0, 3);
+  const body = code.slice(3);
+  let bytes;
+  if (marker === 'G1:') {
+    const ds = new DecompressionStream('gzip');
+    const writer = ds.writable.getWriter();
+    writer.write(base64ToBytes(body)); writer.close();
+    bytes = new Uint8Array(await new Response(ds.readable).arrayBuffer());
+  } else if (marker === 'U1:') {
+    bytes = base64ToBytes(body);
+  } else {
+    bytes = base64ToBytes(code);
+  }
+  return JSON.parse(new TextDecoder().decode(bytes));
+}
+
+/* ================================================================
+   共有モーダル
+   ================================================================ */
+let lastShareCode = null;
+async function generateShareCode() {
+  const statusEl = document.getElementById('shareStatus');
+  const outputEl = document.getElementById('shareOutputArea');
+  statusEl.textContent = '';
+  try {
+    lastShareCode = await encodeShareCode({ kind: 'tai-score-song', v: 1, song: currentSong });
+    outputEl.innerHTML = `
+      <textarea class="code-box" id="shareCodeOutput" readonly onclick="this.select()">${escapeHtml(lastShareCode)}</textarea>
+      <button type="button" class="action-btn secondary" onclick="copyShareCode()">📋 コードをコピー</button>`;
+  } catch (e) {
+    statusEl.className = 'status-msg err';
+    statusEl.textContent = 'コードの作成に失敗しました。';
+  }
+}
+async function copyShareCode() {
+  const ta = document.getElementById('shareCodeOutput');
+  if (!ta) return;
+  ta.select();
+  const statusEl = document.getElementById('shareStatus');
+  try {
+    await navigator.clipboard.writeText(ta.value);
+    statusEl.className = 'status-msg ok';
+    statusEl.textContent = 'コピーしました。SNSやメッセージで貼り付けて共有できます。';
+  } catch (e) {
+    statusEl.className = 'status-msg err';
+    statusEl.textContent = 'コピーに失敗しました。コードが選択された状態なので手動でコピーしてください。';
+  }
+}
+
+function downloadBlob(content, filename, type) {
+  const blob = new Blob([content], { type });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = filename;
+  document.body.appendChild(a); a.click(); a.remove();
+  URL.revokeObjectURL(url);
+}
+function downloadNativeFile() {
+  downloadBlob(JSON.stringify({ kind: 'tai-score-song', v: 1, song: currentSong }, null, 1),
+    `${currentSong.name || 'song'}.taiscore.json`, 'application/json');
+  showToast('ダウンロードしました');
+}
+function downloadSpecyFile() {
+  downloadBlob(JSON.stringify(songToSpecyFormat(currentSong), null, 1),
+    `${currentSong.name || 'song'}.json`, 'application/json');
+  showToast('ダウンロードしました');
+}
+
+/* ================================================================
+   Sky Music Nightly (Specy) 形式との相互変換
+   参考: github.com/Specy/genshin-music の SongTypes / ComposedSong / SongClasses
+   ・columns: [tempoChanger, [[noteIndex, layerHex], ...]][]
+   ・layerHex: レイヤー0のみ使うシンプルな譜面として "1" 固定でエクスポートする
+   ・インポート時は複数レイヤーがあっても、その列で鳴る音として1つに統合する
+   ================================================================ */
+function songToSpecyFormat(song) {
+  return {
+    id: null, type: 'composed', folderId: null, name: song.name, version: 3,
+    bpm: song.bpm, pitch: song.pitch,
+    data: { isComposed: true, appName: 'Sky', isEncrypted: false },
+    instruments: [{ name: song.instrument || 'Harp', notes: [], volume: 100, pitch: song.pitch, baseNotes: [] }],
+    breakpoints: [],
+    reverb: false,
+    columns: song.frames.map(frame => [0, frame.map(idx => [idx, '1'])])
+  };
+}
+function specyFormatToSong(data) {
+  const columns = data.columns || [];
+  return {
+    id: genId(),
+    name: data.name || 'インポートした楽譜',
+    bpm: data.bpm || 150,
+    pitch: data.pitch || 'C',
+    instrument: (data.instruments && data.instruments[0] && data.instruments[0].name) || 'Harp',
+    frames: columns.map(col => {
+      const notes = Array.isArray(col) ? (col[1] || []) : [];
+      return notes.map(n => Array.isArray(n) ? n[0] : (n.index !== undefined ? n.index : n.key)).filter(n => typeof n === 'number' && n >= 0 && n < 15);
+    }),
+    updatedAt: Date.now()
+  };
+}
+function isSpecyFormat(data) {
+  return data && (data.type === 'composed' || data.type === 'recorded' || Array.isArray(data.columns) || Array.isArray(data.notes));
+}
+
+/* ================================================================
+   インポート
+   ================================================================ */
+async function importFromCode() {
+  const statusEl = document.getElementById('importStatus');
+  const code = document.getElementById('importCodeInput').value.trim();
+  if (!code) return;
+  try {
+    const payload = await decodeShareCode(code);
+    let song;
+    if (payload && payload.kind === 'tai-score-song' && payload.song) {
+      song = payload.song; song.id = genId(); song.updatedAt = Date.now();
+    } else if (isSpecyFormat(payload)) {
+      song = specyFormatToSong(payload);
+    } else {
+      throw new Error('unknown format');
+    }
+    finishImport(song, statusEl);
+  } catch (e) {
+    statusEl.className = 'status-msg err';
+    statusEl.textContent = 'コードの読み込みに失敗しました。コードが正しいかご確認ください。';
+  }
+}
+function importFromFile(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  const statusEl = document.getElementById('importStatus');
+  const reader = new FileReader();
+  reader.onload = () => {
+    try {
+      const data = JSON.parse(reader.result);
+      let song;
+      if (data && data.kind === 'tai-score-song' && data.song) {
+        song = data.song; song.id = genId(); song.updatedAt = Date.now();
+      } else if (isSpecyFormat(data)) {
+        song = specyFormatToSong(data);
+      } else {
+        throw new Error('unknown format');
+      }
+      finishImport(song, statusEl);
+    } catch (e) {
+      statusEl.className = 'status-msg err';
+      statusEl.textContent = 'ファイルの読み込みに失敗しました。対応形式のファイルかご確認ください。';
+    }
+  };
+  reader.readAsText(file);
+  event.target.value = '';
+}
+function finishImport(song, statusEl) {
+  if (!song.frames || song.frames.length === 0) song.frames = [[]];
+  const songs = loadSongs();
+  songs.unshift(song);
+  saveSongs(songs);
+  statusEl.className = 'status-msg ok';
+  statusEl.textContent = `「${song.name}」を読み込みました。`;
+  document.getElementById('importCodeInput').value = '';
+  setTimeout(() => { closeModal('importModal'); openEditor(song.id); }, 700);
+}
+
+/* ================================================================
+   URLの #song= から自動読み込み（共有リンクを開いたとき）
+   ================================================================ */
+async function loadSongFromUrlHash() {
+  const m = location.hash.match(/^#song=(.+)$/);
+  if (!m) return;
+  try {
+    const payload = await decodeShareCode(decodeURIComponent(m[1]));
+    if (payload && payload.kind === 'tai-score-song' && payload.song) {
+      const song = payload.song;
+      song.id = genId();
+      song.updatedAt = Date.now();
+      const songs = loadSongs();
+      songs.unshift(song);
+      saveSongs(songs);
+      openEditor(song.id);
+      showToast(`共有された楽譜「${song.name}」を読み込みました`);
+    }
+  } catch (e) { /* 不正なリンクは無視 */ }
+}
+
+/* ================================================================
+   データバックアップ・復元（他サイトと同じ dm* 方式）
+   ================================================================ */
+function dmExport() {
+  const dump = {};
+  const v = localStorage.getItem(SONGS_KEY);
+  if (v !== null) dump[SONGS_KEY] = v;
+  const payload = { exportedFrom: 'taipak5000.github.io/tai-score/', exportedAt: new Date().toISOString(), data: dump };
+  downloadBlob(JSON.stringify(payload, null, 1), `tai-score-backup_${new Date().toISOString().slice(0,10)}.json`, 'application/json');
+  const statusEl = document.getElementById('dmStatus');
+  statusEl.className = 'status-msg ok';
+  statusEl.textContent = 'バックアップをダウンロードしました。';
+}
+let dmPendingImportData = null;
+function dmImportFileSelected(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  const statusEl = document.getElementById('dmStatus');
+  const reader = new FileReader();
+  reader.onload = () => {
+    try {
+      const payload = JSON.parse(reader.result);
+      const data = payload && payload.data && typeof payload.data === 'object' ? payload.data : null;
+      if (!data || !data[SONGS_KEY]) throw new Error('invalid');
+      dmPendingImportData = data;
+      const count = (JSON.parse(data[SONGS_KEY]) || []).length;
+      document.getElementById('dmImportArea').innerHTML =
+        `<div class="status-msg">${count}件の楽譜が見つかりました。</div>
+         <button type="button" class="action-btn primary" onclick="dmConfirmImport()">✅ 復元する（今のデータは上書きされます）</button>`;
+      statusEl.textContent = '';
+    } catch (e) {
+      statusEl.className = 'status-msg err';
+      statusEl.textContent = 'このツールで作成したバックアップファイルではないようです。';
+    }
+  };
+  reader.readAsText(file);
+  event.target.value = '';
+}
+function dmConfirmImport() {
+  if (!dmPendingImportData) return;
+  localStorage.setItem(SONGS_KEY, dmPendingImportData[SONGS_KEY]);
+  document.getElementById('dmStatus').className = 'status-msg ok';
+  document.getElementById('dmStatus').textContent = '復元しました。';
+  document.getElementById('dmImportArea').innerHTML = '';
+  dmPendingImportData = null;
+  renderLibrary();
+}
+function dmRenderWipeArea() {
+  document.getElementById('dmWipeArea').innerHTML =
+    `<button type="button" class="mini-btn danger" onclick="dmStartWipe()">🗑️ 全ての楽譜を削除</button>`;
+}
+function dmStartWipe() {
+  document.getElementById('dmWipeArea').innerHTML = `
+    <div class="status-msg err">本当にすべての楽譜を削除しますか？この操作は取り消せません。</div>
+    <button type="button" class="action-btn secondary" onclick="dmConfirmWipe()" style="background:var(--red); color:#fff; border-color:var(--red);">削除する</button>
+    <button type="button" class="action-btn secondary" onclick="dmRenderWipeArea()">キャンセル</button>`;
+}
+function dmConfirmWipe() {
+  localStorage.removeItem(SONGS_KEY);
+  dmRenderWipeArea();
+  document.getElementById('dmStatus').className = 'status-msg ok';
+  document.getElementById('dmStatus').textContent = '削除しました。';
+  renderLibrary();
+}
+
+/* ================================================================
+   初期化
+   ================================================================ */
+populatePitchSelect();
+dmRenderWipeArea();
+renderLibrary();
+loadSongFromUrlHash();
+</script>
+
+</body>
+</html>
