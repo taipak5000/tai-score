@@ -209,6 +209,26 @@
     .big-note:active { transform: scale(0.9); }
     .big-note.flash { transform: scale(1.15); }
 
+    .current-frame-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 10px; }
+    .current-frame-head .current-frame-label { margin-bottom: 0; }
+    .input-mode-toggle {
+      background: var(--bg); color: var(--text); font-size: 12px; font-weight: 700;
+      padding: 6px 12px; border-radius: 999px; white-space: nowrap; flex-shrink: 0;
+    }
+
+    .piano-keys-wrap { overflow-x: auto; padding-bottom: 2px; }
+    .piano-keys { display: flex; gap: 3px; min-width: max-content; padding: 4px 2px 2px; }
+    .piano-key {
+      width: 38px; height: 130px; background: #fff; border: 1.5px solid var(--sep); border-radius: 0 0 8px 8px;
+      display: flex; align-items: flex-end; justify-content: center; padding-bottom: 10px;
+      font-size: 12px; font-weight: 700; color: var(--text-2); flex-shrink: 0;
+      transition: background 0.08s, transform 0.08s; user-select: none; cursor: pointer;
+    }
+    .piano-key.octave-start { margin-left: 8px; }
+    .piano-key.on { background: var(--note-on); color: #fff; border-color: var(--note-on); }
+    .piano-key:active { transform: scaleY(0.96); }
+    .piano-hint { font-size: 11.5px; color: var(--text-2); text-align: center; margin-top: 8px; }
+
     .practice-panel { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-top: 12px; }
     .practice-panel .mini-btn { flex-shrink: 0; }
 
@@ -345,8 +365,15 @@
       </div>
 
       <div class="current-frame-card">
-        <div class="current-frame-label">選択中のマス（クリックで音をON/OFF）</div>
+        <div class="current-frame-head">
+          <div class="current-frame-label">選択中のマス（クリックで音をON/OFF）</div>
+          <button type="button" class="input-mode-toggle" id="inputModeToggleBtn" onclick="toggleInputMode()">🎹 ピアノ入力に切替</button>
+        </div>
         <div class="big-grid" id="bigGrid"><!-- JS --></div>
+        <div class="piano-keys-wrap" id="pianoKeysWrap" style="display:none;">
+          <div class="piano-keys" id="pianoKeys"><!-- JS --></div>
+          <div class="piano-hint">Skyの楽器は白鍵（ドレミファソラシ）のみに対応しています</div>
+        </div>
       </div>
 
       <div class="sec-label" style="padding-top:4px;">🎼 譜面（クリックでそのマスへ移動）</div>
@@ -576,6 +603,7 @@ function renderEditor() {
   document.getElementById('bpmSlider').value = currentSong.bpm;
   document.getElementById('bpmNumber').value = currentSong.bpm;
   if (selectedFrameIndex >= currentSong.frames.length) selectedFrameIndex = Math.max(0, currentSong.frames.length - 1);
+  applyInputMode();
   renderFrameStrip();
   renderBigGrid();
 }
@@ -586,6 +614,35 @@ function renderBigGrid() {
   grid.innerHTML = NOTE_LABELS.map((label, i) => {
     const on = frame.includes(i);
     return `<div class="big-note${on ? ' on' : ''}" data-idx="${i}" onclick="toggleNote(${i})">${label}</div>`;
+  }).join('');
+  renderPianoKeys();
+}
+
+/* ================================================================
+   音符入力の表示切り替え：グリッド（ゲーム内のマス配置）⇔ ピアノ（白鍵のみ）
+   どちらもtoggleNote(index)を呼ぶ点は共通で、見た目だけが違う。
+   選んだ表示方法はこの端末に記憶される。
+   ================================================================ */
+const INPUT_MODE_KEY = 'taiScoreInputMode_v1';
+function getInputMode() { return localStorage.getItem(INPUT_MODE_KEY) === 'piano' ? 'piano' : 'grid'; }
+function toggleInputMode() {
+  const next = getInputMode() === 'piano' ? 'grid' : 'piano';
+  localStorage.setItem(INPUT_MODE_KEY, next);
+  applyInputMode();
+}
+function applyInputMode() {
+  const mode = getInputMode();
+  document.getElementById('bigGrid').style.display = mode === 'grid' ? 'grid' : 'none';
+  document.getElementById('pianoKeysWrap').style.display = mode === 'piano' ? 'block' : 'none';
+  document.getElementById('inputModeToggleBtn').textContent = mode === 'piano' ? '⚪ グリッド入力に切替' : '🎹 ピアノ入力に切替';
+}
+function renderPianoKeys() {
+  const wrap = document.getElementById('pianoKeys');
+  const frame = currentSong.frames[selectedFrameIndex] || [];
+  wrap.innerHTML = NOTE_LABELS.map((label, i) => {
+    const on = frame.includes(i);
+    const octaveStart = i === 7 || i === 14;
+    return `<div class="piano-key${on ? ' on' : ''}${octaveStart ? ' octave-start' : ''}" data-idx="${i}" onclick="toggleNote(${i})">${label}</div>`;
   }).join('');
 }
 
