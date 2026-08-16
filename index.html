@@ -201,6 +201,7 @@
       display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; max-width: 320px; margin: 0 auto;
     }
     .big-note {
+      position: relative;
       aspect-ratio: 1; border-radius: 50%; background: var(--note-off); color: var(--text-2);
       display: flex; align-items: center; justify-content: center; font-size: 15px; font-weight: 700;
       transition: background 0.08s, transform 0.08s; user-select: none;
@@ -208,6 +209,16 @@
     .big-note.on { background: var(--note-on); color: #fff; }
     .big-note:active { transform: scale(0.9); }
     .big-note.flash { transform: scale(1.15); }
+
+    /* ── キー割り当てのヒント表示（キーボード操作用） ─────────────────── */
+    .key-badge {
+      position: absolute; top: 3px; right: 5px; font-size: 9px; font-weight: 700;
+      color: var(--text-3); background: rgba(255,255,255,0.6); padding: 0 3px; border-radius: 4px;
+      pointer-events: none; line-height: 1.5;
+    }
+    .big-note.on .key-badge { color: rgba(255,255,255,0.8); background: rgba(255,255,255,0.18); }
+    .piano-key .key-badge { top: 4px; left: 4px; right: auto; }
+    .piano-key.on .key-badge { color: rgba(255,255,255,0.8); background: rgba(255,255,255,0.18); }
 
     .current-frame-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 10px; }
     .current-frame-head .current-frame-label { margin-bottom: 0; }
@@ -303,11 +314,13 @@
     }
     .perf-key {
       border-radius: 16px; background: var(--card); box-shadow: 0 1px 4px rgba(0,0,0,0.1);
-      display: flex; align-items: center; justify-content: center;
-      font-size: clamp(15px, 5vw, 28px); font-weight: 700; color: var(--text-2);
+      display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px;
+      color: var(--text-2);
       user-select: none; -webkit-user-select: none; touch-action: manipulation;
       transition: background 0.08s, color 0.08s, transform 0.05s, box-shadow 0.08s;
     }
+    .perf-key-label { font-size: clamp(15px, 5vw, 28px); font-weight: 700; line-height: 1; }
+    .perf-key-hint { font-size: clamp(9px, 2vw, 12px); font-weight: 700; opacity: 0.5; letter-spacing: 0.5px; }
     .perf-key:active, .perf-key.pressed-flash { transform: scale(0.93); background: var(--pink-bg); color: var(--pink-d); }
     .perf-key.target { background: #fff; color: var(--pink-d); box-shadow: 0 0 0 3px var(--pink) inset; animation: perfPulse 0.9s ease-in-out infinite; }
     .perf-key.hit { background: var(--green); color: #fff; box-shadow: none; animation: none; }
@@ -316,6 +329,19 @@
       50% { box-shadow: 0 0 0 7px var(--pink) inset; }
     }
     .perf-footer { flex-shrink: 0; text-align: center; font-size: 12.5px; color: var(--text-2); padding: 10px 4px 2px; }
+
+    /* ── キーボード設定モーダル（演奏オーバーレイより手前に出す） ─────────── */
+    #keyBindModal { z-index: 850; }
+    .keybind-list { display: flex; flex-direction: column; gap: 6px; margin: 14px 0; max-height: 50vh; overflow-y: auto; }
+    .keybind-row { display: flex; align-items: center; gap: 10px; padding: 8px 10px; border-radius: var(--r-sm); background: var(--bg); }
+    .keybind-row.capturing { background: var(--pink-bg); box-shadow: 0 0 0 1.5px var(--pink) inset; animation: perfPulse 0.9s ease-in-out infinite; }
+    .keybind-note { flex: 1; font-size: 13.5px; font-weight: 600; display: flex; align-items: baseline; gap: 5px; }
+    .keybind-note-idx { font-size: 10px; color: var(--text-2); font-weight: 500; }
+    .keybind-key-display {
+      min-width: 50px; text-align: center; font-family: monospace; font-size: 13px; font-weight: 700;
+      background: var(--card); border: 1px solid var(--sep); border-radius: 6px; padding: 5px 8px; color: var(--text);
+    }
+    .keybind-row.capturing .keybind-key-display { color: var(--pink-d); border-color: var(--pink); }
 
     .toast {
       position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%) translateY(20px);
@@ -406,7 +432,8 @@
           <button class="transport-btn primary" id="playBtn" onclick="togglePlayback()">▶️ 再生</button>
           <button class="transport-btn" onclick="openPractice()">🐢 練習モード</button>
           <button class="transport-btn" onclick="stopPlayback()">⏹️ 停止</button>
-          <button class="transport-btn" onclick="openShareModal()">🔗 共有・保存</button>
+          <button class="transport-btn" onclick="openModal('shareModal')">🔗 共有・保存</button>
+          <button class="transport-btn" onclick="openKeyBindModal()">⌨️ キー設定</button>
         </div>
       </div>
 
@@ -492,10 +519,26 @@
   </div>
 </div>
 
+<!-- ▸ キーボード設定モーダル -->
+<div class="modal-overlay" id="keyBindModal" onclick="if(event.target===this)closeKeyBindModal()">
+  <div class="modal-card">
+    <div class="modal-header">
+      <span class="modal-title">⌨️ キーボード設定</span>
+      <button class="modal-close" onclick="closeKeyBindModal()">✕</button>
+    </div>
+    <div class="hint">パソコンのキーボードで楽譜の作成・演奏ができます。「変更」を押してから、割り当てたいキーを押してください。すでに他のマスで使われているキーを選ぶと、入れ替わります。</div>
+    <div class="keybind-list" id="keyBindList"><!-- JS --></div>
+    <button type="button" class="action-btn secondary" onclick="resetKeyBindings()">↩️ 初期設定（Y U I O P / H J K L ; / N M , . /）に戻す</button>
+  </div>
+</div>
+
 <!-- ▸ 演奏オーバーレイ（練習モード／フリー演奏モード共通、画面いっぱいに固定表示） -->
 <div class="perf-overlay" id="perfOverlay">
   <div class="perf-header">
-    <button type="button" class="perf-close" id="perfCloseBtn" onclick="closePerformance()">✕ 終了</button>
+    <div style="display:flex; gap:6px;">
+      <button type="button" class="perf-close" id="perfCloseBtn" onclick="closePerformance()">✕ 終了</button>
+      <button type="button" class="perf-close" onclick="openKeyBindModal()" title="キーボード設定">⌨️</button>
+    </div>
     <div class="perf-title" id="perfTitle"></div>
     <div class="perf-progress" id="perfProgress"></div>
   </div>
@@ -526,6 +569,25 @@
 const NOTE_LABELS = ['ド','レ','ミ','ファ','ソ','ラ','シ','ド','レ','ミ','ファ','ソ','ラ','シ','ド'];
 const NOTE_MIDI = [60,62,64,65,67,69,71,72,74,76,77,79,81,83,84];
 const PITCHES = ["C","Db","D","Eb","E","F","Gb","G","Ab","A","Bb","B"];
+
+/* ================================================================
+   パソコンのキーボードでの操作（作成・演奏）
+   マスごとにキーを自由に割り当てられる。初期値はSky Music Nightly等
+   でも定番のY U I O P / H J K L ; / N M , . / 配列。
+   ================================================================ */
+const KEY_BINDINGS_KEY = 'taiScoreKeyBindings_v1';
+const DEFAULT_KEY_BINDINGS = ['y','u','i','o','p','h','j','k','l',';','n','m',',','.','/'];
+function loadKeyBindings() {
+  try {
+    const saved = JSON.parse(localStorage.getItem(KEY_BINDINGS_KEY));
+    if (Array.isArray(saved) && saved.length === 15) return saved;
+  } catch (_) { /* 無視してデフォルトを使う */ }
+  return DEFAULT_KEY_BINDINGS.slice();
+}
+function saveKeyBindings(bindings) { localStorage.setItem(KEY_BINDINGS_KEY, JSON.stringify(bindings)); }
+let keyBindings = loadKeyBindings();
+function keyDisplayLabel(k) { return k === ' ' ? 'Space' : (k.length === 1 ? k.toUpperCase() : k); }
+function normalizeKeyEvent(e) { return e.key.length === 1 ? e.key.toLowerCase() : e.key; }
 
 function toggleSidebar() {
   document.getElementById('sidebar').classList.toggle('sidebar-open');
@@ -707,7 +769,7 @@ function renderBigGrid() {
   const frame = currentSong.frames[selectedFrameIndex] || [];
   grid.innerHTML = NOTE_LABELS.map((label, i) => {
     const on = frame.includes(i);
-    return `<div class="big-note${on ? ' on' : ''}" data-idx="${i}" onclick="toggleNote(${i})">${label}</div>`;
+    return `<div class="big-note${on ? ' on' : ''}" data-idx="${i}" onclick="toggleNote(${i})">${label}<span class="key-badge">${escapeHtml(keyDisplayLabel(keyBindings[i]))}</span></div>`;
   }).join('');
   renderPianoKeys();
 }
@@ -744,7 +806,8 @@ function renderPianoKeys() {
     const on = frame.includes(i);
     const octaveStart = i === 7 || i === 14;
     const blackKey = hasBlackKeyAfter(i) ? '<div class="piano-black-key" title="Skyの楽器は黒鍵（半音）に対応していません"></div>' : '';
-    return `<div class="piano-key${on ? ' on' : ''}${octaveStart ? ' octave-start' : ''}" data-idx="${i}" onclick="toggleNote(${i})">${blackKey}${label}</div>`;
+    const keyBadge = `<span class="key-badge">${escapeHtml(keyDisplayLabel(keyBindings[i]))}</span>`;
+    return `<div class="piano-key${on ? ' on' : ''}${octaveStart ? ' octave-start' : ''}" data-idx="${i}" onclick="toggleNote(${i})">${blackKey}${keyBadge}${label}</div>`;
   }).join('');
 }
 
@@ -1074,7 +1137,7 @@ function closePerformance() {
 
 function renderPerfGrid() {
   const grid = document.getElementById('perfGrid');
-  grid.innerHTML = NOTE_LABELS.map((label, i) => `<div class="perf-key" data-idx="${i}" onclick="onPerfKeyPress(${i})">${label}</div>`).join('');
+  grid.innerHTML = NOTE_LABELS.map((label, i) => `<div class="perf-key" data-idx="${i}" onclick="onPerfKeyPress(${i})"><span class="perf-key-label">${label}</span><span class="perf-key-hint">${escapeHtml(keyDisplayLabel(keyBindings[i]))}</span></div>`).join('');
 }
 
 function onPerfKeyPress(idx) {
@@ -1120,6 +1183,95 @@ function highlightPerfTargets() {
 function clearPerfTargets() {
   document.querySelectorAll('#perfGrid .perf-key').forEach(el => el.classList.remove('target', 'hit'));
 }
+
+/* ================================================================
+   キーボード設定モーダル：マスごとに好きなキーを割り当てる
+   ================================================================ */
+let capturingKeyIndex = null;
+function openKeyBindModal() {
+  capturingKeyIndex = null;
+  renderKeyBindModal();
+  openModal('keyBindModal');
+}
+function closeKeyBindModal() {
+  capturingKeyIndex = null;
+  closeModal('keyBindModal');
+}
+function renderKeyBindModal() {
+  const wrap = document.getElementById('keyBindList');
+  wrap.innerHTML = NOTE_LABELS.map((label, i) => {
+    const capturing = capturingKeyIndex === i;
+    return `
+      <div class="keybind-row${capturing ? ' capturing' : ''}">
+        <div class="keybind-note">${label}<span class="keybind-note-idx">マス${i + 1}</span></div>
+        <div class="keybind-key-display">${capturing ? '入力待ち…' : escapeHtml(keyDisplayLabel(keyBindings[i]))}</div>
+        <button type="button" class="mini-btn${capturing ? ' primary' : ''}" onclick="startKeyCapture(${i})">${capturing ? 'キャンセル' : '変更'}</button>
+      </div>`;
+  }).join('');
+}
+function startKeyCapture(i) {
+  capturingKeyIndex = (capturingKeyIndex === i) ? null : i;
+  renderKeyBindModal();
+}
+function resetKeyBindings() {
+  keyBindings = DEFAULT_KEY_BINDINGS.slice();
+  saveKeyBindings(keyBindings);
+  capturingKeyIndex = null;
+  renderKeyBindModal();
+  refreshAllKeyHints();
+  showToast('キー割り当てを初期設定に戻しました');
+}
+function refreshAllKeyHints() {
+  if (currentSong && document.getElementById('viewEditor').classList.contains('active')) renderBigGrid();
+  if (document.getElementById('perfOverlay').classList.contains('open')) {
+    renderPerfGrid();
+    if (perfMode === 'practice') highlightPerfTargets();
+  }
+}
+
+/* ================================================================
+   キーボード操作の受付
+   ・キー割り当て待ち中はそのキーを割り当てる（Escでキャンセル）
+   ・演奏オーバーレイが開いていれば演奏（onPerfKeyPress）
+   ・エディタ画面を表示中なら作成（toggleNote＝マスのON/OFF切替）
+   ・他のモーダルが開いている時や、入力欄にフォーカスがある時は無効
+   ================================================================ */
+function handleGlobalKeydown(e) {
+  if (capturingKeyIndex !== null) {
+    if (e.key === 'Escape') { capturingKeyIndex = null; renderKeyBindModal(); e.preventDefault(); return; }
+    if (['Tab', 'Shift', 'Control', 'Alt', 'Meta', 'CapsLock'].includes(e.key)) return;
+    const newKey = normalizeKeyEvent(e);
+    const swapIdx = keyBindings.findIndex((k, idx) => idx !== capturingKeyIndex && k === newKey);
+    if (swapIdx >= 0) {
+      keyBindings[swapIdx] = keyBindings[capturingKeyIndex];
+      showToast(`「${NOTE_LABELS[swapIdx]}」（マス${swapIdx + 1}）と入れ替えました`);
+    }
+    keyBindings[capturingKeyIndex] = newKey;
+    saveKeyBindings(keyBindings);
+    capturingKeyIndex = null;
+    renderKeyBindModal();
+    refreshAllKeyHints();
+    e.preventDefault();
+    return;
+  }
+
+  if (document.querySelector('.modal-overlay.open')) return;
+  const activeTag = document.activeElement && document.activeElement.tagName;
+  if (activeTag === 'INPUT' || activeTag === 'TEXTAREA' || activeTag === 'SELECT') return;
+  if (e.metaKey || e.ctrlKey || e.altKey) return;
+
+  const idx = keyBindings.indexOf(normalizeKeyEvent(e));
+  if (idx < 0) return;
+
+  if (perfMode && document.getElementById('perfOverlay').classList.contains('open')) {
+    onPerfKeyPress(idx);
+    e.preventDefault();
+  } else if (currentSong && document.getElementById('viewEditor').classList.contains('active')) {
+    toggleNote(idx);
+    e.preventDefault();
+  }
+}
+document.addEventListener('keydown', handleGlobalKeydown);
 
 /* ================================================================
    コードの圧縮/展開 + Base64（データ引継ぎと同じ方式）
