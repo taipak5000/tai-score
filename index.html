@@ -114,6 +114,7 @@
       background: var(--pink); color: #fff; font-weight: 700; font-size: 13.5px;
       padding: 10px 16px; border-radius: var(--r-sm); white-space: nowrap;
     }
+    .new-song-btn.secondary { background: var(--card); color: var(--text); border: 1px solid var(--sep); }
     .song-list { display: flex; flex-direction: column; gap: 10px; margin-top: 14px; }
     .song-card { background: var(--card); border-radius: var(--r); padding: 14px; box-shadow: 0 1px 4px rgba(0,0,0,0.07); }
     .song-card-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
@@ -398,6 +399,7 @@
     <section class="view-section active" id="viewLibrary">
       <div class="lib-toolbar">
         <input type="search" class="lib-search" id="librarySearch" placeholder="🔍 曲名で検索…" oninput="renderLibrary()">
+        <button class="new-song-btn secondary" onclick="openModal('importModal')">📥 読み込む</button>
         <button class="new-song-btn" onclick="createNewSong()">＋ 新規作成</button>
       </div>
       <div class="song-list" id="songList"><!-- JS --></div>
