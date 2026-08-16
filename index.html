@@ -487,6 +487,10 @@
     <div class="hint">この楽譜専用のコードを作成し、別の端末やSNSで共有できます。ファイルとしても保存できます。</div>
     <button type="button" class="action-btn primary" onclick="generateShareCode()">📋 共有コードを作成</button>
     <div id="shareOutputArea"></div>
+    <div style="height:14px; border-top:1px solid var(--sep); margin-top:14px;"></div>
+    <div class="hint" style="margin-top:14px;">文字だけの楽譜（テキスト譜面）を作成します。Sky音楽コミュニティで使われているABC譜（例: A1 B3C1 . A5）形式なので、他の方への説明にも使いやすく、LINEやDiscordにそのまま貼り付けて共有できます。貼り付けられた側は「読み込む」からこのテキストをそのまま読み込めます。</div>
+    <button type="button" class="action-btn secondary" onclick="generateTextSheet()">📝 テキスト譜面を作成</button>
+    <div id="shareTextArea"></div>
     <div style="height:14px;"></div>
     <div class="hint">Sky Music Nightly形式で保存すると、他の楽譜ツールでも開けます。</div>
     <button type="button" class="action-btn secondary" onclick="downloadNativeFile()">⬇️ このサイトの形式でダウンロード</button>
@@ -502,8 +506,8 @@
       <span class="modal-title">📥 楽譜を読み込む</span>
       <button class="modal-close" onclick="closeModal('importModal')">✕</button>
     </div>
-    <div class="hint">共有コード、またはこのサイト／Sky Music Nightly／Sky Studio形式の.json・.txtファイルを読み込めます。</div>
-    <textarea class="code-box" id="importCodeInput" placeholder="共有コードを貼り付け"></textarea>
+    <div class="hint">共有コード、テキスト譜面（ABC譜）、またはこのサイト／Sky Music Nightly／Sky Studio形式の.json・.txtファイルを読み込めます。</div>
+    <textarea class="code-box" id="importCodeInput" placeholder="共有コードまたはテキスト譜面を貼り付け"></textarea>
     <button type="button" class="action-btn secondary" onclick="importFromCode()">🔍 コードから読み込む</button>
     <input type="file" id="importFileInput" accept=".json,.txt" onchange="importFromFile(event)">
     <div id="importStatus" class="status-msg"></div>
@@ -591,6 +595,13 @@
 const NOTE_LABELS = ['ド','レ','ミ','ファ','ソ','ラ','シ','ド','レ','ミ','ファ','ソ','ラ','シ','ド'];
 const NOTE_MIDI = [60,62,64,65,67,69,71,72,74,76,77,79,81,83,84];
 const PITCHES = ["C","Db","D","Eb","E","F","Gb","G","Ab","A","Bb","B"];
+// Skyコミュニティで広く使われている「ABC譜」記法（上段=A、中段=B、下段=C、左から1〜5）
+const NOTE_ABC_CODES = ['A1','A2','A3','A4','A5','B1','B2','B3','B4','B5','C1','C2','C3','C4','C5'];
+const INSTRUMENT_LABELS = { Harp: 'ハープ', Piano: 'ピアノ', Guitar: 'ギター', Bass: 'ベース', Drum: 'ドラム', Flute: 'フルート', Bells: '鐘' };
+function instrumentCodeFromLabel(label) {
+  const found = Object.keys(INSTRUMENT_LABELS).find(code => INSTRUMENT_LABELS[code] === label || code === label);
+  return found || null;
+}
 
 /* ================================================================
    パソコンのキーボードでの操作（作成・演奏）
@@ -1438,6 +1449,98 @@ async function copyShareCode() {
   }
 }
 
+/* ================================================================
+   テキスト譜面（ABC譜）
+   Skyコミュニティで広く使われている記法（上段=A、中段=B、下段=Cの行 ＋
+   左から1〜5の列）で、文字だけの楽譜を作成・読み込みできるようにする。
+   ・同時に鳴る音（和音）はコードを続けて書く（例: A1A3）
+   ・音の無いマス（休符）は "."
+   ・マスの区切りは半角スペース、8マスごとに改行して見やすくする
+   ・先頭の "#" 行は曲名・BPM等のメモ（無くても読み込める）
+   ================================================================ */
+function songToTextSheet(song) {
+  const body = song.frames.map(frame => {
+    if (frame.length === 0) return '.';
+    return frame.slice().sort((a, b) => a - b).map(i => NOTE_ABC_CODES[i]).join('');
+  });
+  const lines = [];
+  for (let i = 0; i < body.length; i += 8) lines.push(body.slice(i, i + 8).join(' '));
+  const instLabel = INSTRUMENT_LABELS[song.instrument] || song.instrument || 'ハープ';
+  const header = [
+    `# 曲名: ${song.name || '無題'}`,
+    `# BPM: ${song.bpm}　調: ${song.pitch}　楽器: ${instLabel}`,
+    `# tai-score (https://taipak5000.github.io/tai-score/) のテキスト譜面`,
+    ''
+  ].join('\n');
+  return header + lines.join('\n');
+}
+function parseAbcToken(token) {
+  if (token === '.' || token === '') return [];
+  const indices = [];
+  for (let i = 0; i < token.length; i += 2) {
+    const idx = NOTE_ABC_CODES.indexOf(token.slice(i, i + 2).toUpperCase());
+    if (idx >= 0) indices.push(idx);
+  }
+  return indices;
+}
+function isAbcTextSheet(text) {
+  const t = (text || '').trim();
+  if (!t || t.startsWith('{') || t.startsWith('[')) return false;
+  const bodyLines = t.split(/\r?\n/).filter(l => l.trim() && !l.trim().startsWith('#'));
+  if (bodyLines.length === 0) return false;
+  const tokens = bodyLines.join(' ').trim().split(/\s+/);
+  return tokens.length > 0 && tokens.every(tok => /^(\.|([A-C][1-5])+)$/i.test(tok));
+}
+function textSheetToSong(text) {
+  let name = 'インポートした楽譜', bpm = 150, pitch = 'C', instrument = 'Harp';
+  const bodyLines = [];
+  text.split(/\r?\n/).forEach(line => {
+    const trimmed = line.trim();
+    if (!trimmed) return;
+    if (trimmed.startsWith('#')) {
+      const nameMatch = trimmed.match(/曲名[:：]\s*(.+)/);
+      if (nameMatch) name = nameMatch[1].trim();
+      const bpmMatch = trimmed.match(/BPM[:：]\s*(\d+)/i);
+      if (bpmMatch) bpm = Math.max(40, Math.min(999, parseInt(bpmMatch[1], 10)));
+      const pitchMatch = trimmed.match(/調[:：]\s*([A-G]b?)/);
+      if (pitchMatch && PITCHES.includes(pitchMatch[1])) pitch = pitchMatch[1];
+      const instMatch = trimmed.match(/楽器[:：]\s*([^\s　]+)/);
+      if (instMatch) instrument = instrumentCodeFromLabel(instMatch[1]) || instrument;
+      return;
+    }
+    bodyLines.push(trimmed);
+  });
+  const tokens = bodyLines.join(' ').trim().split(/\s+/).filter(Boolean);
+  const frames = tokens.map(parseAbcToken);
+  if (frames.length === 0) throw new Error('no frames parsed');
+  return { id: genId(), name, bpm, pitch, instrument, frames, updatedAt: Date.now() };
+}
+function generateTextSheet() {
+  const text = songToTextSheet(currentSong);
+  document.getElementById('shareTextArea').innerHTML = `
+    <textarea class="code-box" id="shareTextOutput" readonly onclick="this.select()" style="min-height:130px; font-family:monospace;">${escapeHtml(text)}</textarea>
+    <button type="button" class="action-btn secondary" onclick="copyTextSheet()">📋 テキストをコピー</button>
+    <button type="button" class="action-btn secondary" onclick="downloadTextSheet()">⬇️ テキストファイルでダウンロード</button>`;
+}
+async function copyTextSheet() {
+  const ta = document.getElementById('shareTextOutput');
+  if (!ta) return;
+  ta.select();
+  const statusEl = document.getElementById('shareStatus');
+  try {
+    await navigator.clipboard.writeText(ta.value);
+    statusEl.className = 'status-msg ok';
+    statusEl.textContent = 'コピーしました。LINEやDiscordに貼り付けて共有できます。貼り付けられた側は「読み込む」からこのテキストをそのまま読み込めます。';
+  } catch (e) {
+    statusEl.className = 'status-msg err';
+    statusEl.textContent = 'コピーに失敗しました。テキストが選択された状態なので手動でコピーしてください。';
+  }
+}
+function downloadTextSheet() {
+  downloadBlob(songToTextSheet(currentSong), `${currentSong.name || 'song'}.txt`, 'text/plain');
+  showToast('ダウンロードしました');
+}
+
 function downloadBlob(content, filename, type) {
   const blob = new Blob([content], { type });
   const url = URL.createObjectURL(blob);
@@ -1607,6 +1710,10 @@ async function importFromCode() {
   const code = document.getElementById('importCodeInput').value.trim();
   if (!code) return;
   try {
+    if (isAbcTextSheet(code)) {
+      finishImport(textSheetToSong(code), statusEl, '');
+      return;
+    }
     let payload;
     try {
       payload = await decodeShareCode(code);
@@ -1629,8 +1736,13 @@ function importFromFile(event) {
   reader.onload = () => {
     try {
       const text = decodeFileBuffer(reader.result);
-      const parsed = JSON.parse(text);
-      const { song, extraNote } = pickImportableSong(parsed);
+      let song, extraNote = '';
+      if (isAbcTextSheet(text)) {
+        song = textSheetToSong(text);
+      } else {
+        const parsed = JSON.parse(text);
+        ({ song, extraNote } = pickImportableSong(parsed));
+      }
       finishImport(song, statusEl, extraNote);
     } catch (e) {
       statusEl.className = 'status-msg err';
