@@ -433,6 +433,19 @@
   </div>
 </div>
 
+<!-- ▸ 確認モーダル（ブラウザ標準のconfirm()はダイアログブロックで表示できない場合があるため、画面内で表示する） -->
+<div class="modal-overlay" id="confirmModal" onclick="if(event.target===this)closeConfirm()">
+  <div class="modal-card">
+    <div class="modal-header">
+      <span class="modal-title" id="confirmModalTitle">確認</span>
+      <button class="modal-close" onclick="closeConfirm()">✕</button>
+    </div>
+    <div class="hint" id="confirmModalMessage"></div>
+    <button type="button" class="action-btn secondary" id="confirmModalOkBtn" style="background:var(--red); color:#fff; border-color:var(--red);"></button>
+    <button type="button" class="action-btn secondary" onclick="closeConfirm()">キャンセル</button>
+  </div>
+</div>
+
 <footer>
   このサイトはSky 星を紡ぐ子どもたちの非公式ファンサイトです。thatgamecompanyは一切関与していません。<br>
   演奏音はすべてブラウザ内で合成しており、ゲームから抽出した音源は使用していません。<br>
@@ -521,11 +534,35 @@ function persistCurrentSong() {
 }
 
 function deleteSong(id) {
-  if (!confirm('この楽譜を削除しますか？この操作は取り消せません。')) return;
-  saveSongs(loadSongs().filter(s => s.id !== id));
-  renderLibrary();
-  showToast('削除しました');
+  showConfirm('この楽譜を削除しますか？この操作は取り消せません。', () => {
+    saveSongs(loadSongs().filter(s => s.id !== id));
+    renderLibrary();
+    showToast('削除しました');
+  }, '🗑️ 削除する');
 }
+
+/* ================================================================
+   画面内の確認モーダル
+   ブラウザ標準のconfirm()はスマホやアプリ内ブラウザでダイアログブロックの
+   対象になり表示できない場合があるため、代わりにこのモーダルを使う。
+   ================================================================ */
+let confirmModalCallback = null;
+function showConfirm(message, onConfirm, okLabel) {
+  document.getElementById('confirmModalMessage').textContent = message;
+  document.getElementById('confirmModalOkBtn').textContent = okLabel || 'OK';
+  confirmModalCallback = onConfirm;
+  openModal('confirmModal');
+}
+function closeConfirm() {
+  closeModal('confirmModal');
+  confirmModalCallback = null;
+}
+document.getElementById('confirmModalOkBtn').addEventListener('click', () => {
+  const cb = confirmModalCallback;
+  closeModal('confirmModal');
+  confirmModalCallback = null;
+  if (cb) cb();
+});
 
 function duplicateSong(id) {
   const songs = loadSongs();
