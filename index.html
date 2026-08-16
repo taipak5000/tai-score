@@ -312,7 +312,8 @@
     <div class="card" style="margin-top:14px;">
       <p>Skyの5×3マス（ハープ等）の楽器で演奏できる楽譜を、自由に作成・保存・共有・練習できるツールです。
         <a href="https://sky-music.specy.app/" target="_blank" rel="noopener noreferrer">Sky Music Nightly</a>形式の楽譜ファイルの
-        インポート・エクスポートにも対応しているので、すでに公開されている楽譜もそのまま読み込めます。
+        インポート・エクスポートにも対応しているほか、Sky Studio形式の楽譜ファイルの読み込みにも対応しているので、
+        すでに公開されている楽譜もそのまま読み込めます。
         データはこの端末のブラウザだけに保存され、外部には送信されません。</p>
     </div>
 
@@ -348,8 +349,8 @@
         </div>
         <div class="bpm-row">
           <label>BPM</label>
-          <input type="range" id="bpmSlider" min="40" max="300" value="150" oninput="onBpmChange(this.value)">
-          <input type="number" id="bpmNumber" min="40" max="300" value="150" oninput="onBpmChange(this.value)">
+          <input type="range" id="bpmSlider" min="40" max="999" value="150" oninput="onBpmChange(this.value)">
+          <input type="number" id="bpmNumber" min="40" max="999" value="150" oninput="onBpmChange(this.value)">
         </div>
         <div class="tap-tempo-row">
           <button type="button" class="tap-tempo-btn" id="tapTempoBtn" onclick="tapTempo()">🥁 タップでBPM測定</button>
@@ -407,7 +408,7 @@
       <span class="modal-title">📥 楽譜を読み込む</span>
       <button class="modal-close" onclick="closeModal('importModal')">✕</button>
     </div>
-    <div class="hint">共有コード、またはこのサイト／Sky Music Nightly形式の.jsonファイルを読み込めます。</div>
+    <div class="hint">共有コード、またはこのサイト／Sky Music Nightly／Sky Studio形式の.json・.txtファイルを読み込めます。</div>
     <textarea class="code-box" id="importCodeInput" placeholder="共有コードを貼り付け"></textarea>
     <button type="button" class="action-btn secondary" onclick="importFromCode()">🔍 コードから読み込む</button>
     <input type="file" id="importFileInput" accept=".json,.txt" onchange="importFromFile(event)">
@@ -736,7 +737,7 @@ function onSongMetaChange() {
 }
 
 function onBpmChange(val) {
-  const bpm = Math.max(40, Math.min(300, parseInt(val) || 150));
+  const bpm = Math.max(40, Math.min(999, parseInt(val) || 150));
   currentSong.bpm = bpm;
   document.getElementById('bpmSlider').value = bpm;
   document.getElementById('bpmNumber').value = bpm;
@@ -1031,6 +1032,111 @@ function isSpecyFormat(data) {
 }
 
 /* ================================================================
+   Sky Studio（Maple氏）形式との変換
+   この形式は「マス」ではなく絶対時間（ミリ秒）で音を記録しているため、
+   実際の音の間隔からGCD（最大公約数）でマス単位を自動検出し、マス目の
+   譜面に変換する。キー名は "1Key2" のように「レイヤー番号」+「Key」+
+   「0〜14の音番号」の形式（音番号はこのサイトの0〜14の並びと同じ）。
+   参考: github.com/Specy/genshin-music の RecordedSong.fromOldFormat
+   ================================================================ */
+function isOldSkyStudioFormat(data) {
+  return !!(data && !data.type && !data.kind && Array.isArray(data.songNotes));
+}
+function gcdInt(a, b) {
+  a = Math.abs(Math.round(a)); b = Math.abs(Math.round(b));
+  while (b) { const t = a % b; a = b; b = t; }
+  return a;
+}
+function oldSkyStudioFormatToSong(data) {
+  const rawNotes = Array.isArray(data.songNotes) ? data.songNotes : [];
+  // 重複除去：同じ音番号・同じ時刻の音は1つにまとめる
+  const seen = new Set();
+  const notes = [];
+  rawNotes.forEach(n => {
+    const idx = parseInt(String(n.key).split('Key')[1], 10);
+    if (!Number.isFinite(idx) || idx < 0 || idx > 14) return; // 白鍵15個の範囲外は無視
+    const time = Number(n.time) || 0;
+    const dedupeKey = idx + '|' + time;
+    if (seen.has(dedupeKey)) return;
+    seen.add(dedupeKey);
+    notes.push({ idx, time });
+  });
+  if (notes.length === 0) {
+    return { id: genId(), name: data.name || 'インポートした楽譜', bpm: 150, pitch: 'C', instrument: 'Harp', frames: [[]], updatedAt: Date.now() };
+  }
+
+  // 実際の音の間隔（GCD）から、最も細かいマス単位（ミリ秒）を自動検出する
+  const uniqueTimes = [...new Set(notes.map(n => n.time))].sort((a, b) => a - b);
+  const fallbackBpm = Math.max(40, Math.round(Number(data.bpm)) || 150);
+  let unitMs = 60000 / fallbackBpm;
+  if (uniqueTimes.length > 1) {
+    let g = 0;
+    for (let i = 1; i < uniqueTimes.length; i++) {
+      const delta = uniqueTimes[i] - uniqueTimes[i - 1];
+      if (delta > 0) g = g === 0 ? delta : gcdInt(g, delta);
+    }
+    if (g > 0) unitMs = Math.max(g, 20); // 20ms未満の間隔は異常値とみなし切り捨てない
+  }
+
+  // マス数が多すぎる場合は単位を粗くして安全な範囲に収める
+  const maxTime = uniqueTimes[uniqueTimes.length - 1];
+  const FRAME_CAP = 2000;
+  if (Math.round(maxTime / unitMs) > FRAME_CAP) unitMs = maxTime / FRAME_CAP;
+  const maxTick = Math.round(maxTime / unitMs);
+
+  const frameNotes = new Map();
+  notes.forEach(n => {
+    const tick = Math.round(n.time / unitMs);
+    if (!frameNotes.has(tick)) frameNotes.set(tick, new Set());
+    frameNotes.get(tick).add(n.idx);
+  });
+
+  const frames = [];
+  for (let t = 0; t <= maxTick; t++) {
+    frames.push(frameNotes.has(t) ? [...frameNotes.get(t)].sort((a, b) => a - b) : []);
+  }
+
+  const bpm = Math.max(40, Math.min(999, Math.round(60000 / unitMs)));
+  const pitch = PITCHES[Number.isInteger(data.pitchLevel) ? data.pitchLevel : 0] || 'C';
+  let name = data.name || 'インポートした楽譜';
+  if (data.author) name += `（${data.author}）`;
+
+  return { id: genId(), name, bpm, pitch, instrument: 'Harp', frames, updatedAt: Date.now() };
+}
+
+// ファイルのバイト列からエンコーディング（BOM）を判定してデコードする。
+// Sky Studio等が書き出す .txt ファイルはUTF-16（LE）の場合があるため、
+// 単純なreadAsText()（UTF-8前提）では文字化けしてJSONとして読めないことがある。
+function decodeFileBuffer(buffer) {
+  const bytes = new Uint8Array(buffer);
+  if (bytes.length >= 2 && bytes[0] === 0xFF && bytes[1] === 0xFE) return new TextDecoder('utf-16le').decode(bytes.subarray(2));
+  if (bytes.length >= 2 && bytes[0] === 0xFE && bytes[1] === 0xFF) return new TextDecoder('utf-16be').decode(bytes.subarray(2));
+  if (bytes.length >= 3 && bytes[0] === 0xEF && bytes[1] === 0xBB && bytes[2] === 0xBF) return new TextDecoder('utf-8').decode(bytes.subarray(3));
+  return new TextDecoder('utf-8').decode(bytes);
+}
+
+// 読み込んだデータ（配列で複数曲が包まれている場合を含む）から、実際に取り込む1曲分を選ぶ
+function pickImportableSong(parsed) {
+  let extraNote = '';
+  if (Array.isArray(parsed)) {
+    if (parsed.length === 0) throw new Error('empty array');
+    if (parsed.length > 1) extraNote = `（${parsed.length}曲含まれていましたが、最初の1曲のみ読み込みました）`;
+    parsed = parsed[0];
+  }
+  let song;
+  if (parsed && parsed.kind === 'tai-score-song' && parsed.song) {
+    song = parsed.song; song.id = genId(); song.updatedAt = Date.now();
+  } else if (isOldSkyStudioFormat(parsed)) {
+    song = oldSkyStudioFormatToSong(parsed);
+  } else if (isSpecyFormat(parsed)) {
+    song = specyFormatToSong(parsed);
+  } else {
+    throw new Error('unknown format');
+  }
+  return { song, extraNote };
+}
+
+/* ================================================================
    インポート
    ================================================================ */
 async function importFromCode() {
@@ -1038,16 +1144,15 @@ async function importFromCode() {
   const code = document.getElementById('importCodeInput').value.trim();
   if (!code) return;
   try {
-    const payload = await decodeShareCode(code);
-    let song;
-    if (payload && payload.kind === 'tai-score-song' && payload.song) {
-      song = payload.song; song.id = genId(); song.updatedAt = Date.now();
-    } else if (isSpecyFormat(payload)) {
-      song = specyFormatToSong(payload);
-    } else {
-      throw new Error('unknown format');
+    let payload;
+    try {
+      payload = await decodeShareCode(code);
+    } catch (e) {
+      // 共有コードとして読めない場合、Sky Studio/Sky Music Nightly形式のJSONを直接貼り付けたものとして再試行する
+      payload = JSON.parse(code);
     }
-    finishImport(song, statusEl);
+    const { song, extraNote } = pickImportableSong(payload);
+    finishImport(song, statusEl, extraNote);
   } catch (e) {
     statusEl.className = 'status-msg err';
     statusEl.textContent = 'コードの読み込みに失敗しました。コードが正しいかご確認ください。';
@@ -1060,31 +1165,25 @@ function importFromFile(event) {
   const reader = new FileReader();
   reader.onload = () => {
     try {
-      const data = JSON.parse(reader.result);
-      let song;
-      if (data && data.kind === 'tai-score-song' && data.song) {
-        song = data.song; song.id = genId(); song.updatedAt = Date.now();
-      } else if (isSpecyFormat(data)) {
-        song = specyFormatToSong(data);
-      } else {
-        throw new Error('unknown format');
-      }
-      finishImport(song, statusEl);
+      const text = decodeFileBuffer(reader.result);
+      const parsed = JSON.parse(text);
+      const { song, extraNote } = pickImportableSong(parsed);
+      finishImport(song, statusEl, extraNote);
     } catch (e) {
       statusEl.className = 'status-msg err';
       statusEl.textContent = 'ファイルの読み込みに失敗しました。対応形式のファイルかご確認ください。';
     }
   };
-  reader.readAsText(file);
+  reader.readAsArrayBuffer(file);
   event.target.value = '';
 }
-function finishImport(song, statusEl) {
+function finishImport(song, statusEl, extraNote) {
   if (!song.frames || song.frames.length === 0) song.frames = [[]];
   const songs = loadSongs();
   songs.unshift(song);
   saveSongs(songs);
   statusEl.className = 'status-msg ok';
-  statusEl.textContent = `「${song.name}」を読み込みました。`;
+  statusEl.textContent = `「${song.name}」を読み込みました。${extraNote || ''}`;
   document.getElementById('importCodeInput').value = '';
   setTimeout(() => { closeModal('importModal'); openEditor(song.id); }, 700);
 }
