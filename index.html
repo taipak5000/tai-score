@@ -147,6 +147,16 @@
     }
     .bpm-row input[type=range] { flex: 1; accent-color: var(--pink); }
 
+    .tap-tempo-row { display: flex; align-items: center; gap: 10px; margin-bottom: 14px; flex-wrap: wrap; }
+    .tap-tempo-btn {
+      background: var(--pink-bg); color: var(--pink-d); font-size: 13px; font-weight: 700;
+      padding: 10px 16px; border-radius: var(--r-sm); border: 1px solid transparent;
+      display: flex; align-items: center; gap: 6px; transition: transform 0.06s;
+      user-select: none;
+    }
+    .tap-tempo-btn.flash { transform: scale(0.94); background: var(--pink); color: #fff; }
+    .tap-tempo-hint { font-size: 12px; color: var(--text-2); }
+
     .transport { display: flex; gap: 8px; margin-bottom: 14px; flex-wrap: wrap; }
     .transport-btn {
       background: var(--card); border: 1px solid var(--sep); color: var(--text); font-size: 13px; font-weight: 700;
@@ -320,6 +330,10 @@
           <label>BPM</label>
           <input type="range" id="bpmSlider" min="40" max="300" value="150" oninput="onBpmChange(this.value)">
           <input type="number" id="bpmNumber" min="40" max="300" value="150" oninput="onBpmChange(this.value)">
+        </div>
+        <div class="tap-tempo-row">
+          <button type="button" class="tap-tempo-btn" id="tapTempoBtn" onclick="tapTempo()">🥁 タップでBPM測定</button>
+          <span class="tap-tempo-hint" id="tapTempoHint">リズムに合わせて連続でタップしてください</span>
         </div>
         <div class="transport">
           <button class="transport-btn primary" id="playBtn" onclick="togglePlayback()">▶️ 再生</button>
@@ -633,6 +647,41 @@ function onBpmChange(val) {
   document.getElementById('bpmSlider').value = bpm;
   document.getElementById('bpmNumber').value = bpm;
   persistCurrentSong();
+}
+
+/* ================================================================
+   タップテンポ：画面を連続でタップして、その間隔からBPMを測定する
+   2秒以上間が空いたら新しい計測として最初からやり直す。
+   直近8タップ分の間隔の平均から算出する。
+   ================================================================ */
+const TAP_TEMPO_RESET_MS = 2000;
+const TAP_TEMPO_MAX_TAPS = 8;
+let tapTempoTimes = [];
+function tapTempo() {
+  const now = performance.now();
+  if (tapTempoTimes.length > 0 && now - tapTempoTimes[tapTempoTimes.length - 1] > TAP_TEMPO_RESET_MS) {
+    tapTempoTimes = [];
+  }
+  tapTempoTimes.push(now);
+  if (tapTempoTimes.length > TAP_TEMPO_MAX_TAPS) tapTempoTimes.shift();
+
+  const btn = document.getElementById('tapTempoBtn');
+  btn.classList.add('flash');
+  clearTimeout(tapTempo._flashTimer);
+  tapTempo._flashTimer = setTimeout(() => btn.classList.remove('flash'), 100);
+
+  const hint = document.getElementById('tapTempoHint');
+  if (tapTempoTimes.length < 2) {
+    hint.textContent = 'もう一度タップ…';
+    return;
+  }
+
+  const intervals = [];
+  for (let i = 1; i < tapTempoTimes.length; i++) intervals.push(tapTempoTimes[i] - tapTempoTimes[i - 1]);
+  const avgMs = intervals.reduce((a, b) => a + b, 0) / intervals.length;
+  const bpm = Math.max(40, Math.min(300, Math.round(60000 / avgMs)));
+  onBpmChange(bpm);
+  hint.textContent = `${tapTempoTimes.length}回タップ・BPM ${bpm}（測定中…もう少しタップして精度アップ）`;
 }
 
 /* ================================================================
