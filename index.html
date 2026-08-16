@@ -219,6 +219,7 @@
     .piano-keys-wrap { overflow-x: auto; padding-bottom: 2px; }
     .piano-keys { display: flex; gap: 3px; min-width: max-content; padding: 4px 2px 2px; }
     .piano-key {
+      position: relative;
       width: 38px; height: 130px; background: #fff; border: 1.5px solid var(--sep); border-radius: 0 0 8px 8px;
       display: flex; align-items: flex-end; justify-content: center; padding-bottom: 10px;
       font-size: 12px; font-weight: 700; color: var(--text-2); flex-shrink: 0;
@@ -227,6 +228,12 @@
     .piano-key.octave-start { margin-left: 8px; }
     .piano-key.on { background: var(--note-on); color: #fff; border-color: var(--note-on); }
     .piano-key:active { transform: scaleY(0.96); }
+    /* 黒鍵は見た目の参考用（押せなくても良い＝Skyの楽器は半音に対応していないため非インタラクティブ） */
+    .piano-black-key {
+      position: absolute; top: -1.5px; right: -12px; width: 24px; height: 62%; z-index: 3;
+      background: linear-gradient(180deg, #3a3a3c, #1c1c1e); border-radius: 0 0 4px 4px;
+      box-shadow: 0 2px 3px rgba(0,0,0,0.35); pointer-events: none;
+    }
     .piano-hint { font-size: 11.5px; color: var(--text-2); text-align: center; margin-top: 8px; }
 
     .practice-panel { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-top: 12px; }
@@ -271,6 +278,44 @@
 
     footer { text-align: center; padding: 24px 16px; color: var(--text-2); font-size: 13px; border-top: 1px solid var(--sep); margin-top: 40px; line-height: 1.6; }
     footer a { color: var(--pink-d); text-decoration: none; }
+
+    /* ── 演奏オーバーレイ（練習／フリー演奏） ─────────────────
+       position: fixed で画面いっぱいに独立して表示するため、
+       裏のページをどれだけスクロールしていても表示が崩れない。 */
+    .perf-overlay {
+      display: none; flex-direction: column; position: fixed; inset: 0; z-index: 800;
+      background: var(--bg);
+      padding: max(10px, env(safe-area-inset-top)) max(10px, env(safe-area-inset-right))
+               max(10px, env(safe-area-inset-bottom)) max(10px, env(safe-area-inset-left));
+      box-sizing: border-box;
+    }
+    .perf-overlay.open { display: flex; }
+    .perf-header { display: flex; align-items: center; justify-content: space-between; gap: 8px; flex-shrink: 0; padding: 4px 4px 10px; }
+    .perf-close {
+      background: var(--card); color: var(--text); font-size: 13px; font-weight: 700;
+      padding: 8px 14px; border-radius: 999px; box-shadow: 0 1px 4px rgba(0,0,0,0.08); flex-shrink: 0;
+    }
+    .perf-title { font-size: 14px; font-weight: 700; text-align: center; flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; padding: 0 6px; }
+    .perf-progress { font-size: 12.5px; color: var(--text-2); font-weight: 600; flex-shrink: 0; white-space: nowrap; }
+    .perf-grid {
+      flex: 1; min-height: 0; display: grid; grid-template-columns: repeat(5, 1fr); grid-template-rows: repeat(3, 1fr);
+      gap: 8px;
+    }
+    .perf-key {
+      border-radius: 16px; background: var(--card); box-shadow: 0 1px 4px rgba(0,0,0,0.1);
+      display: flex; align-items: center; justify-content: center;
+      font-size: clamp(15px, 5vw, 28px); font-weight: 700; color: var(--text-2);
+      user-select: none; -webkit-user-select: none; touch-action: manipulation;
+      transition: background 0.08s, color 0.08s, transform 0.05s, box-shadow 0.08s;
+    }
+    .perf-key:active, .perf-key.pressed-flash { transform: scale(0.93); background: var(--pink-bg); color: var(--pink-d); }
+    .perf-key.target { background: #fff; color: var(--pink-d); box-shadow: 0 0 0 3px var(--pink) inset; animation: perfPulse 0.9s ease-in-out infinite; }
+    .perf-key.hit { background: var(--green); color: #fff; box-shadow: none; animation: none; }
+    @keyframes perfPulse {
+      0%, 100% { box-shadow: 0 0 0 3px var(--pink) inset; }
+      50% { box-shadow: 0 0 0 7px var(--pink) inset; }
+    }
+    .perf-footer { flex-shrink: 0; text-align: center; font-size: 12.5px; color: var(--text-2); padding: 10px 4px 2px; }
 
     .toast {
       position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%) translateY(20px);
@@ -320,6 +365,7 @@
     <div class="view-tabs">
       <button class="view-tab active" id="tabLibraryBtn" onclick="switchView('library')">📚 ライブラリ</button>
       <button class="view-tab" id="tabEditorBtn" onclick="switchView('editor')">✏️ 作成・演奏</button>
+      <button class="view-tab" onclick="openFreeMode()">🎹 フリー演奏</button>
     </div>
 
     <!-- ▸ ライブラリ -->
@@ -358,11 +404,10 @@
         </div>
         <div class="transport">
           <button class="transport-btn primary" id="playBtn" onclick="togglePlayback()">▶️ 再生</button>
-          <button class="transport-btn" id="practiceBtn" onclick="togglePractice()">🐢 練習モード</button>
+          <button class="transport-btn" onclick="openPractice()">🐢 練習モード</button>
           <button class="transport-btn" onclick="stopPlayback()">⏹️ 停止</button>
           <button class="transport-btn" onclick="openShareModal()">🔗 共有・保存</button>
         </div>
-        <div class="hint" id="practiceHint" style="display:none;"></div>
       </div>
 
       <div class="current-frame-card">
@@ -445,6 +490,17 @@
     <button type="button" class="action-btn secondary" id="confirmModalOkBtn" style="background:var(--red); color:#fff; border-color:var(--red);"></button>
     <button type="button" class="action-btn secondary" onclick="closeConfirm()">キャンセル</button>
   </div>
+</div>
+
+<!-- ▸ 演奏オーバーレイ（練習モード／フリー演奏モード共通、画面いっぱいに固定表示） -->
+<div class="perf-overlay" id="perfOverlay">
+  <div class="perf-header">
+    <button type="button" class="perf-close" id="perfCloseBtn" onclick="closePerformance()">✕ 終了</button>
+    <div class="perf-title" id="perfTitle"></div>
+    <div class="perf-progress" id="perfProgress"></div>
+  </div>
+  <div class="perf-grid" id="perfGrid"><!-- JS --></div>
+  <div class="perf-footer" id="perfFooter"></div>
 </div>
 
 <footer>
@@ -674,13 +730,21 @@ function applyInputMode() {
   document.getElementById('pianoKeysWrap').style.display = mode === 'piano' ? 'block' : 'none';
   document.getElementById('inputModeToggleBtn').textContent = mode === 'piano' ? '⚪ グリッド入力に切替' : '🎹 ピアノ入力に切替';
 }
+// 白鍵の音番号（オクターブ内0〜6 = ド レ ミ ファ ソ ラ シ）のうち、
+// 右側に黒鍵がある位置（ミ→ファ、シ→ドの間には黒鍵が無い）
+function hasBlackKeyAfter(i) {
+  if (i >= NOTE_LABELS.length - 1) return false;
+  const pos = i % 7;
+  return pos === 0 || pos === 1 || pos === 3 || pos === 4 || pos === 5;
+}
 function renderPianoKeys() {
   const wrap = document.getElementById('pianoKeys');
   const frame = currentSong.frames[selectedFrameIndex] || [];
   wrap.innerHTML = NOTE_LABELS.map((label, i) => {
     const on = frame.includes(i);
     const octaveStart = i === 7 || i === 14;
-    return `<div class="piano-key${on ? ' on' : ''}${octaveStart ? ' octave-start' : ''}" data-idx="${i}" onclick="toggleNote(${i})">${label}</div>`;
+    const blackKey = hasBlackKeyAfter(i) ? '<div class="piano-black-key" title="Skyの楽器は黒鍵（半音）に対応していません"></div>' : '';
+    return `<div class="piano-key${on ? ' on' : ''}${octaveStart ? ' octave-start' : ''}" data-idx="${i}" onclick="toggleNote(${i})">${blackKey}${label}</div>`;
   }).join('');
 }
 
@@ -790,37 +854,130 @@ function ensureAudioCtx() {
 }
 function midiToFreq(midi) { return 440 * Math.pow(2, (midi - 69) / 12); }
 
+// ドラム用のホワイトノイズバッファ（毎回生成せず使い回す）
+let cachedNoiseBuffer = null;
+function getNoiseBuffer(ctx) {
+  if (cachedNoiseBuffer && cachedNoiseBuffer.sampleRate === ctx.sampleRate) return cachedNoiseBuffer;
+  const duration = 0.3;
+  const size = Math.floor(ctx.sampleRate * duration);
+  const buffer = ctx.createBuffer(1, size, ctx.sampleRate);
+  const data = buffer.getChannelData(0);
+  for (let i = 0; i < size; i++) data[i] = (Math.random() * 2 - 1) * (1 - i / size);
+  cachedNoiseBuffer = buffer;
+  return buffer;
+}
+
 function playNote(noteIndex) {
   try {
     const ctx = ensureAudioCtx();
     const pitchOffset = PITCHES.indexOf((currentSong && currentSong.pitch) || 'C');
-    const midi = NOTE_MIDI[noteIndex] + pitchOffset;
-    const freq = midiToFreq(midi);
     const instrument = (currentSong && currentSong.instrument) || 'Harp';
+    const now = ctx.currentTime;
 
+    if (instrument === 'Drum') { playDrumVoice(ctx, now, noteIndex); return; }
+    if (instrument === 'Bells') {
+      const midi = NOTE_MIDI[noteIndex] + pitchOffset;
+      playBellVoice(ctx, now, midiToFreq(midi));
+      return;
+    }
+    const octaveShift = instrument === 'Bass' ? -12 : 0; // ベースは1オクターブ下げて低音らしくする
+    const midi = NOTE_MIDI[noteIndex] + pitchOffset + octaveShift;
+    playToneVoice(ctx, now, midiToFreq(midi), instrument);
+  } catch (e) { /* オーディオが使えない環境では無視 */ }
+}
+
+// ハープ・ピアノ・ギター・ベース・フルート：単一オシレーターを基本に、
+// 楽器ごとに波形・音の立ち上がり/減衰・フィルターを変えて聴き分けやすくする
+function playToneVoice(ctx, now, freq, instrument) {
+  let attack = 0.006, decay = 1.1, peak = 0.28, waveType = 'triangle';
+  let filterFrom = null, filterTo = null;
+  if (instrument === 'Bass') { attack = 0.01; decay = 0.9; peak = 0.36; waveType = 'sine'; }
+  else if (instrument === 'Flute') { attack = 0.06; decay = 0.9; peak = 0.20; waveType = 'sine'; }
+  else if (instrument === 'Piano') { attack = 0.002; decay = 1.5; peak = 0.26; waveType = 'triangle'; }
+  else if (instrument === 'Guitar') { attack = 0.003; decay = 1.0; peak = 0.30; waveType = 'sawtooth'; filterFrom = 5200; filterTo = 600; }
+  // Harp（デフォルト）は上の初期値のまま
+
+  const osc = ctx.createOscillator();
+  osc.type = waveType;
+  osc.frequency.setValueAtTime(freq, now);
+
+  const gain = ctx.createGain();
+  gain.gain.setValueAtTime(0, now);
+  gain.gain.linearRampToValueAtTime(peak, now + attack);
+  gain.gain.exponentialRampToValueAtTime(0.001, now + attack + decay);
+
+  let outNode = osc;
+  if (filterFrom) {
+    // ギター：弾いた瞬間は明るく、すぐ丸い音に落ち着くフィルターの動きをつける
+    const filter = ctx.createBiquadFilter();
+    filter.type = 'lowpass';
+    filter.frequency.setValueAtTime(filterFrom, now);
+    filter.frequency.exponentialRampToValueAtTime(filterTo, now + decay * 0.6);
+    osc.connect(filter);
+    outNode = filter;
+  }
+  outNode.connect(gain);
+  gain.connect(ctx.destination);
+  osc.start(now);
+  osc.stop(now + attack + decay + 0.05);
+
+  // ハープ・ピアノは打鍵のきらめきとして1オクターブ上の弱い倍音を重ねる
+  if (instrument === 'Piano' || instrument === 'Harp') {
+    const osc2 = ctx.createOscillator();
+    osc2.type = 'sine';
+    osc2.frequency.setValueAtTime(freq * 2, now);
+    const gain2 = ctx.createGain();
+    gain2.gain.setValueAtTime(0, now);
+    gain2.gain.linearRampToValueAtTime(peak * 0.16, now + attack);
+    gain2.gain.exponentialRampToValueAtTime(0.001, now + attack + decay * 0.45);
+    osc2.connect(gain2);
+    gain2.connect(ctx.destination);
+    osc2.start(now);
+    osc2.stop(now + attack + decay * 0.45 + 0.05);
+  }
+}
+
+// 鐘：非整数倍音比のオシレーターを複数重ねて金属的な響きにする
+function playBellVoice(ctx, now, freq) {
+  const partials = [1, 2.41, 3.88, 5.43];
+  const decay = 1.8;
+  partials.forEach((ratio, i) => {
     const osc = ctx.createOscillator();
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(freq * ratio, now);
     const gain = ctx.createGain();
+    const peak = 0.22 / (i + 1.4);
+    gain.gain.setValueAtTime(0, now);
+    gain.gain.linearRampToValueAtTime(peak, now + 0.004);
+    gain.gain.exponentialRampToValueAtTime(0.001, now + decay / (i * 0.4 + 1));
     osc.connect(gain);
     gain.connect(ctx.destination);
-
-    const now = ctx.currentTime;
-    let attack = 0.005, decay = 1.1, peak = 0.28, waveType = 'triangle';
-    if (instrument === 'Drum') { attack = 0.002; decay = 0.18; peak = 0.35; waveType = 'square'; }
-    else if (instrument === 'Bass') { attack = 0.005; decay = 0.6; peak = 0.3; waveType = 'sine'; }
-    else if (instrument === 'Flute') { attack = 0.03; decay = 0.9; peak = 0.22; waveType = 'sine'; }
-    else if (instrument === 'Bells') { attack = 0.002; decay = 1.6; peak = 0.22; waveType = 'sine'; }
-    else if (instrument === 'Piano') { attack = 0.003; decay = 1.3; peak = 0.26; waveType = 'triangle'; }
-    else if (instrument === 'Guitar') { attack = 0.004; decay = 0.9; peak = 0.28; waveType = 'sawtooth'; }
-
-    osc.type = waveType;
-    osc.frequency.setValueAtTime(freq, now);
-    gain.gain.setValueAtTime(0, now);
-    gain.gain.linearRampToValueAtTime(peak, now + attack);
-    gain.gain.exponentialRampToValueAtTime(0.001, now + attack + decay);
-
     osc.start(now);
-    osc.stop(now + attack + decay + 0.05);
-  } catch (e) { /* オーディオが使えない環境では無視 */ }
+    osc.stop(now + decay + 0.05);
+  });
+}
+
+// ドラム：音程のあるオシレーターではなく、フィルターしたノイズで打楽器らしさを出す
+// マスの位置（0〜14）に応じてフィルターの中心周波数を変え、低い/高いドラムを打ち分けられるようにする
+function playDrumVoice(ctx, now, noteIndex) {
+  const duration = 0.22;
+  const noise = ctx.createBufferSource();
+  noise.buffer = getNoiseBuffer(ctx);
+
+  const filter = ctx.createBiquadFilter();
+  filter.type = 'bandpass';
+  filter.frequency.setValueAtTime(90 + noteIndex * 22, now);
+  filter.Q.value = 1.1;
+
+  const gain = ctx.createGain();
+  gain.gain.setValueAtTime(0.55, now);
+  gain.gain.exponentialRampToValueAtTime(0.001, now + duration);
+
+  noise.connect(filter);
+  filter.connect(gain);
+  gain.connect(ctx.destination);
+  noise.start(now);
+  noise.stop(now + duration + 0.02);
 }
 
 function playFrame(frame) { frame.forEach(n => playNote(n)); }
@@ -830,7 +987,6 @@ function playFrame(frame) { frame.forEach(n => playNote(n)); }
    ================================================================ */
 let playbackTimer = null;
 let isPlaying = false;
-let isPracticing = false;
 
 function togglePlayback() {
   if (isPlaying) { stopPlayback(); return; }
@@ -854,11 +1010,8 @@ function stopPlayback() {
   clearTimeout(playbackTimer);
   playbackTimer = null;
   isPlaying = false;
-  isPracticing = false;
   document.getElementById('playBtn').classList.remove('active');
   document.getElementById('playBtn').textContent = '▶️ 再生';
-  document.getElementById('practiceBtn').classList.remove('active');
-  document.getElementById('practiceHint').style.display = 'none';
   clearPlayingHighlight();
 }
 
@@ -875,30 +1028,97 @@ function clearPlayingHighlight() {
   document.querySelectorAll('.frame-box.playing').forEach(b => b.classList.remove('playing'));
 }
 
-// 練習モード：自分のペースで「次へ」を押しながら1マスずつ進む自習モード
-function togglePractice() {
-  if (isPracticing) { stopPlayback(); return; }
+/* ================================================================
+   演奏オーバーレイ（練習モード／フリー演奏モード共通）
+   画面いっぱいに固定表示するので、下のページをスクロールしても
+   崩れたりずれたりしない（position: fixedで独立している）。
+   ================================================================ */
+let perfMode = null; // 'practice' | 'free'
+let perfFrameIndex = -1;
+let perfHitSet = new Set();
+
+function openPractice() {
+  if (!currentSong || currentSong.frames.length === 0 || !currentSong.frames.some(f => f.length > 0)) {
+    showToast('練習する音が譜面にありません');
+    return;
+  }
   stopPlayback();
-  isPracticing = true;
-  selectedFrameIndex = 0;
-  document.getElementById('practiceBtn').classList.add('active');
-  document.getElementById('practiceHint').style.display = 'block';
-  renderPracticeStep();
+  perfMode = 'practice';
+  document.getElementById('perfTitle').textContent = `🐢 練習モード：${currentSong.name || '無題'}`;
+  document.getElementById('perfCloseBtn').textContent = '✕ 終了';
+  renderPerfGrid();
+  perfFrameIndex = -1;
+  goToNextPracticeFrame();
+  openPerfOverlay();
 }
-function renderPracticeStep() {
-  selectFrame(selectedFrameIndex);
-  playFrame(currentSong.frames[selectedFrameIndex]);
-  const hint = document.getElementById('practiceHint');
-  hint.innerHTML = `${selectedFrameIndex + 1} / ${currentSong.frames.length} マス目です。押せたら次へ進みましょう。
-    <button class="mini-btn primary" onclick="practiceNext()" style="margin-left:6px;">次へ ▶</button>
-    <button class="mini-btn" onclick="practicePrev()">◀ 前へ</button>`;
+
+function openFreeMode() {
+  stopPlayback();
+  perfMode = 'free';
+  document.getElementById('perfTitle').textContent = '🎹 フリー演奏モード';
+  document.getElementById('perfProgress').textContent = '';
+  document.getElementById('perfFooter').textContent = '楽譜には関係なく、自由に押して演奏を楽しめます';
+  document.getElementById('perfCloseBtn').textContent = '✕ 閉じる';
+  renderPerfGrid();
+  clearPerfTargets();
+  openPerfOverlay();
 }
-function practiceNext() {
-  if (selectedFrameIndex < currentSong.frames.length - 1) { selectedFrameIndex++; renderPracticeStep(); }
-  else { showToast('最後まで到達しました！'); stopPlayback(); }
+
+function openPerfOverlay() {
+  document.getElementById('perfOverlay').classList.add('open');
 }
-function practicePrev() {
-  if (selectedFrameIndex > 0) { selectedFrameIndex--; renderPracticeStep(); }
+function closePerformance() {
+  document.getElementById('perfOverlay').classList.remove('open');
+  perfMode = null;
+}
+
+function renderPerfGrid() {
+  const grid = document.getElementById('perfGrid');
+  grid.innerHTML = NOTE_LABELS.map((label, i) => `<div class="perf-key" data-idx="${i}" onclick="onPerfKeyPress(${i})">${label}</div>`).join('');
+}
+
+function onPerfKeyPress(idx) {
+  playNote(idx);
+  const el = document.querySelector(`#perfGrid .perf-key[data-idx="${idx}"]`);
+  if (el) {
+    el.classList.add('pressed-flash');
+    setTimeout(() => el.classList.remove('pressed-flash'), 120);
+  }
+  if (perfMode !== 'practice') return;
+  const frame = currentSong.frames[perfFrameIndex];
+  if (frame && frame.includes(idx) && !perfHitSet.has(idx)) {
+    perfHitSet.add(idx);
+    if (el) el.classList.add('hit');
+    if (frame.every(n => perfHitSet.has(n))) {
+      setTimeout(() => goToNextPracticeFrame(), 220);
+    }
+  }
+}
+
+function goToNextPracticeFrame() {
+  perfFrameIndex++;
+  while (perfFrameIndex < currentSong.frames.length && currentSong.frames[perfFrameIndex].length === 0) perfFrameIndex++;
+  perfHitSet = new Set();
+  if (perfFrameIndex >= currentSong.frames.length) {
+    clearPerfTargets();
+    document.getElementById('perfFooter').textContent = '🎉 最後まで演奏できました！閉じてもう一度開くと最初からになります。';
+    document.getElementById('perfProgress').textContent = `${currentSong.frames.length} / ${currentSong.frames.length}`;
+    return;
+  }
+  highlightPerfTargets();
+  document.getElementById('perfProgress').textContent = `${perfFrameIndex + 1} / ${currentSong.frames.length}`;
+  document.getElementById('perfFooter').textContent = '光っているマスを押しましょう';
+}
+function highlightPerfTargets() {
+  clearPerfTargets();
+  const frame = currentSong.frames[perfFrameIndex] || [];
+  frame.forEach(idx => {
+    const el = document.querySelector(`#perfGrid .perf-key[data-idx="${idx}"]`);
+    if (el) el.classList.add('target');
+  });
+}
+function clearPerfTargets() {
+  document.querySelectorAll('#perfGrid .perf-key').forEach(el => el.classList.remove('target', 'hit'));
 }
 
 /* ================================================================
