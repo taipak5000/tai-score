@@ -329,7 +329,7 @@
       border-radius: 16px; background: var(--card); box-shadow: 0 1px 4px rgba(0,0,0,0.1);
       display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px;
       color: var(--text-2);
-      user-select: none; -webkit-user-select: none; touch-action: manipulation;
+      user-select: none; -webkit-user-select: none; touch-action: none;
       transition: background 0.08s, color 0.08s, transform 0.05s, box-shadow 0.08s;
     }
     .perf-key-label { font-size: clamp(15px, 5vw, 28px); font-weight: 700; line-height: 1; }
@@ -1237,9 +1237,17 @@ function closePerformance() {
   perfMode = null;
 }
 
+// pointerdown（押した瞬間）で反応させることで、和音の同時押しに対応する。
+// clickだと指を離した瞬間にしか発火せず、複数指での同時押しが正しく機能しないため。
 function renderPerfGrid() {
   const grid = document.getElementById('perfGrid');
-  grid.innerHTML = NOTE_LABELS.map((label, i) => `<div class="perf-key" data-idx="${i}" onclick="onPerfKeyPress(${i})"><span class="perf-key-label">${label}</span><span class="perf-key-hint">${escapeHtml(keyDisplayLabel(keyBindings[i]))}</span></div>`).join('');
+  grid.innerHTML = NOTE_LABELS.map((label, i) => `<div class="perf-key" data-idx="${i}"><span class="perf-key-label">${label}</span><span class="perf-key-hint">${escapeHtml(keyDisplayLabel(keyBindings[i]))}</span></div>`).join('');
+  grid.querySelectorAll('.perf-key').forEach(el => {
+    el.addEventListener('pointerdown', e => {
+      e.preventDefault();
+      onPerfKeyPress(parseInt(el.dataset.idx, 10));
+    });
+  });
 }
 
 function onPerfKeyPress(idx) {
@@ -1339,6 +1347,7 @@ function refreshAllKeyHints() {
    ・他のモーダルが開いている時や、入力欄にフォーカスがある時は無効
    ================================================================ */
 function handleGlobalKeydown(e) {
+  if (e.repeat) return; // キーリピート（押しっぱなし）で音の連打やトグルの誤爆が起きるのを防ぐ
   if (capturingKeyIndex !== null) {
     if (e.key === 'Escape') { capturingKeyIndex = null; renderKeyBindModal(); e.preventDefault(); return; }
     if (['Tab', 'Shift', 'Control', 'Alt', 'Meta', 'CapsLock'].includes(e.key)) return;
