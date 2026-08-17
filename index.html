@@ -1336,6 +1336,9 @@ function onPerfKeyPress(idx) {
 }
 
 function goToNextPracticeFrame() {
+  // 完了直前に演奏を終了する等で、220ms後の自動遷移が発火する頃には
+  // currentSongが変わっている／nullになっている場合があるためガードする
+  if (!currentSong || perfMode !== 'practice') return;
   perfFrameIndex++;
   while (perfFrameIndex < currentSong.frames.length && currentSong.frames[perfFrameIndex].length === 0) perfFrameIndex++;
   perfHitSet = new Set();
@@ -1914,7 +1917,25 @@ async function onVideoFileSelected(event) {
   if (videoImportObjectUrl) URL.revokeObjectURL(videoImportObjectUrl);
   videoImportObjectUrl = URL.createObjectURL(file);
   videoImportEl.src = videoImportObjectUrl;
-  await new Promise(resolve => videoImportEl.addEventListener('loadedmetadata', resolve, { once: true }));
+
+  const statusEl = document.getElementById('videoImportStatus');
+  statusEl.textContent = '';
+  statusEl.className = 'status-msg';
+
+  // 対応していない動画形式の場合、loadedmetadataがいつまでも発火せず
+  // 無反応に見えてしまうため、エラーとタイムアウトも合わせて待つ
+  const loadResult = await Promise.race([
+    new Promise(resolve => videoImportEl.addEventListener('loadedmetadata', () => resolve('ok'), { once: true })),
+    new Promise(resolve => videoImportEl.addEventListener('error', () => resolve('error'), { once: true })),
+    new Promise(resolve => setTimeout(() => resolve('timeout'), 15000))
+  ]);
+  if (loadResult !== 'ok') {
+    statusEl.className = 'status-msg err';
+    statusEl.textContent = 'この動画を読み込めませんでした。お使いのブラウザが対応していない形式か、ファイルが壊れている可能性があります。別の動画ファイル（.mp4など）でお試しください。';
+    event.target.value = '';
+    return;
+  }
+
   await fixVideoDuration(videoImportEl);
   const slider = document.getElementById('videoScrubSlider');
   slider.max = String(Math.max(1, Math.floor(videoImportEl.duration * 10))); // 0.1秒刻み
@@ -1993,9 +2014,25 @@ function drawCalibrationFrame() {
 
 function seekVideoTo(t) {
   return new Promise(resolve => {
-    const onSeeked = () => { videoImportEl.removeEventListener('seeked', onSeeked); resolve(); };
+    let done = false;
+    const finish = () => {
+      if (done) return;
+      done = true;
+      videoImportEl.removeEventListener('seeked', onSeeked);
+      resolve();
+    };
+    const onSeeked = () => {
+      // seekedイベント発生直後は、実際にはまだ新しいフレームがcanvasへ
+      // 正しく描画できる状態になっていない場合がある（特に圧縮率の高い
+      // 実際の動画ファイルで顕著）ため、少し待ってから読み取ることで
+      // 明るさの検出が常に古いフレームを見てしまう不具合を防ぐ。
+      setTimeout(finish, 30);
+    };
     videoImportEl.addEventListener('seeked', onSeeked);
     videoImportEl.currentTime = t;
+    // 動画やブラウザの相性によってはseekedが発火しないまま止まってしまう
+    // ことがあるため、一定時間で必ず先へ進めるようにする（無限に固まる防止）
+    setTimeout(finish, 1500);
   });
 }
 
