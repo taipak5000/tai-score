@@ -595,10 +595,10 @@
           <canvas id="videoCalibCanvas"></canvas>
         </div>
         <div class="video-calib-controls">
-          <label>左端<input type="range" id="calibLeft" min="0" max="95" value="20" oninput="updateCalibFromSliders()"></label>
-          <label>上端<input type="range" id="calibTop" min="0" max="95" value="55" oninput="updateCalibFromSliders()"></label>
-          <label>幅<input type="range" id="calibWidth" min="5" max="100" value="60" oninput="updateCalibFromSliders()"></label>
-          <label>高さ<input type="range" id="calibHeight" min="5" max="100" value="35" oninput="updateCalibFromSliders()"></label>
+          <label>左端<input type="range" id="calibLeft" min="0" max="95" value="25" oninput="updateCalibFromSliders()"></label>
+          <label>上端<input type="range" id="calibTop" min="0" max="95" value="8" oninput="updateCalibFromSliders()"></label>
+          <label>幅<input type="range" id="calibWidth" min="5" max="100" value="40" oninput="updateCalibFromSliders()"></label>
+          <label>高さ<input type="range" id="calibHeight" min="5" max="100" value="32" oninput="updateCalibFromSliders()"></label>
         </div>
       </div>
     </div>
@@ -1904,7 +1904,7 @@ function finishImport(song, statusEl, extraNote, modalId) {
 let videoImportFile = null;
 let videoImportEl = null;       // 隠しvideo要素（同じファイル選択中は使い回す）
 let videoImportObjectUrl = null;
-let videoCalib = { left: 20, top: 55, width: 60, height: 35 }; // %単位（動画の実サイズに対する枠の位置）
+let videoCalib = { left: 25, top: 8, width: 40, height: 32 }; // %単位（動画の実サイズに対する枠の位置。画面上部のHUDに多いことが多いのでそこを初期値にしている）
 let videoAnalysisCancelled = false;
 let detectMode = 'audio'; // 'audio' | 'video'
 // calibArea（枠選び用UI）が今どちらの目的で使われているか。
