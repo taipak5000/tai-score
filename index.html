@@ -166,6 +166,16 @@
     }
     .transport-btn.primary { background: var(--pink); color: #fff; border-color: var(--pink); }
     .transport-btn.active { background: var(--green); color: #fff; border-color: var(--green); }
+    .transport-btn.danger-outline { color: var(--red); border-color: var(--red); }
+
+    .practice-range-row { display: flex; align-items: center; gap: 8px; margin-bottom: 12px; flex-wrap: wrap; }
+    .practice-range-row label { font-size: 12.5px; color: var(--text-2); font-weight: 600; white-space: nowrap; }
+    .practice-range-row input[type=number] {
+      width: 64px; background: var(--bg); border: 1.5px solid var(--sep); border-radius: var(--r-sm);
+      padding: 6px 8px; font-size: 13px; color: var(--text);
+    }
+    .practice-range-row .range-sep { color: var(--text-2); font-size: 13px; }
+    .practice-range-row .range-unit { font-size: 12px; color: var(--text-2); }
 
     .frame-strip { display: flex; flex-wrap: wrap; gap: 8px; padding: 4px 0 12px; }
     .frame-box {
@@ -367,6 +377,7 @@
     .perf-key:active, .perf-key.pressed-flash { transform: scale(0.93); background: var(--pink-bg); color: var(--pink-d); }
     .perf-key.target { background: #fff; color: var(--pink-d); box-shadow: 0 0 0 3px var(--pink) inset; animation: perfPulse 0.9s ease-in-out infinite; }
     .perf-key.hit { background: var(--green); color: #fff; box-shadow: none; animation: none; }
+    .perf-key.miss-flash { background: var(--red); color: #fff; }
     @keyframes perfPulse {
       0%, 100% { box-shadow: 0 0 0 3px var(--pink) inset; }
       50% { box-shadow: 0 0 0 7px var(--pink) inset; }
@@ -471,10 +482,18 @@
           <button type="button" class="tap-tempo-btn" id="tapTempoBtn" onclick="tapTempo()">🥁 タップでBPM測定</button>
           <span class="tap-tempo-hint" id="tapTempoHint">リズムに合わせて連続でタップしてください</span>
         </div>
+        <div class="practice-range-row">
+          <label>練習・試験の範囲</label>
+          <input type="number" id="practiceRangeStart" min="1" value="1" onchange="onPracticeRangeChange()">
+          <span class="range-sep">〜</span>
+          <input type="number" id="practiceRangeEnd" min="1" value="1" onchange="onPracticeRangeChange()">
+          <span class="range-unit">マス目</span>
+        </div>
         <div class="transport">
           <button class="transport-btn primary" id="playBtn" onclick="togglePlayback()">▶️ 再生</button>
+          <button class="transport-btn" id="stopBtn" onclick="stopPlayback()" style="display:none;">⏹️ 停止</button>
           <button class="transport-btn" onclick="openPractice()">🐢 練習モード</button>
-          <button class="transport-btn" onclick="stopPlayback()">⏹️ 停止</button>
+          <button class="transport-btn" onclick="openTestMode()">📝 試験モード</button>
           <button class="transport-btn" onclick="openModal('shareModal')">🔗 共有・保存</button>
           <button class="transport-btn" onclick="openKeyBindModal()">⌨️ キー設定</button>
         </div>
@@ -900,6 +919,40 @@ function renderEditor() {
   applyInputMode();
   renderFrameStrip();
   renderBigGrid();
+  updatePracticeRangeBounds(true);
+}
+
+// 練習・試験モードで使う範囲（マス目の番号、1始まり）の入力欄を、
+// 楽譜の長さに合わせて更新する。resetToFullがtrueなら曲全体を対象にリセットし、
+// falseならユーザーが指定した範囲を曲の長さの範囲内でできるだけ維持する。
+function updatePracticeRangeBounds(resetToFull) {
+  if (!currentSong) return;
+  const total = currentSong.frames.length;
+  const startInput = document.getElementById('practiceRangeStart');
+  const endInput = document.getElementById('practiceRangeEnd');
+  startInput.max = total;
+  endInput.max = total;
+  if (resetToFull || !startInput.value || !endInput.value) {
+    startInput.value = 1;
+    endInput.value = total;
+    return;
+  }
+  let start = Math.max(1, Math.min(total, parseInt(startInput.value, 10) || 1));
+  let end = Math.max(start, Math.min(total, parseInt(endInput.value, 10) || total));
+  startInput.value = start;
+  endInput.value = end;
+}
+function onPracticeRangeChange() {
+  updatePracticeRangeBounds(false);
+}
+// 練習・試験モードで使う範囲を0始まりのフレーム番号で返す
+function getPracticeRange() {
+  const total = currentSong.frames.length;
+  const startInput = document.getElementById('practiceRangeStart');
+  const endInput = document.getElementById('practiceRangeEnd');
+  let start = Math.max(1, Math.min(total, parseInt(startInput.value, 10) || 1));
+  let end = Math.max(start, Math.min(total, parseInt(endInput.value, 10) || total));
+  return { start: start - 1, end: end - 1 };
 }
 
 function renderBigGrid() {
@@ -1051,6 +1104,7 @@ function addFrame() {
   persistCurrentSong();
   renderFrameStrip();
   renderBigGrid();
+  updatePracticeRangeBounds(false);
 }
 
 function deleteFrame(fi) {
@@ -1060,6 +1114,7 @@ function deleteFrame(fi) {
   persistCurrentSong();
   renderFrameStrip();
   renderBigGrid();
+  updatePracticeRangeBounds(false);
 }
 
 function onSongMetaChange() {
@@ -1234,6 +1289,7 @@ function togglePlayback() {
   isPlaying = true;
   document.getElementById('playBtn').classList.add('active');
   document.getElementById('playBtn').textContent = '⏸️ 再生中…';
+  document.getElementById('stopBtn').style.display = 'flex';
   let i = selectedFrameIndex;
   const intervalMs = 60000 / currentSong.bpm;
   const step = () => {
@@ -1252,6 +1308,7 @@ function stopPlayback() {
   isPlaying = false;
   document.getElementById('playBtn').classList.remove('active');
   document.getElementById('playBtn').textContent = '▶️ 再生';
+  document.getElementById('stopBtn').style.display = 'none';
   clearPlayingHighlight();
 }
 
@@ -1273,23 +1330,42 @@ function clearPlayingHighlight() {
    画面いっぱいに固定表示するので、下のページをスクロールしても
    崩れたりずれたりしない（position: fixedで独立している）。
    ================================================================ */
-let perfMode = null; // 'practice' | 'free'
+let perfMode = null; // 'practice' | 'test' | 'free'
 let perfFrameIndex = -1;
 let perfHitSet = new Set();
+let perfRangeStart = 0; // 0始まりのフレーム番号（練習・試験の対象範囲）
+let perfRangeEnd = 0;
+let perfMistakeCount = 0; // 試験モードでの誤答回数
 
-function openPractice() {
-  if (!currentSong || currentSong.frames.length === 0 || !currentSong.frames.some(f => f.length > 0)) {
-    showToast('練習する音が譜面にありません');
+function openPractice() { startPerfSession('practice'); }
+function openTestMode() { startPerfSession('test'); }
+
+function startPerfSession(mode) {
+  if (!currentSong || currentSong.frames.length === 0) {
+    showToast('楽譜がありません');
+    return;
+  }
+  const range = getPracticeRange();
+  const hasNotes = currentSong.frames.slice(range.start, range.end + 1).some(f => f.length > 0);
+  if (!hasNotes) {
+    showToast(mode === 'practice' ? '練習する音がこの範囲にありません' : '試験する音がこの範囲にありません');
     return;
   }
   stopPlayback();
-  perfMode = 'practice';
-  document.getElementById('perfTitle').textContent = `🐢 練習モード：${currentSong.name || '無題'}`;
+  perfMode = mode;
+  perfRangeStart = range.start;
+  perfRangeEnd = range.end;
+  perfMistakeCount = 0;
+  const isFullRange = range.start === 0 && range.end === currentSong.frames.length - 1;
+  const rangeLabel = isFullRange ? '' : `（${range.start + 1}〜${range.end + 1}マス目）`;
+  document.getElementById('perfTitle').textContent = mode === 'practice'
+    ? `🐢 練習モード：${currentSong.name || '無題'}${rangeLabel}`
+    : `📝 試験モード：${currentSong.name || '無題'}${rangeLabel}`;
   document.getElementById('perfCloseBtn').textContent = '✕ 終了';
   document.getElementById('perfInstrumentRow').style.display = 'none';
   renderPerfGrid();
-  perfFrameIndex = -1;
-  goToNextPracticeFrame();
+  perfFrameIndex = perfRangeStart - 1;
+  goToNextPerfFrame();
   openPerfOverlay();
 }
 
@@ -1346,33 +1422,59 @@ function onPerfKeyPress(idx) {
     el.classList.add('pressed-flash');
     setTimeout(() => el.classList.remove('pressed-flash'), 120);
   }
-  if (perfMode !== 'practice') return;
+  if (perfMode !== 'practice' && perfMode !== 'test') return;
   const frame = currentSong.frames[perfFrameIndex];
-  if (frame && frame.includes(idx) && !perfHitSet.has(idx)) {
-    perfHitSet.add(idx);
-    if (el) el.classList.add('hit');
-    if (frame.every(n => perfHitSet.has(n))) {
-      setTimeout(() => goToNextPracticeFrame(), 220);
+  if (!frame) return;
+  if (frame.includes(idx)) {
+    if (!perfHitSet.has(idx)) {
+      perfHitSet.add(idx);
+      if (el) el.classList.add('hit');
+      if (frame.every(n => perfHitSet.has(n))) {
+        setTimeout(() => goToNextPerfFrame(), 220);
+      }
     }
+  } else if (perfMode === 'test') {
+    // 試験モードでは、お手本（光っているマス）が出ていない状態で不正解を
+    // 押した場合はミスとして数え、そのマスをもう一度最初からやり直させる
+    perfMistakeCount++;
+    perfHitSet = new Set();
+    if (el) {
+      el.classList.add('miss-flash');
+      setTimeout(() => el.classList.remove('miss-flash'), 250);
+    }
+    document.getElementById('perfFooter').textContent = `❌ 不正解（ミス${perfMistakeCount}回）。もう一度そのマスから挑戦しましょう`;
   }
 }
 
-function goToNextPracticeFrame() {
+function goToNextPerfFrame() {
   // 完了直前に演奏を終了する等で、220ms後の自動遷移が発火する頃には
   // currentSongが変わっている／nullになっている場合があるためガードする
-  if (!currentSong || perfMode !== 'practice') return;
+  if (!currentSong || (perfMode !== 'practice' && perfMode !== 'test')) return;
   perfFrameIndex++;
-  while (perfFrameIndex < currentSong.frames.length && currentSong.frames[perfFrameIndex].length === 0) perfFrameIndex++;
+  while (perfFrameIndex <= perfRangeEnd && currentSong.frames[perfFrameIndex].length === 0) perfFrameIndex++;
   perfHitSet = new Set();
-  if (perfFrameIndex >= currentSong.frames.length) {
+  const totalInRange = perfRangeEnd - perfRangeStart + 1;
+  if (perfFrameIndex > perfRangeEnd) {
     clearPerfTargets();
-    document.getElementById('perfFooter').textContent = '🎉 最後まで演奏できました！閉じてもう一度開くと最初からになります。';
-    document.getElementById('perfProgress').textContent = `${currentSong.frames.length} / ${currentSong.frames.length}`;
+    if (perfMode === 'test') {
+      document.getElementById('perfFooter').textContent = perfMistakeCount === 0
+        ? '🎉 ノーミスで合格です！閉じてもう一度開くと最初からになります。'
+        : `🎉 試験終了（ミス${perfMistakeCount}回）。閉じてもう一度開くと最初からになります。`;
+    } else {
+      document.getElementById('perfFooter').textContent = '🎉 最後まで演奏できました！閉じてもう一度開くと最初からになります。';
+    }
+    document.getElementById('perfProgress').textContent = `${totalInRange} / ${totalInRange}`;
     return;
   }
-  highlightPerfTargets();
-  document.getElementById('perfProgress').textContent = `${perfFrameIndex + 1} / ${currentSong.frames.length}`;
-  document.getElementById('perfFooter').textContent = '光っているマスを押しましょう';
+  const posInRange = perfFrameIndex - perfRangeStart + 1;
+  document.getElementById('perfProgress').textContent = `${posInRange} / ${totalInRange}`;
+  if (perfMode === 'practice') {
+    highlightPerfTargets();
+    document.getElementById('perfFooter').textContent = '光っているマスを押しましょう';
+  } else {
+    clearPerfTargets();
+    document.getElementById('perfFooter').textContent = 'お手本なしで、正しいマスを押しましょう';
+  }
 }
 function highlightPerfTargets() {
   clearPerfTargets();
