@@ -2230,10 +2230,12 @@ async function detectVisualOnsetTimes(onProgress) {
 
   const duration = videoImportEl.duration;
   // 音の高さの検出（音声側）と違い、こちらは「だいたいいつ動いたか」が
-  // 分かれば十分なので、シーク回数を抑えるため間隔を粗めにする
-  // （動画のシークは1回ごとに時間がかかるため、処理時間を大きく左右する）。
-  const STEP_SEC = 0.1;
-  const totalSteps = Math.min(2000, Math.ceil(duration / STEP_SEC));
+  // 分かれば十分。また、この処理のボトルネックは計算量ではなく動画の
+  // シーク回数（1回ごとに実時間がかかる）なので、細かくしすぎると
+  // 処理時間が際限なく伸びてしまう。150ms程度の動きを捉えるには
+  // 十分な間隔にとどめる。
+  const STEP_SEC = 0.08;
+  const totalSteps = Math.min(3000, Math.ceil(duration / STEP_SEC));
 
   let prevData = null;
   const motion = []; // { t, diff }
@@ -2376,9 +2378,12 @@ async function startAudioAnalysis() {
   // ダイアトニック音階の中で最も接近している「ミ-ファ」「シ-ド」の半音差
   // （約20Hz、C4付近）を確実に分離できるよう、窓を大きめ（約186ms）に取る。
   const WINDOW = 8192;
-  const HOP = 2048;
+  // HOPを窓の1/8まで細かくし（75%→87.5%オーバーラップ）、タイミングの
+  // 検出精度を上げる。処理時間は伸びるが精度を優先する。
+  const HOP = 1024;
   const HISTORY_LEN = 10;
-  const REFRACTORY_SEC = 0.3;
+  // HOPを細かくした分、同じ音の連打も拾えるよう不応期を短くする
+  const REFRACTORY_SEC = 0.15;
   // 倍音は含めない：Skyの15音は2オクターブにまたがっており、ある音の
   // 2倍音は必ず1オクターブ上の別の音の基音と一致してしまうため、
   // 倍音を加算すると別の音を誤検出する原因になる。
