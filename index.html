@@ -2,7 +2,7 @@
 <html lang="ja">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <link rel="manifest" href="manifest.json">
   <link rel="apple-touch-icon" href="icons/app-icon-192.png">
   <meta name="apple-mobile-web-app-capable" content="yes">
@@ -1306,6 +1306,10 @@ function renderPerfGrid() {
   const grid = document.getElementById('perfGrid');
   grid.innerHTML = NOTE_LABELS.map((label, i) => `<div class="perf-key" data-idx="${i}"><span class="perf-key-label">${label}</span><span class="perf-key-hint">${escapeHtml(keyDisplayLabel(keyBindings[i]))}</span></div>`).join('');
   grid.querySelectorAll('.perf-key').forEach(el => {
+    // touch-action:noneだけでは一部のブラウザでダブルタップズームを
+    // 抑止しきれない場合があるため、touchstartのpreventDefaultも保険で入れる
+    // （音を鳴らす処理はpointerdown側だけで行い、二重発火は起きない）
+    el.addEventListener('touchstart', e => e.preventDefault(), { passive: false });
     el.addEventListener('pointerdown', e => {
       e.preventDefault();
       onPerfKeyPress(parseInt(el.dataset.idx, 10));
