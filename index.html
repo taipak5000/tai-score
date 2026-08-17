@@ -345,6 +345,12 @@
     }
     .perf-title { font-size: 14px; font-weight: 700; text-align: center; flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; padding: 0 6px; }
     .perf-progress { font-size: 12.5px; color: var(--text-2); font-weight: 600; flex-shrink: 0; white-space: nowrap; }
+    .perf-instrument-row { display: flex; gap: 6px; flex-wrap: wrap; justify-content: center; flex-shrink: 0; padding: 2px 4px 10px; }
+    .perf-instrument-btn {
+      background: var(--card); color: var(--text-2); font-size: 12px; font-weight: 700;
+      padding: 7px 12px; border-radius: 999px; box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+    }
+    .perf-instrument-btn.active { background: var(--pink); color: #fff; }
     .perf-grid {
       flex: 1; min-height: 0; display: grid; grid-template-columns: repeat(5, 1fr); grid-template-rows: repeat(3, 1fr);
       gap: 8px;
@@ -449,13 +455,11 @@
           <input type="text" id="songNameInput" placeholder="曲名" oninput="onSongMetaChange()">
           <select id="songPitchInput" onchange="onSongMetaChange()"></select>
           <select id="songInstrumentInput" onchange="onSongMetaChange()">
-            <option value="Harp">🎼 ハープ</option>
-            <option value="Piano">🎹 ピアノ</option>
-            <option value="Guitar">🎸 ギター</option>
-            <option value="Bass">🎸 ベース</option>
-            <option value="Drum">🥁 ドラム</option>
-            <option value="Flute">🪈 フルート</option>
-            <option value="Bells">🔔 鐘</option>
+            <option value="Harp">🎼 楽器A</option>
+            <option value="Guitar">🎸 楽器B</option>
+            <option value="Bass">🎸 楽器C</option>
+            <option value="Flute">🪈 楽器D</option>
+            <option value="Bells">🔔 楽器E</option>
           </select>
         </div>
         <div class="bpm-row">
@@ -668,6 +672,7 @@
     <div class="perf-title" id="perfTitle"></div>
     <div class="perf-progress" id="perfProgress"></div>
   </div>
+  <div class="perf-instrument-row" id="perfInstrumentRow" style="display:none;"><!-- JS --></div>
   <div class="perf-grid" id="perfGrid"><!-- JS --></div>
   <div class="perf-footer" id="perfFooter"></div>
 </div>
@@ -697,7 +702,7 @@ const NOTE_MIDI = [60,62,64,65,67,69,71,72,74,76,77,79,81,83,84];
 const PITCHES = ["C","Db","D","Eb","E","F","Gb","G","Ab","A","Bb","B"];
 // Skyコミュニティで広く使われている「ABC譜」記法（上段=A、中段=B、下段=C、左から1〜5）
 const NOTE_ABC_CODES = ['A1','A2','A3','A4','A5','B1','B2','B3','B4','B5','C1','C2','C3','C4','C5'];
-const INSTRUMENT_LABELS = { Harp: 'ハープ', Piano: 'ピアノ', Guitar: 'ギター', Bass: 'ベース', Drum: 'ドラム', Flute: 'フルート', Bells: '鐘' };
+const INSTRUMENT_LABELS = { Harp: '楽器A', Guitar: '楽器B', Bass: '楽器C', Flute: '楽器D', Bells: '楽器E' };
 function instrumentCodeFromLabel(label) {
   const found = Object.keys(INSTRUMENT_LABELS).find(code => INSTRUMENT_LABELS[code] === label || code === label);
   return found || null;
@@ -1119,27 +1124,21 @@ function ensureAudioCtx() {
 }
 function midiToFreq(midi) { return 440 * Math.pow(2, (midi - 69) / 12); }
 
-// ドラム用のホワイトノイズバッファ（毎回生成せず使い回す）
-let cachedNoiseBuffer = null;
-function getNoiseBuffer(ctx) {
-  if (cachedNoiseBuffer && cachedNoiseBuffer.sampleRate === ctx.sampleRate) return cachedNoiseBuffer;
-  const duration = 0.3;
-  const size = Math.floor(ctx.sampleRate * duration);
-  const buffer = ctx.createBuffer(1, size, ctx.sampleRate);
-  const data = buffer.getChannelData(0);
-  for (let i = 0; i < size; i++) data[i] = (Math.random() * 2 - 1) * (1 - i / size);
-  cachedNoiseBuffer = buffer;
-  return buffer;
+// フリー演奏モードは特定の楽譜に紐づかないため、専用に選んだ楽器を覚えておく
+let freePlayInstrument = localStorage.getItem('taiScoreFreePlayInstrument_v1') || 'Harp';
+function setFreePlayInstrument(code) {
+  freePlayInstrument = code;
+  localStorage.setItem('taiScoreFreePlayInstrument_v1', code);
+  renderFreePlayInstrumentRow();
 }
 
 function playNote(noteIndex) {
   try {
     const ctx = ensureAudioCtx();
     const pitchOffset = PITCHES.indexOf((currentSong && currentSong.pitch) || 'C');
-    const instrument = (currentSong && currentSong.instrument) || 'Harp';
+    const instrument = perfMode === 'free' ? freePlayInstrument : ((currentSong && currentSong.instrument) || 'Harp');
     const now = ctx.currentTime;
 
-    if (instrument === 'Drum') { playDrumVoice(ctx, now, noteIndex); return; }
     if (instrument === 'Bells') {
       const midi = NOTE_MIDI[noteIndex] + pitchOffset;
       playBellVoice(ctx, now, midiToFreq(midi));
@@ -1151,14 +1150,13 @@ function playNote(noteIndex) {
   } catch (e) { /* オーディオが使えない環境では無視 */ }
 }
 
-// ハープ・ピアノ・ギター・ベース・フルート：単一オシレーターを基本に、
+// ハープ・ギター・ベース・フルート：単一オシレーターを基本に、
 // 楽器ごとに波形・音の立ち上がり/減衰・フィルターを変えて聴き分けやすくする
 function playToneVoice(ctx, now, freq, instrument) {
   let attack = 0.006, decay = 1.1, peak = 0.28, waveType = 'triangle';
   let filterFrom = null, filterTo = null;
   if (instrument === 'Bass') { attack = 0.01; decay = 0.9; peak = 0.36; waveType = 'sine'; }
   else if (instrument === 'Flute') { attack = 0.06; decay = 0.9; peak = 0.20; waveType = 'sine'; }
-  else if (instrument === 'Piano') { attack = 0.002; decay = 1.5; peak = 0.26; waveType = 'triangle'; }
   else if (instrument === 'Guitar') { attack = 0.003; decay = 1.0; peak = 0.30; waveType = 'sawtooth'; filterFrom = 5200; filterTo = 600; }
   // Harp（デフォルト）は上の初期値のまま
 
@@ -1186,8 +1184,8 @@ function playToneVoice(ctx, now, freq, instrument) {
   osc.start(now);
   osc.stop(now + attack + decay + 0.05);
 
-  // ハープ・ピアノは打鍵のきらめきとして1オクターブ上の弱い倍音を重ねる
-  if (instrument === 'Piano' || instrument === 'Harp') {
+  // ハープは打鍵のきらめきとして1オクターブ上の弱い倍音を重ねる
+  if (instrument === 'Harp') {
     const osc2 = ctx.createOscillator();
     osc2.type = 'sine';
     osc2.frequency.setValueAtTime(freq * 2, now);
@@ -1220,29 +1218,6 @@ function playBellVoice(ctx, now, freq) {
     osc.start(now);
     osc.stop(now + decay + 0.05);
   });
-}
-
-// ドラム：音程のあるオシレーターではなく、フィルターしたノイズで打楽器らしさを出す
-// マスの位置（0〜14）に応じてフィルターの中心周波数を変え、低い/高いドラムを打ち分けられるようにする
-function playDrumVoice(ctx, now, noteIndex) {
-  const duration = 0.22;
-  const noise = ctx.createBufferSource();
-  noise.buffer = getNoiseBuffer(ctx);
-
-  const filter = ctx.createBiquadFilter();
-  filter.type = 'bandpass';
-  filter.frequency.setValueAtTime(90 + noteIndex * 22, now);
-  filter.Q.value = 1.1;
-
-  const gain = ctx.createGain();
-  gain.gain.setValueAtTime(0.55, now);
-  gain.gain.exponentialRampToValueAtTime(0.001, now + duration);
-
-  noise.connect(filter);
-  filter.connect(gain);
-  gain.connect(ctx.destination);
-  noise.start(now);
-  noise.stop(now + duration + 0.02);
 }
 
 function playFrame(frame) { frame.forEach(n => playNote(n)); }
@@ -1311,6 +1286,7 @@ function openPractice() {
   perfMode = 'practice';
   document.getElementById('perfTitle').textContent = `🐢 練習モード：${currentSong.name || '無題'}`;
   document.getElementById('perfCloseBtn').textContent = '✕ 終了';
+  document.getElementById('perfInstrumentRow').style.display = 'none';
   renderPerfGrid();
   perfFrameIndex = -1;
   goToNextPracticeFrame();
@@ -1324,9 +1300,18 @@ function openFreeMode() {
   document.getElementById('perfProgress').textContent = '';
   document.getElementById('perfFooter').textContent = '楽譜には関係なく、自由に押して演奏を楽しめます';
   document.getElementById('perfCloseBtn').textContent = '✕ 閉じる';
+  document.getElementById('perfInstrumentRow').style.display = 'flex';
+  renderFreePlayInstrumentRow();
   renderPerfGrid();
   clearPerfTargets();
   openPerfOverlay();
+}
+function renderFreePlayInstrumentRow() {
+  const row = document.getElementById('perfInstrumentRow');
+  const icons = { Harp: '🎼', Guitar: '🎸', Bass: '🎸', Flute: '🪈', Bells: '🔔' };
+  row.innerHTML = Object.keys(INSTRUMENT_LABELS).map(code => `
+    <button type="button" class="perf-instrument-btn${code === freePlayInstrument ? ' active' : ''}" onclick="setFreePlayInstrument('${code}')">${icons[code] || ''} ${escapeHtml(INSTRUMENT_LABELS[code])}</button>
+  `).join('');
 }
 
 function openPerfOverlay() {
