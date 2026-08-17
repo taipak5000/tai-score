@@ -308,7 +308,7 @@
        裏のページをどれだけスクロールしていても表示が崩れない。 */
     .perf-overlay {
       display: none; flex-direction: column; position: fixed; inset: 0; z-index: 800;
-      background: var(--bg);
+      background: var(--bg); touch-action: none;
       padding: max(10px, env(safe-area-inset-top)) max(10px, env(safe-area-inset-right))
                max(10px, env(safe-area-inset-bottom)) max(10px, env(safe-area-inset-left));
       box-sizing: border-box;
