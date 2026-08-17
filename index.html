@@ -104,7 +104,8 @@
     .view-section.active { display: block; }
 
     /* ── ライブラリ ─────────────────────────── */
-    .lib-toolbar { display: flex; gap: 8px; margin-top: 14px; }
+    .lib-toolbar { display: flex; gap: 8px; margin-top: 14px; flex-wrap: wrap; }
+    .lib-toolbar .lib-search { flex-basis: 100%; }
     .lib-search {
       flex: 1; background: var(--card); border: 1.5px solid var(--sep); border-radius: var(--r-sm);
       padding: 10px 12px; font-size: 14px; color: var(--text);
@@ -300,6 +301,24 @@
       border: 1px dashed var(--sep); border-radius: var(--r-sm); padding: 10px 12px; margin-top: 10px;
     }
 
+    /* ── 動画から楽譜を作成モーダル ─────────────────────────── */
+    #videoImportModal .modal-card { max-width: 560px; }
+    #videoFileInput {
+      width: 100%; box-sizing: border-box; font-size: 12.5px; color: var(--text-2);
+      border: 1px dashed var(--sep); border-radius: var(--r-sm); padding: 10px 12px; margin-top: 10px;
+    }
+    .video-scrub { width: 100%; accent-color: var(--pink); margin-top: 10px; }
+    .video-calib-wrap { position: relative; margin-top: 8px; border-radius: var(--r-sm); overflow: hidden; background: #000; line-height: 0; }
+    #videoCalibCanvas { width: 100%; height: auto; display: block; }
+    .video-calib-controls { display: grid; grid-template-columns: 1fr 1fr; gap: 8px 14px; margin-top: 12px; }
+    .video-calib-controls label { display: flex; flex-direction: column; font-size: 11.5px; color: var(--text-2); font-weight: 600; gap: 3px; }
+    .video-calib-controls input[type=range] { accent-color: var(--pink); }
+    .video-sensitivity-row { display: flex; align-items: center; gap: 10px; margin-top: 14px; }
+    .video-sensitivity-row label { font-size: 12.5px; color: var(--text-2); font-weight: 600; white-space: nowrap; }
+    .video-sensitivity-row input[type=range] { flex: 1; accent-color: var(--pink); }
+    .video-progress-bar { height: 8px; background: var(--bg); border-radius: 999px; overflow: hidden; margin: 12px 0 6px; }
+    .video-progress-fill { height: 100%; background: var(--pink); width: 0%; transition: width 0.15s; }
+
     footer { text-align: center; padding: 24px 16px; color: var(--text-2); font-size: 13px; border-top: 1px solid var(--sep); margin-top: 40px; line-height: 1.6; }
     footer a { color: var(--pink-d); text-decoration: none; }
 
@@ -412,6 +431,7 @@
       <div class="lib-toolbar">
         <input type="search" class="lib-search" id="librarySearch" placeholder="🔍 曲名で検索…" oninput="renderLibrary()">
         <button class="new-song-btn secondary" onclick="openModal('importModal')">📥 読み込む</button>
+        <button class="new-song-btn secondary" onclick="openVideoImportModal()">🎥 動画から作成</button>
         <button class="new-song-btn" onclick="createNewSong()">＋ 新規作成</button>
       </div>
       <div class="song-list" id="songList"><!-- JS --></div>
@@ -511,6 +531,49 @@
     <button type="button" class="action-btn secondary" onclick="importFromCode()">🔍 コードから読み込む</button>
     <input type="file" id="importFileInput" accept=".json,.txt" onchange="importFromFile(event)">
     <div id="importStatus" class="status-msg"></div>
+  </div>
+</div>
+
+<!-- ▸ 動画から楽譜を作成モーダル -->
+<div class="modal-overlay" id="videoImportModal" onclick="if(event.target===this)closeVideoImportModal()">
+  <div class="modal-card">
+    <div class="modal-header">
+      <span class="modal-title">🎥 動画から楽譜を作成</span>
+      <button class="modal-close" onclick="closeVideoImportModal()">✕</button>
+    </div>
+    <div class="hint">演奏動画のファイルを選ぶと、ボタンが光る様子を解析して自動で楽譜を作成します。動画はどこにもアップロードされず、すべてこの端末（ブラウザ）内だけで処理されます。自動解析のため完璧ではありません。作成後は編集画面で内容をご確認・修正してください。</div>
+
+    <div id="videoImportStep1">
+      <input type="file" id="videoFileInput" accept="video/*" onchange="onVideoFileSelected(event)">
+    </div>
+
+    <div id="videoImportStep2" style="display:none;">
+      <div class="hint" style="margin-top:12px;">① ボタンがよく見えるシーンまでスライダーで動画を動かし、② 下のスライダーで枠をSkyの3×5マス（楽器のボタン）に合わせてください。</div>
+      <input type="range" class="video-scrub" id="videoScrubSlider" min="0" max="1000" value="0" step="1" oninput="onVideoScrub(this.value)">
+      <div class="video-calib-wrap">
+        <canvas id="videoCalibCanvas"></canvas>
+      </div>
+      <div class="video-calib-controls">
+        <label>左端<input type="range" id="calibLeft" min="0" max="95" value="20" oninput="updateCalibFromSliders()"></label>
+        <label>上端<input type="range" id="calibTop" min="0" max="95" value="55" oninput="updateCalibFromSliders()"></label>
+        <label>幅<input type="range" id="calibWidth" min="5" max="100" value="60" oninput="updateCalibFromSliders()"></label>
+        <label>高さ<input type="range" id="calibHeight" min="5" max="100" value="35" oninput="updateCalibFromSliders()"></label>
+      </div>
+      <div class="video-sensitivity-row">
+        <label>感度</label>
+        <input type="range" id="videoSensitivity" min="5" max="100" value="30">
+      </div>
+      <button type="button" class="action-btn primary" onclick="startVideoAnalysis()">🔍 この位置で解析を始める</button>
+    </div>
+
+    <div id="videoImportStep3" style="display:none;">
+      <div class="hint">解析中です…動画の長さによっては数十秒〜数分かかることがあります。</div>
+      <div class="video-progress-bar"><div class="video-progress-fill" id="videoProgressFill"></div></div>
+      <div id="videoProgressText" class="hint"></div>
+      <button type="button" class="action-btn secondary" onclick="cancelVideoAnalysis()">キャンセルしてやり直す</button>
+    </div>
+
+    <div id="videoImportStatus" class="status-msg"></div>
   </div>
 </div>
 
@@ -1622,27 +1685,17 @@ function gcdInt(a, b) {
   while (b) { const t = a % b; a = b; b = t; }
   return a;
 }
-function oldSkyStudioFormatToSong(data) {
-  const rawNotes = Array.isArray(data.songNotes) ? data.songNotes : [];
-  // 重複除去：同じ音番号・同じ時刻の音は1つにまとめる
-  const seen = new Set();
-  const notes = [];
-  rawNotes.forEach(n => {
-    const idx = parseInt(String(n.key).split('Key')[1], 10);
-    if (!Number.isFinite(idx) || idx < 0 || idx > 14) return; // 白鍵15個の範囲外は無視
-    const time = Number(n.time) || 0;
-    const dedupeKey = idx + '|' + time;
-    if (seen.has(dedupeKey)) return;
-    seen.add(dedupeKey);
-    notes.push({ idx, time });
-  });
+// notes = [{idx, time(ミリ秒)}] から、実際の間隔のGCD（最大公約数）で最も細かい
+// マス単位を自動検出し、マス目の配列(frames)とBPMに変換する共通処理。
+// Sky Studio形式のインポートと、動画解析からのインポートの両方で使う。
+function quantizeNoteEventsToFrames(notes, fallbackBpmHint) {
+  const fallbackBpm = Math.max(40, Math.round(fallbackBpmHint) || 150);
   if (notes.length === 0) {
-    return { id: genId(), name: data.name || 'インポートした楽譜', bpm: 150, pitch: 'C', instrument: 'Harp', frames: [[]], updatedAt: Date.now() };
+    return { frames: [[]], bpm: fallbackBpm };
   }
 
   // 実際の音の間隔（GCD）から、最も細かいマス単位（ミリ秒）を自動検出する
   const uniqueTimes = [...new Set(notes.map(n => n.time))].sort((a, b) => a - b);
-  const fallbackBpm = Math.max(40, Math.round(Number(data.bpm)) || 150);
   let unitMs = 60000 / fallbackBpm;
   if (uniqueTimes.length > 1) {
     let g = 0;
@@ -1672,6 +1725,25 @@ function oldSkyStudioFormatToSong(data) {
   }
 
   const bpm = Math.max(40, Math.min(999, Math.round(60000 / unitMs)));
+  return { frames, bpm };
+}
+
+function oldSkyStudioFormatToSong(data) {
+  const rawNotes = Array.isArray(data.songNotes) ? data.songNotes : [];
+  // 重複除去：同じ音番号・同じ時刻の音は1つにまとめる
+  const seen = new Set();
+  const notes = [];
+  rawNotes.forEach(n => {
+    const idx = parseInt(String(n.key).split('Key')[1], 10);
+    if (!Number.isFinite(idx) || idx < 0 || idx > 14) return; // 白鍵15個の範囲外は無視
+    const time = Number(n.time) || 0;
+    const dedupeKey = idx + '|' + time;
+    if (seen.has(dedupeKey)) return;
+    seen.add(dedupeKey);
+    notes.push({ idx, time });
+  });
+
+  const { frames, bpm } = quantizeNoteEventsToFrames(notes, Number(data.bpm));
   const pitch = PITCHES[Number.isInteger(data.pitchLevel) ? data.pitchLevel : 0] || 'C';
   let name = data.name || 'インポートした楽譜';
   if (data.author) name += `（${data.author}）`;
@@ -1761,15 +1833,261 @@ function importFromFile(event) {
   reader.readAsArrayBuffer(file);
   event.target.value = '';
 }
-function finishImport(song, statusEl, extraNote) {
+function finishImport(song, statusEl, extraNote, modalId) {
+  modalId = modalId || 'importModal';
   if (!song.frames || song.frames.length === 0) song.frames = [[]];
   const songs = loadSongs();
   songs.unshift(song);
   saveSongs(songs);
   statusEl.className = 'status-msg ok';
   statusEl.textContent = `「${song.name}」を読み込みました。${extraNote || ''}`;
-  document.getElementById('importCodeInput').value = '';
-  setTimeout(() => { closeModal('importModal'); openEditor(song.id); }, 700);
+  if (modalId === 'importModal') {
+    const codeInput = document.getElementById('importCodeInput');
+    if (codeInput) codeInput.value = '';
+  }
+  setTimeout(() => { closeModal(modalId); openEditor(song.id); }, 700);
+}
+
+/* ================================================================
+   動画から楽譜を作成
+   演奏動画内でSkyの3×5マス（楽器のボタン）が光る様子を解析し、
+   自動で楽譜（frames）を作成する。動画はサーバーには一切送信せず、
+   すべてブラウザ内（canvas）だけで処理する。
+   ゲーム画面をそのまま録画した動画（カメラでの斜め撮り等ではないもの）を想定。
+   自動解析はあくまで下書き作成の補助であり、完璧な変換ではないため、
+   作成後は必ず編集画面で内容を確認・修正することを前提にしている。
+   ================================================================ */
+let videoImportFile = null;
+let videoImportEl = null;       // 隠しvideo要素（同じファイル選択中は使い回す）
+let videoImportObjectUrl = null;
+let videoCalib = { left: 20, top: 55, width: 60, height: 35 }; // %単位（動画の実サイズに対する枠の位置）
+let videoAnalysisCancelled = false;
+
+function openVideoImportModal() {
+  document.getElementById('videoImportStep1').style.display = 'block';
+  document.getElementById('videoImportStep2').style.display = 'none';
+  document.getElementById('videoImportStep3').style.display = 'none';
+  const statusEl = document.getElementById('videoImportStatus');
+  statusEl.textContent = '';
+  statusEl.className = 'status-msg';
+  openModal('videoImportModal');
+}
+function closeVideoImportModal() {
+  videoAnalysisCancelled = true;
+  closeModal('videoImportModal');
+}
+
+// ブラウザの画面録画機能等で作られたwebmは、コンテナに正しい長さ（duration）が
+// 記録されておらず、Infinityや実際より短い値になる場合がある。末尾付近へ一度
+// シークすることで、ブラウザに正しい長さを再計算させる既知の回避策。
+function fixVideoDuration(video) {
+  return new Promise(resolve => {
+    let done = false;
+    const finish = () => {
+      if (done) return;
+      done = true;
+      video.removeEventListener('durationchange', onDurationChange);
+      video.currentTime = 0;
+      resolve();
+    };
+    const onDurationChange = () => finish();
+    video.addEventListener('durationchange', onDurationChange);
+    video.currentTime = 1e9;
+    setTimeout(finish, 1500); // durationchangeが発火しない環境向けの保険
+  });
+}
+
+async function onVideoFileSelected(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  videoImportFile = file;
+  if (!videoImportEl) {
+    videoImportEl = document.createElement('video');
+    videoImportEl.muted = true;
+    videoImportEl.playsInline = true;
+    videoImportEl.addEventListener('seeked', () => drawCalibrationFrame());
+  }
+  if (videoImportObjectUrl) URL.revokeObjectURL(videoImportObjectUrl);
+  videoImportObjectUrl = URL.createObjectURL(file);
+  videoImportEl.src = videoImportObjectUrl;
+  await new Promise(resolve => videoImportEl.addEventListener('loadedmetadata', resolve, { once: true }));
+  await fixVideoDuration(videoImportEl);
+  const slider = document.getElementById('videoScrubSlider');
+  slider.max = String(Math.max(1, Math.floor(videoImportEl.duration * 10))); // 0.1秒刻み
+  slider.value = String(Math.min(parseInt(slider.max, 10), 20)); // 2秒地点あたりから開始（読み込み演出を避ける）
+  videoImportEl.currentTime = parseInt(slider.value, 10) / 10;
+  document.getElementById('videoImportStep1').style.display = 'none';
+  document.getElementById('videoImportStep2').style.display = 'block';
+  event.target.value = '';
+}
+
+function onVideoScrub(value) {
+  if (!videoImportEl) return;
+  videoImportEl.currentTime = parseFloat(value) / 10;
+}
+
+function updateCalibFromSliders() {
+  videoCalib = {
+    left: parseFloat(document.getElementById('calibLeft').value),
+    top: parseFloat(document.getElementById('calibTop').value),
+    width: parseFloat(document.getElementById('calibWidth').value),
+    height: parseFloat(document.getElementById('calibHeight').value)
+  };
+  drawCalibrationFrame();
+}
+
+// Skyの3×5マスの各中心座標（動画の実ピクセルサイズ基準）を計算する
+function computeSampleCenters(videoW, videoH) {
+  const boxX = videoCalib.left / 100 * videoW;
+  const boxY = videoCalib.top / 100 * videoH;
+  const boxW = videoCalib.width / 100 * videoW;
+  const boxH = videoCalib.height / 100 * videoH;
+  const centers = [];
+  for (let row = 0; row < 3; row++) {
+    for (let col = 0; col < 5; col++) {
+      centers.push({
+        idx: row * 5 + col,
+        x: boxX + boxW * (col + 0.5) / 5,
+        y: boxY + boxH * (row + 0.5) / 3
+      });
+    }
+  }
+  return centers;
+}
+function sampleRadius(videoW, videoH) {
+  const boxW = videoCalib.width / 100 * videoW;
+  const boxH = videoCalib.height / 100 * videoH;
+  return Math.max(3, Math.min(boxW / 5, boxH / 3) * 0.22);
+}
+
+function drawCalibrationFrame() {
+  if (!videoImportEl || !videoImportEl.videoWidth) return;
+  const canvas = document.getElementById('videoCalibCanvas');
+  const vw = videoImportEl.videoWidth, vh = videoImportEl.videoHeight;
+  canvas.width = vw; canvas.height = vh;
+  const ctx = canvas.getContext('2d');
+  ctx.drawImage(videoImportEl, 0, 0, vw, vh);
+
+  const boxX = videoCalib.left / 100 * vw;
+  const boxY = videoCalib.top / 100 * vh;
+  const boxW = videoCalib.width / 100 * vw;
+  const boxH = videoCalib.height / 100 * vh;
+
+  ctx.strokeStyle = '#FF2D55';
+  ctx.lineWidth = Math.max(2, vw * 0.003);
+  ctx.strokeRect(boxX, boxY, boxW, boxH);
+  ctx.beginPath();
+  for (let c = 1; c < 5; c++) { const x = boxX + boxW * c / 5; ctx.moveTo(x, boxY); ctx.lineTo(x, boxY + boxH); }
+  for (let r = 1; r < 3; r++) { const y = boxY + boxH * r / 3; ctx.moveTo(boxX, y); ctx.lineTo(boxX + boxW, y); }
+  ctx.stroke();
+
+  const centers = computeSampleCenters(vw, vh);
+  const r = sampleRadius(vw, vh);
+  ctx.fillStyle = 'rgba(255,45,85,0.85)';
+  centers.forEach(c => { ctx.beginPath(); ctx.arc(c.x, c.y, r, 0, Math.PI * 2); ctx.fill(); });
+}
+
+function seekVideoTo(t) {
+  return new Promise(resolve => {
+    const onSeeked = () => { videoImportEl.removeEventListener('seeked', onSeeked); resolve(); };
+    videoImportEl.addEventListener('seeked', onSeeked);
+    videoImportEl.currentTime = t;
+  });
+}
+
+// 指定した中心・半径の円に外接する正方形の平均輝度（0〜255）を求める
+function sampleBrightness(ctx, cx, cy, r) {
+  const size = Math.max(2, Math.round(r * 2));
+  const x = Math.max(0, Math.round(cx - r)), y = Math.max(0, Math.round(cy - r));
+  const w = Math.min(ctx.canvas.width - x, size), h = Math.min(ctx.canvas.height - y, size);
+  if (w <= 0 || h <= 0) return 0;
+  const data = ctx.getImageData(x, y, w, h).data;
+  let sum = 0, count = 0;
+  for (let i = 0; i < data.length; i += 4) {
+    sum += data[i] * 0.299 + data[i + 1] * 0.587 + data[i + 2] * 0.114;
+    count++;
+  }
+  return count > 0 ? sum / count : 0;
+}
+
+// 動画を一定間隔でシークしながら各マスの明るさをサンプリングし、
+// 「明るさが基準値より一定以上明るくなった瞬間」（立ち上がりエッジ）を
+// そのマスが押された瞬間として記録する。連打の誤検出を防ぐため、
+// 同じマスは短時間（不応期）は再検出しない。
+async function startVideoAnalysis() {
+  videoAnalysisCancelled = false;
+  document.getElementById('videoImportStep2').style.display = 'none';
+  document.getElementById('videoImportStep3').style.display = 'block';
+  const progressFill = document.getElementById('videoProgressFill');
+  const progressText = document.getElementById('videoProgressText');
+  progressFill.style.width = '0%';
+
+  const vw = videoImportEl.videoWidth, vh = videoImportEl.videoHeight;
+  const canvas = document.createElement('canvas');
+  canvas.width = vw; canvas.height = vh;
+  const ctx = canvas.getContext('2d', { willReadFrequently: true });
+  const centers = computeSampleCenters(vw, vh);
+  const r = Math.round(sampleRadius(vw, vh));
+  const sensitivity = parseFloat(document.getElementById('videoSensitivity').value);
+
+  const duration = videoImportEl.duration;
+  const STEP_SEC = 0.05; // 約20サンプル/秒
+  const totalSteps = Math.min(9000, Math.ceil(duration / STEP_SEC)); // 安全上限（約7.5分ぶん）
+
+  const HISTORY_LEN = 10;
+  const REFRACTORY_SEC = 0.08;
+  const history = centers.map(() => []);
+  const wasAbove = centers.map(() => false);
+  const lastOnsetTime = centers.map(() => -Infinity);
+  const noteEvents = [];
+
+  for (let step = 0; step < totalSteps; step++) {
+    if (videoAnalysisCancelled) return;
+    const t = step * STEP_SEC;
+    if (t > duration) break;
+    await seekVideoTo(t);
+    ctx.drawImage(videoImportEl, 0, 0, vw, vh);
+
+    centers.forEach((c, i) => {
+      const brightness = sampleBrightness(ctx, c.x, c.y, r);
+      const hist = history[i];
+      hist.push(brightness);
+      if (hist.length > HISTORY_LEN) hist.shift();
+      const baseline = hist.length >= 3 ? Math.min(...hist) : brightness;
+      const isAbove = brightness > baseline + sensitivity;
+      if (isAbove && !wasAbove[i] && (t - lastOnsetTime[i]) > REFRACTORY_SEC) {
+        noteEvents.push({ idx: c.idx, time: Math.round(t * 1000) });
+        lastOnsetTime[i] = t;
+      }
+      wasAbove[i] = isAbove;
+    });
+
+    if (step % 5 === 0) {
+      const pct = Math.round((step / totalSteps) * 100);
+      progressFill.style.width = pct + '%';
+      progressText.textContent = `${pct}%（${noteEvents.length}個の音を検出）`;
+      await new Promise(res => setTimeout(res, 0)); // 画面が固まらないよう一呼吸おく
+    }
+  }
+  if (videoAnalysisCancelled) return;
+
+  progressFill.style.width = '100%';
+  progressText.textContent = `解析完了：${noteEvents.length}個の音を検出しました`;
+
+  const { frames, bpm } = quantizeNoteEventsToFrames(noteEvents, 150);
+  const song = {
+    id: genId(),
+    name: (videoImportFile && videoImportFile.name) ? videoImportFile.name.replace(/\.[^.]+$/, '') : '動画から作成した楽譜',
+    bpm, pitch: 'C', instrument: 'Harp', frames, updatedAt: Date.now()
+  };
+  const statusEl = document.getElementById('videoImportStatus');
+  finishImport(song, statusEl, '（自動解析のため、内容を編集画面でご確認ください）', 'videoImportModal');
+}
+
+function cancelVideoAnalysis() {
+  videoAnalysisCancelled = true;
+  document.getElementById('videoImportStep3').style.display = 'none';
+  document.getElementById('videoImportStep2').style.display = 'block';
 }
 
 /* ================================================================
