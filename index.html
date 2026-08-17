@@ -318,6 +318,11 @@
     .video-sensitivity-row input[type=range] { flex: 1; accent-color: var(--pink); }
     .video-progress-bar { height: 8px; background: var(--bg); border-radius: 999px; overflow: hidden; margin: 12px 0 6px; }
     .video-progress-fill { height: 100%; background: var(--pink); width: 0%; transition: width 0.15s; }
+    .visual-refine-toggle {
+      display: flex; align-items: center; gap: 8px; margin-top: 12px; font-size: 12.5px;
+      font-weight: 600; color: var(--text-2); cursor: pointer;
+    }
+    .visual-refine-toggle input[type=checkbox] { accent-color: var(--pink); width: 16px; height: 16px; flex-shrink: 0; }
 
     footer { text-align: center; padding: 24px 16px; color: var(--text-2); font-size: 13px; border-top: 1px solid var(--sep); margin-top: 40px; line-height: 1.6; }
     footer a { color: var(--pink-d); text-decoration: none; }
@@ -563,11 +568,28 @@
           <label>感度</label>
           <input type="range" id="audioSensitivity" min="10" max="80" value="30">
         </div>
+        <label class="visual-refine-toggle">
+          <input type="checkbox" id="useVisualRefineCheckbox" onchange="onToggleVisualRefine()">
+          映像でタイミングを補正する（手首など光る場所を指定・処理に時間がかかります）
+        </label>
+        <div id="audioCalibAnchor"></div>
         <button type="button" class="action-btn primary" onclick="startAudioAnalysis()">🔍 音声から解析を始める</button>
       </div>
 
       <div id="videoDetectPanel" style="display:none;">
         <div class="hint" style="margin-top:10px;">① ボタンがよく見えるシーンまでスライダーで動画を動かし、② 下のスライダーで枠をSkyの3×5マス（楽器のボタン）に合わせてください。</div>
+        <div id="videoCalibAnchor"></div>
+        <div class="video-sensitivity-row">
+          <label>感度</label>
+          <input type="range" id="videoSensitivity" min="5" max="100" value="30">
+        </div>
+        <button type="button" class="action-btn primary" onclick="startVideoAnalysis()">🔍 この位置で解析を始める</button>
+      </div>
+
+      <!-- 映像検出モード／音声＋映像補正モードで共用するキャリブレーションUI。
+           JSでaudioCalibAnchor / videoCalibAnchorの直後に移動して使う。 -->
+      <div id="calibArea" style="display:none;">
+        <div class="hint" id="calibHint" style="margin-top:10px;"></div>
         <input type="range" class="video-scrub" id="videoScrubSlider" min="0" max="1000" value="0" step="1" oninput="onVideoScrub(this.value)">
         <div class="video-calib-wrap">
           <canvas id="videoCalibCanvas"></canvas>
@@ -578,11 +600,6 @@
           <label>幅<input type="range" id="calibWidth" min="5" max="100" value="60" oninput="updateCalibFromSliders()"></label>
           <label>高さ<input type="range" id="calibHeight" min="5" max="100" value="35" oninput="updateCalibFromSliders()"></label>
         </div>
-        <div class="video-sensitivity-row">
-          <label>感度</label>
-          <input type="range" id="videoSensitivity" min="5" max="100" value="30">
-        </div>
-        <button type="button" class="action-btn primary" onclick="startVideoAnalysis()">🔍 この位置で解析を始める</button>
       </div>
     </div>
 
@@ -1890,6 +1907,10 @@ let videoImportObjectUrl = null;
 let videoCalib = { left: 20, top: 55, width: 60, height: 35 }; // %単位（動画の実サイズに対する枠の位置）
 let videoAnalysisCancelled = false;
 let detectMode = 'audio'; // 'audio' | 'video'
+// calibArea（枠選び用UI）が今どちらの目的で使われているか。
+// 'grid'   ：映像から検出モード。3×5マスに区切って各マスの明るさを見る
+// 'single' ：音声＋映像補正モード。1か所（手首など）の動き量だけを見る
+let calibMode = 'grid';
 
 function openVideoImportModal() {
   document.getElementById('videoImportStep1').style.display = 'block';
@@ -1901,6 +1922,7 @@ function openVideoImportModal() {
   if (!document.getElementById('audioPitchSelect').options.length) {
     document.getElementById('audioPitchSelect').innerHTML = PITCHES.map(p => `<option value="${p}">${p}</option>`).join('');
   }
+  document.getElementById('useVisualRefineCheckbox').checked = false;
   setDetectMode('audio');
   openModal('videoImportModal');
 }
@@ -1909,6 +1931,28 @@ function setDetectMode(mode) {
   document.getElementById('audioDetectPanel').style.display = mode === 'audio' ? 'block' : 'none';
   document.getElementById('videoDetectPanel').style.display = mode === 'video' ? 'block' : 'none';
   document.querySelectorAll('.input-mode-tab[data-detect-mode]').forEach(btn => btn.classList.toggle('active', btn.dataset.detectMode === mode));
+  if (mode === 'video') {
+    showCalibArea('videoCalibAnchor', 'grid', '① ボタンがよく見えるシーンまでスライダーで動画を動かし、② 下のスライダーで枠をSkyの3×5マス（楽器のボタン）に合わせてください。');
+  } else if (document.getElementById('useVisualRefineCheckbox').checked) {
+    showCalibArea('audioCalibAnchor', 'single', '音を弾いた瞬間に動く場所（手首など）が見えるシーンまでスライダーで動画を動かし、その場所に枠を合わせてください。');
+  } else {
+    document.getElementById('calibArea').style.display = 'none';
+  }
+}
+function onToggleVisualRefine() {
+  if (document.getElementById('useVisualRefineCheckbox').checked) {
+    showCalibArea('audioCalibAnchor', 'single', '音を弾いた瞬間に動く場所（手首など）が見えるシーンまでスライダーで動画を動かし、その場所に枠を合わせてください。');
+  } else {
+    document.getElementById('calibArea').style.display = 'none';
+  }
+}
+function showCalibArea(anchorId, mode, hintText) {
+  calibMode = mode;
+  const calibArea = document.getElementById('calibArea');
+  document.getElementById(anchorId).insertAdjacentElement('afterend', calibArea);
+  document.getElementById('calibHint').textContent = hintText;
+  calibArea.style.display = 'block';
+  drawCalibrationFrame();
 }
 function closeVideoImportModal() {
   videoAnalysisCancelled = true;
@@ -2032,15 +2076,18 @@ function drawCalibrationFrame() {
   ctx.strokeStyle = '#FF2D55';
   ctx.lineWidth = Math.max(2, vw * 0.003);
   ctx.strokeRect(boxX, boxY, boxW, boxH);
-  ctx.beginPath();
-  for (let c = 1; c < 5; c++) { const x = boxX + boxW * c / 5; ctx.moveTo(x, boxY); ctx.lineTo(x, boxY + boxH); }
-  for (let r = 1; r < 3; r++) { const y = boxY + boxH * r / 3; ctx.moveTo(boxX, y); ctx.lineTo(boxX + boxW, y); }
-  ctx.stroke();
 
-  const centers = computeSampleCenters(vw, vh);
-  const r = sampleRadius(vw, vh);
-  ctx.fillStyle = 'rgba(255,45,85,0.85)';
-  centers.forEach(c => { ctx.beginPath(); ctx.arc(c.x, c.y, r, 0, Math.PI * 2); ctx.fill(); });
+  if (calibMode === 'grid') {
+    ctx.beginPath();
+    for (let c = 1; c < 5; c++) { const x = boxX + boxW * c / 5; ctx.moveTo(x, boxY); ctx.lineTo(x, boxY + boxH); }
+    for (let r = 1; r < 3; r++) { const y = boxY + boxH * r / 3; ctx.moveTo(boxX, y); ctx.lineTo(boxX + boxW, y); }
+    ctx.stroke();
+
+    const centers = computeSampleCenters(vw, vh);
+    const r = sampleRadius(vw, vh);
+    ctx.fillStyle = 'rgba(255,45,85,0.85)';
+    centers.forEach(c => { ctx.beginPath(); ctx.arc(c.x, c.y, r, 0, Math.PI * 2); ctx.fill(); });
+  }
 }
 
 function seekVideoTo(t) {
@@ -2163,6 +2210,89 @@ function cancelVideoAnalysis() {
 }
 
 /* ================================================================
+   映像によるタイミング補正（音声＋映像モード）
+   Skyの演奏時、手首など1か所が回転するような視覚効果は出るが、
+   15マス個別の見た目の違いは無いため「どの音か」は映像からは分からない。
+   そのため映像側では「その瞬間に何かが動いた」というタイミングだけを
+   検出し、音声側で検出した音（どの音か）の時刻をその瞬間に合わせて
+   微調整する“補助”として使う。単独では楽譜を作らない。
+   ================================================================ */
+async function detectVisualOnsetTimes(onProgress) {
+  const vw = videoImportEl.videoWidth, vh = videoImportEl.videoHeight;
+  const boxX = Math.round(videoCalib.left / 100 * vw);
+  const boxY = Math.round(videoCalib.top / 100 * vh);
+  const boxW = Math.max(2, Math.round(videoCalib.width / 100 * vw));
+  const boxH = Math.max(2, Math.round(videoCalib.height / 100 * vh));
+
+  const canvas = document.createElement('canvas');
+  canvas.width = vw; canvas.height = vh;
+  const ctx = canvas.getContext('2d', { willReadFrequently: true });
+
+  const duration = videoImportEl.duration;
+  // 音の高さの検出（音声側）と違い、こちらは「だいたいいつ動いたか」が
+  // 分かれば十分なので、シーク回数を抑えるため間隔を粗めにする
+  // （動画のシークは1回ごとに時間がかかるため、処理時間を大きく左右する）。
+  const STEP_SEC = 0.1;
+  const totalSteps = Math.min(2000, Math.ceil(duration / STEP_SEC));
+
+  let prevData = null;
+  const motion = []; // { t, diff }
+  for (let step = 0; step < totalSteps; step++) {
+    if (videoAnalysisCancelled) return null;
+    const t = step * STEP_SEC;
+    if (t > duration) break;
+    await seekVideoTo(t);
+    ctx.drawImage(videoImportEl, 0, 0, vw, vh);
+    const data = ctx.getImageData(boxX, boxY, boxW, boxH).data;
+    let diff = 0;
+    if (prevData) {
+      for (let i = 0; i < data.length; i += 4 * 4) { // 間引いて高速化
+        diff += Math.abs(data[i] - prevData[i]) + Math.abs(data[i + 1] - prevData[i + 1]) + Math.abs(data[i + 2] - prevData[i + 2]);
+      }
+    }
+    motion.push({ t, diff });
+    prevData = data;
+    if (onProgress && step % 10 === 0) await onProgress(step, totalSteps);
+  }
+  if (videoAnalysisCancelled) return null;
+
+  // 立ち上がりエッジ検出（動画解析と同じ考え方）：直近の変化量の最小値を基準に、
+  // 急に変化量が増えた瞬間を「何かが動いた瞬間」として拾う
+  const HISTORY_LEN = 10, REFRACTORY_SEC = 0.15;
+  const history = [];
+  let wasAbove = false, lastOnset = -Infinity;
+  const onsets = [];
+  motion.forEach(({ t, diff }) => {
+    history.push(diff);
+    if (history.length > HISTORY_LEN) history.shift();
+    const baseline = history.length >= 3 ? Math.min(...history) : diff;
+    const isAbove = diff > baseline * 2.5 + 400;
+    if (isAbove && !wasAbove && (t - lastOnset) > REFRACTORY_SEC) {
+      onsets.push(t);
+      lastOnset = t;
+    }
+    wasAbove = isAbove;
+  });
+  return onsets;
+}
+
+// 音声で検出した各音の時刻を、近くにある映像onsetの時刻に合わせて微調整する。
+// 対応する映像onsetが見つからない音は、音声だけで検出した時刻のまま残す。
+function refineTimingWithVisual(noteEvents, visualOnsetTimes) {
+  if (!visualOnsetTimes || visualOnsetTimes.length === 0) return noteEvents;
+  const MATCH_WINDOW_SEC = 0.15;
+  return noteEvents.map(ev => {
+    const evSec = ev.time / 1000;
+    let best = null, bestDist = Infinity;
+    visualOnsetTimes.forEach(vt => {
+      const d = Math.abs(vt - evSec);
+      if (d < MATCH_WINDOW_SEC && d < bestDist) { best = vt; bestDist = d; }
+    });
+    return best === null ? ev : { idx: ev.idx, time: Math.round(best * 1000) };
+  });
+}
+
+/* ================================================================
    音声から楽譜を作成
    一般的な自動採譜と違い、Skyの音は常に15個の決まった音階（NOTE_MIDIを
    選んだ調で移調したもの）のどれかしか鳴らない。そのため「音声にどんな
@@ -2260,7 +2390,7 @@ async function startAudioAnalysis() {
   const history = targetFreqs.map(() => []);
   const wasAbove = targetFreqs.map(() => false);
   const lastOnsetTime = targetFreqs.map(() => -Infinity);
-  const noteEvents = [];
+  let noteEvents = [];
 
   for (let step = 0; step < totalSteps; step++) {
     if (videoAnalysisCancelled) return;
@@ -2294,6 +2424,21 @@ async function startAudioAnalysis() {
     }
   }
   if (videoAnalysisCancelled) return;
+
+  progressFill.style.width = '100%';
+  progressText.textContent = `${noteEvents.length}個の音を検出しました`;
+
+  if (document.getElementById('useVisualRefineCheckbox').checked && videoImportEl && videoImportEl.videoWidth) {
+    progressText.textContent = '映像でタイミングを補正しています…';
+    const visualOnsets = await detectVisualOnsetTimes(async (step, total) => {
+      const pct = Math.round((step / total) * 100);
+      progressFill.style.width = pct + '%';
+      progressText.textContent = `映像でタイミングを補正中… ${pct}%`;
+      await new Promise(res => setTimeout(res, 0));
+    });
+    if (videoAnalysisCancelled) return;
+    if (visualOnsets) noteEvents = refineTimingWithVisual(noteEvents, visualOnsets);
+  }
 
   progressFill.style.width = '100%';
   progressText.textContent = `解析完了：${noteEvents.length}個の音を検出しました`;
