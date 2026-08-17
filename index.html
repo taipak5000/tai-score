@@ -2656,45 +2656,97 @@ function buildInkMask(imgData, w, h) {
   return mask;
 }
 
-// 横幅の一定割合以上が黒い行＝五線の候補行として検出し、隣接行をまとめる
+// 行ごとの黒画素密度を求め、その「局所的な極大値」を五線の候補行とする。
+// 五線の間隔は狭いことが多く、隣り合う線同士のアンチエイリアスがにじんで
+// つながってしまうため、単純に閾値を超えた行をまとめるだけだと複数の線が
+// 1本に潰れてしまう。極大値（周囲より明らかに黒い行）を探すことで、
+// 線同士が近接していても個別に検出できるようにしている。
 function detectStaffLineRows(mask, w, h) {
-  const DENSITY_THRESHOLD = 0.35;
-  const candidateRows = [];
+  const density = new Float64Array(h);
   for (let y = 0; y < h; y++) {
     let count = 0;
     const base = y * w;
     for (let x = 0; x < w; x++) count += mask[base + x];
-    if (count / w > DENSITY_THRESHOLD) candidateRows.push(y);
+    density[y] = count / w;
   }
-  const lines = [];
-  let cluster = [];
-  for (let i = 0; i < candidateRows.length; i++) {
-    if (cluster.length === 0 || candidateRows[i] - cluster[cluster.length - 1] <= 2) {
-      cluster.push(candidateRows[i]);
+  const WINDOW = 3;
+  const MIN_DENSITY = 0.08;
+  const peaks = [];
+  for (let y = 0; y < h; y++) {
+    if (density[y] < MIN_DENSITY) continue;
+    let isPeak = true;
+    for (let dy = -WINDOW; dy <= WINDOW; dy++) {
+      if (dy === 0) continue;
+      const ny = y + dy;
+      if (ny < 0 || ny >= h) continue;
+      if (density[ny] > density[y]) { isPeak = false; break; }
+    }
+    if (isPeak) peaks.push(y);
+  }
+  const filtered = [];
+  for (const p of peaks) {
+    if (filtered.length && p - filtered[filtered.length - 1] < 4) {
+      if (density[p] > density[filtered[filtered.length - 1]]) filtered[filtered.length - 1] = p;
     } else {
-      lines.push(cluster.reduce((a, b) => a + b, 0) / cluster.length);
-      cluster = [candidateRows[i]];
+      filtered.push(p);
     }
   }
-  if (cluster.length) lines.push(cluster.reduce((a, b) => a + b, 0) / cluster.length);
-  return lines;
+  // 密度がかなり高い（＝ページ幅の半分以上を占める、本物の五線らしい）行を
+  // 別途覚えておく。タイトル文字など五線でないものが偶然似た間隔で並んでも、
+  // 本物の五線には必ずこのレベルの実線が1本以上含まれるはずなので、
+  // 誤検出の五線をあとで除外するのに使う。
+  const strongYs = new Set(filtered.filter(p => density[p] > 0.28));
+  return { lineYs: filtered, strongYs };
 }
 
 // 検出した線（y座標の配列）を、間隔が揃った5本ずつの五線にまとめる
-function groupIntoStaves(lineYs) {
+// 実際の画像では、5本のうち1本が薄くて候補から漏れることがあるため、
+// 「5本連続で見つかる」ことを前提にせず、まずページ全体の候補行の間隔から
+// 五線の1段分の間隔（unit）を推定し、それを使って多少の欠けを許容しながら
+// 5本1組を探す。strongYsに含まれる行を1本も含まないグループは、五線ではなく
+// 文字列等の偶然の一致とみなして除外する。
+function groupIntoStaves(lineYs, strongYs) {
+  if (lineYs.length < 4) return [];
+
+  const gapCounts = new Map();
+  for (let i = 0; i < lineYs.length; i++) {
+    for (let j = i + 1; j < lineYs.length; j++) {
+      const gap = lineYs[j] - lineYs[i];
+      if (gap >= 40) break; // lineYsはソート済みなので、これ以上は対象外
+      if (gap > 3) {
+        const bucket = Math.round(gap);
+        gapCounts.set(bucket, (gapCounts.get(bucket) || 0) + 1);
+      }
+    }
+  }
+  if (gapCounts.size === 0) return [];
+  let unit = 0, bestCount = 0;
+  gapCounts.forEach((count, bucket) => { if (count > bestCount) { bestCount = count; unit = bucket; } });
+  if (unit <= 3) return [];
+
+  const TOL = Math.max(1.5, unit * 0.35);
+  const used = new Array(lineYs.length).fill(false);
   const staves = [];
-  let i = 0;
-  while (i + 4 < lineYs.length) {
-    const group = lineYs.slice(i, i + 5);
-    const gaps = [];
-    for (let k = 1; k < 5; k++) gaps.push(group[k] - group[k - 1]);
-    const avgGap = gaps.reduce((a, b) => a + b, 0) / gaps.length;
-    const gapVariance = Math.max(...gaps) - Math.min(...gaps);
-    if (avgGap > 2 && gapVariance < avgGap * 0.6) {
-      staves.push({ lines: group, lineSpacing: avgGap, top: group[0], bottom: group[4] });
-      i += 5;
-    } else {
-      i += 1;
+  for (let i = 0; i < lineYs.length; i++) {
+    if (used[i]) continue;
+    const base = lineYs[i];
+    const matched = [{ idx: i, y: base }];
+    for (let k = 1; k <= 4; k++) {
+      const target = base + unit * k;
+      let bestJ = -1, bestDist = TOL;
+      for (let j = 0; j < lineYs.length; j++) {
+        if (used[j] || j === i) continue;
+        const d = Math.abs(lineYs[j] - target);
+        if (d < bestDist) { bestDist = d; bestJ = j; }
+      }
+      matched.push(bestJ >= 0 ? { idx: bestJ, y: lineYs[bestJ] } : { idx: -1, y: target });
+    }
+    const realMatches = matched.filter(m => m.idx >= 0).length;
+    const hasStrongLine = matched.some(m => m.idx >= 0 && strongYs && strongYs.has(m.y));
+    if (realMatches >= 4 && hasStrongLine) {
+      matched.forEach(m => { if (m.idx >= 0) used[m.idx] = true; });
+      const lines = matched.map(m => m.y);
+      staves.push({ lines, lineSpacing: unit, top: lines[0], bottom: lines[4] });
     }
   }
   return staves;
@@ -2854,9 +2906,13 @@ function buildSystemChords(sys, noteheads) {
 
 // 画像1枚（1ページ）分を解析し、システムごとの和音列を返す
 function analyzeSheetImage(bitmap) {
+  // 五線検出は行ごとの黒画素密度を見るため、解像度が低いと線が細すぎて
+  // アンチエイリアスに埋もれ検出を取りこぼす。小さい画像は逆に拡大しておく。
   const MAX_DIM = 2000;
+  const MIN_DIM = 1400;
   const srcW = bitmap.width, srcH = bitmap.height;
-  const scale = Math.max(srcW, srcH) > MAX_DIM ? MAX_DIM / Math.max(srcW, srcH) : 1;
+  const longest = Math.max(srcW, srcH);
+  const scale = longest > MAX_DIM ? MAX_DIM / longest : (longest < MIN_DIM ? MIN_DIM / longest : 1);
   const w = Math.max(1, Math.round(srcW * scale));
   const h = Math.max(1, Math.round(srcH * scale));
   const canvas = document.createElement('canvas');
@@ -2866,8 +2922,8 @@ function analyzeSheetImage(bitmap) {
   const imgData = ctx.getImageData(0, 0, w, h);
 
   const mask = buildInkMask(imgData, w, h);
-  const lineYs = detectStaffLineRows(mask, w, h);
-  const staves = groupIntoStaves(lineYs);
+  const { lineYs, strongYs } = detectStaffLineRows(mask, w, h);
+  const staves = groupIntoStaves(lineYs, strongYs);
   if (staves.length === 0) return { systems: [] };
   const systems = pairStavesIntoSystems(staves);
   const cleanedMask = eraseThinStaffLines(mask, w, h, lineYs);
@@ -2945,7 +3001,15 @@ async function startImageAnalysis() {
         ch.indices.forEach(idx => allNotes.push({ time: timeOffset + ch.xUnit, idx }));
       });
       const lastXUnit = system.chords[system.chords.length - 1].xUnit;
-      timeOffset += lastXUnit + 1; // 段の切れ目：譜面上は続きの音楽なので、大きな間は空けない
+      // 段の切れ目：譜面上は続きの音楽なので、大きな間は空けない。
+      // 間隔は固定値ではなく、その段自体の音符間隔（中央値）を使う
+      // （曲によって音符の密度がまちまちで、固定値だと密な曲では
+      // 逆に一番短い間隔として量子化を狂わせてしまうため）。
+      const xGaps = [];
+      for (let i = 1; i < system.chords.length; i++) xGaps.push(system.chords[i].xUnit - system.chords[i - 1].xUnit);
+      xGaps.sort((a, b) => a - b);
+      const typicalGap = xGaps.length ? xGaps[Math.floor(xGaps.length / 2)] : 3;
+      timeOffset += lastXUnit + Math.max(1, typicalGap);
     });
   }
 
@@ -2962,9 +3026,40 @@ async function startImageAnalysis() {
     return;
   }
 
+  // 符頭のx座標は画素単位で検出しているため、本来同じタイミングの音でも
+  // 1px程度の揺れが乗る。これをそのままGCD量子化（quantizeNoteEventsToFrames）
+  // に渡すと、その僅かな揺れが最小間隔として扱われてしまい、曲全体のマス数が
+  // 爆発的に増えてタイミングが破綻する。そこで先に「曲全体の代表的な間隔
+  // （中央値）」を1マスとみなし、各和音をその整数倍の位置へスナップしてから
+  // 渡すことで、意味のある整数関係になるようにしている。
+  const chordTimeMap = new Map();
+  allNotes.forEach(n => {
+    if (!chordTimeMap.has(n.time)) chordTimeMap.set(n.time, new Set());
+    chordTimeMap.get(n.time).add(n.idx);
+  });
+  const sortedTimes = [...chordTimeMap.keys()].sort((a, b) => a - b);
+  const gaps = [];
+  for (let i = 1; i < sortedTimes.length; i++) gaps.push(sortedTimes[i] - sortedTimes[i - 1]);
+  const sortedGaps = [...gaps].sort((a, b) => a - b);
+  // 中央値だと、休符や長い音符による大きい間隔に引っ張られて単位が粗くなり、
+  // 実際には別々の音（8分音符の連続など）を同じマスに丸め込んでしまう。
+  // 曲中で最も細かい音符の間隔に近い、やや小さめのパーセンタイルを単位とする
+  // （ごく僅かな検出ノイズによる極端に小さい間隔は下のtick丸めで自然に吸収される）
+  const unitGap = sortedGaps.length ? sortedGaps[Math.floor(sortedGaps.length * 0.2)] : 0;
+  const unit = unitGap > 0 ? unitGap : 1;
+
+  const tickMap = new Map();
+  const t0 = sortedTimes[0] || 0;
+  sortedTimes.forEach(t => {
+    const tick = Math.round((t - t0) / unit);
+    if (!tickMap.has(tick)) tickMap.set(tick, new Set());
+    chordTimeMap.get(t).forEach(idx => tickMap.get(tick).add(idx));
+  });
+
   // quantizeNoteEventsToFrames は実時間(ms)を前提に20ms未満の間隔を丸めてしまうため、
-  // 線間隔1つ分を100単位として十分大きくスケールしてから渡す
-  const notesForQuantize = allNotes.map(n => ({ idx: n.idx, time: Math.round(n.time * 100) }));
+  // スナップ後の1マスを100単位として十分大きくスケールしてから渡す
+  const notesForQuantize = [];
+  tickMap.forEach((indices, tick) => { indices.forEach(idx => notesForQuantize.push({ idx, time: tick * 100 })); });
   const { frames, bpm } = quantizeNoteEventsToFrames(notesForQuantize, 150);
   const song = {
     id: genId(),
