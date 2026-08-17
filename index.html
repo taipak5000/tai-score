@@ -569,10 +569,10 @@
       <span class="modal-title">🎥 動画から楽譜を作成</span>
       <button class="modal-close" onclick="closeVideoImportModal()">✕</button>
     </div>
-    <div class="hint">演奏動画のファイルを選ぶと、自動で楽譜を作成します。動画はどこにもアップロードされず、すべてこの端末（ブラウザ）内だけで処理されます。自動解析のため完璧ではありません。作成後は編集画面で内容をご確認・修正してください。</div>
+    <div class="hint">演奏動画または演奏音声のファイルを選ぶと、自動で楽譜を作成します。ファイルはどこにもアップロードされず、すべてこの端末（ブラウザ）内だけで処理されます。自動解析のため完璧ではありません。作成後は編集画面で内容をご確認・修正してください。</div>
 
     <div id="videoImportStep1">
-      <input type="file" id="videoFileInput" accept="video/*" onchange="onVideoFileSelected(event)">
+      <input type="file" id="videoFileInput" accept="video/*,audio/*" onchange="onVideoFileSelected(event)">
     </div>
 
     <div id="videoImportStep2" style="display:none;">
@@ -2093,7 +2093,7 @@ async function onVideoFileSelected(event) {
   ]);
   if (loadResult !== 'ok') {
     statusEl.className = 'status-msg err';
-    statusEl.textContent = 'この動画を読み込めませんでした。お使いのブラウザが対応していない形式か、ファイルが壊れている可能性があります。別の動画ファイル（.mp4など）でお試しください。';
+    statusEl.textContent = 'このファイルを読み込めませんでした。お使いのブラウザが対応していない形式か、ファイルが壊れている可能性があります。別の動画・音声ファイル（.mp4、.mp3など）でお試しください。';
     event.target.value = '';
     return;
   }
@@ -2444,7 +2444,7 @@ async function startAudioAnalysis() {
     audioBuffer = await decodeCtx.decodeAudioData(arrayBuffer);
     decodeCtx.close();
   } catch (e) {
-    backToStep2('この動画から音声を取り出せませんでした。音声トラックが無いか、対応していない形式の可能性があります。');
+    backToStep2('このファイルから音声を取り出せませんでした。音声トラックが無いか、対応していない形式の可能性があります。');
     return;
   }
   if (videoAnalysisCancelled) return;
