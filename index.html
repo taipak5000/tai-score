@@ -541,29 +541,49 @@
       <span class="modal-title">🎥 動画から楽譜を作成</span>
       <button class="modal-close" onclick="closeVideoImportModal()">✕</button>
     </div>
-    <div class="hint">演奏動画のファイルを選ぶと、ボタンが光る様子を解析して自動で楽譜を作成します。動画はどこにもアップロードされず、すべてこの端末（ブラウザ）内だけで処理されます。自動解析のため完璧ではありません。作成後は編集画面で内容をご確認・修正してください。</div>
+    <div class="hint">演奏動画のファイルを選ぶと、自動で楽譜を作成します。動画はどこにもアップロードされず、すべてこの端末（ブラウザ）内だけで処理されます。自動解析のため完璧ではありません。作成後は編集画面で内容をご確認・修正してください。</div>
 
     <div id="videoImportStep1">
       <input type="file" id="videoFileInput" accept="video/*" onchange="onVideoFileSelected(event)">
     </div>
 
     <div id="videoImportStep2" style="display:none;">
-      <div class="hint" style="margin-top:12px;">① ボタンがよく見えるシーンまでスライダーで動画を動かし、② 下のスライダーで枠をSkyの3×5マス（楽器のボタン）に合わせてください。</div>
-      <input type="range" class="video-scrub" id="videoScrubSlider" min="0" max="1000" value="0" step="1" oninput="onVideoScrub(this.value)">
-      <div class="video-calib-wrap">
-        <canvas id="videoCalibCanvas"></canvas>
+      <div class="input-mode-tabs" style="margin-top:12px;">
+        <button type="button" class="input-mode-tab" data-detect-mode="audio" onclick="setDetectMode('audio')">🎵 音声から検出</button>
+        <button type="button" class="input-mode-tab" data-detect-mode="video" onclick="setDetectMode('video')">🎥 映像から検出</button>
       </div>
-      <div class="video-calib-controls">
-        <label>左端<input type="range" id="calibLeft" min="0" max="95" value="20" oninput="updateCalibFromSliders()"></label>
-        <label>上端<input type="range" id="calibTop" min="0" max="95" value="55" oninput="updateCalibFromSliders()"></label>
-        <label>幅<input type="range" id="calibWidth" min="5" max="100" value="60" oninput="updateCalibFromSliders()"></label>
-        <label>高さ<input type="range" id="calibHeight" min="5" max="100" value="35" oninput="updateCalibFromSliders()"></label>
+
+      <div id="audioDetectPanel">
+        <div class="hint" style="margin-top:10px;">Skyの音は15個の決まった音階なので、その音の高さをもとに検出します。演奏の調（キー）が分かれば選んでください（分からなければCのままお試しください。うまく検出できない場合は調を変えて試してみてください）。</div>
+        <div class="bpm-row" style="margin-top:8px;">
+          <label>調</label>
+          <select id="audioPitchSelect"></select>
+        </div>
+        <div class="video-sensitivity-row">
+          <label>感度</label>
+          <input type="range" id="audioSensitivity" min="10" max="80" value="30">
+        </div>
+        <button type="button" class="action-btn primary" onclick="startAudioAnalysis()">🔍 音声から解析を始める</button>
       </div>
-      <div class="video-sensitivity-row">
-        <label>感度</label>
-        <input type="range" id="videoSensitivity" min="5" max="100" value="30">
+
+      <div id="videoDetectPanel" style="display:none;">
+        <div class="hint" style="margin-top:10px;">① ボタンがよく見えるシーンまでスライダーで動画を動かし、② 下のスライダーで枠をSkyの3×5マス（楽器のボタン）に合わせてください。</div>
+        <input type="range" class="video-scrub" id="videoScrubSlider" min="0" max="1000" value="0" step="1" oninput="onVideoScrub(this.value)">
+        <div class="video-calib-wrap">
+          <canvas id="videoCalibCanvas"></canvas>
+        </div>
+        <div class="video-calib-controls">
+          <label>左端<input type="range" id="calibLeft" min="0" max="95" value="20" oninput="updateCalibFromSliders()"></label>
+          <label>上端<input type="range" id="calibTop" min="0" max="95" value="55" oninput="updateCalibFromSliders()"></label>
+          <label>幅<input type="range" id="calibWidth" min="5" max="100" value="60" oninput="updateCalibFromSliders()"></label>
+          <label>高さ<input type="range" id="calibHeight" min="5" max="100" value="35" oninput="updateCalibFromSliders()"></label>
+        </div>
+        <div class="video-sensitivity-row">
+          <label>感度</label>
+          <input type="range" id="videoSensitivity" min="5" max="100" value="30">
+        </div>
+        <button type="button" class="action-btn primary" onclick="startVideoAnalysis()">🔍 この位置で解析を始める</button>
       </div>
-      <button type="button" class="action-btn primary" onclick="startVideoAnalysis()">🔍 この位置で解析を始める</button>
     </div>
 
     <div id="videoImportStep3" style="display:none;">
@@ -1869,6 +1889,7 @@ let videoImportEl = null;       // 隠しvideo要素（同じファイル選択�
 let videoImportObjectUrl = null;
 let videoCalib = { left: 20, top: 55, width: 60, height: 35 }; // %単位（動画の実サイズに対する枠の位置）
 let videoAnalysisCancelled = false;
+let detectMode = 'audio'; // 'audio' | 'video'
 
 function openVideoImportModal() {
   document.getElementById('videoImportStep1').style.display = 'block';
@@ -1877,7 +1898,17 @@ function openVideoImportModal() {
   const statusEl = document.getElementById('videoImportStatus');
   statusEl.textContent = '';
   statusEl.className = 'status-msg';
+  if (!document.getElementById('audioPitchSelect').options.length) {
+    document.getElementById('audioPitchSelect').innerHTML = PITCHES.map(p => `<option value="${p}">${p}</option>`).join('');
+  }
+  setDetectMode('audio');
   openModal('videoImportModal');
+}
+function setDetectMode(mode) {
+  detectMode = mode;
+  document.getElementById('audioDetectPanel').style.display = mode === 'audio' ? 'block' : 'none';
+  document.getElementById('videoDetectPanel').style.display = mode === 'video' ? 'block' : 'none';
+  document.querySelectorAll('.input-mode-tab[data-detect-mode]').forEach(btn => btn.classList.toggle('active', btn.dataset.detectMode === mode));
 }
 function closeVideoImportModal() {
   videoAnalysisCancelled = true;
@@ -2129,6 +2160,151 @@ function cancelVideoAnalysis() {
   videoAnalysisCancelled = true;
   document.getElementById('videoImportStep3').style.display = 'none';
   document.getElementById('videoImportStep2').style.display = 'block';
+}
+
+/* ================================================================
+   音声から楽譜を作成
+   一般的な自動採譜と違い、Skyの音は常に15個の決まった音階（NOTE_MIDIを
+   選んだ調で移調したもの）のどれかしか鳴らない。そのため「音声にどんな
+   音が含まれるか」を広く探す必要がなく、「その15個の周波数それぞれの
+   強さ」だけを効率よく求めれば十分。これにはGoertzelアルゴリズム
+   （特定の周波数1つぶんのDFTだけを高速に計算する手法）を使う。
+   倍音（2倍・3倍の周波数）も合わせて見ることで、楽器の音色による
+   基音の強さのばらつきに対してある程度頑健にしている。
+   ================================================================ */
+// 窓かけ済みのサンプル列に対してGoertzelアルゴリズムを実行する。
+// ダイアトニック音階は「ミ→ファ」「シ→ド」の半音（隣の音との差が
+// 他より小さい）があり、矩形窓のままだと隣の音との漏れ込み（スペクトル
+// リーケージ）を誤検出してしまうため、事前にハン窓をかけて漏れを抑える。
+function goertzelOnWindowed(windowedSamples, sampleRate, targetFreq) {
+  const length = windowedSamples.length;
+  const k = Math.round(length * targetFreq / sampleRate);
+  const omega = (2 * Math.PI * k) / length;
+  const coeff = 2 * Math.cos(omega);
+  let q0 = 0, q1 = 0, q2 = 0;
+  for (let i = 0; i < length; i++) {
+    q0 = coeff * q1 - q2 + windowedSamples[i];
+    q2 = q1;
+    q1 = q0;
+  }
+  const real = q1 - q2 * Math.cos(omega);
+  const imag = q2 * Math.sin(omega);
+  return Math.sqrt(real * real + imag * imag) / length;
+}
+function buildHannWindow(length) {
+  const win = new Float32Array(length);
+  for (let i = 0; i < length; i++) win[i] = 0.5 - 0.5 * Math.cos((2 * Math.PI * i) / (length - 1));
+  return win;
+}
+function noteTargetFrequencies(pitch) {
+  const pitchOffset = PITCHES.indexOf(pitch || 'C');
+  return NOTE_MIDI.map(m => 440 * Math.pow(2, (m + Math.max(0, pitchOffset) - 69) / 12));
+}
+
+async function startAudioAnalysis() {
+  videoAnalysisCancelled = false;
+  document.getElementById('videoImportStep2').style.display = 'none';
+  document.getElementById('videoImportStep3').style.display = 'block';
+  const progressFill = document.getElementById('videoProgressFill');
+  const progressText = document.getElementById('videoProgressText');
+  progressFill.style.width = '0%';
+  progressText.textContent = '音声を読み込んでいます…';
+  const statusEl = document.getElementById('videoImportStatus');
+
+  const backToStep2 = (message) => {
+    document.getElementById('videoImportStep3').style.display = 'none';
+    document.getElementById('videoImportStep2').style.display = 'block';
+    statusEl.className = 'status-msg err';
+    statusEl.textContent = message;
+  };
+
+  let audioBuffer;
+  try {
+    const arrayBuffer = await videoImportFile.arrayBuffer();
+    const decodeCtx = new (window.AudioContext || window.webkitAudioContext)();
+    audioBuffer = await decodeCtx.decodeAudioData(arrayBuffer);
+    decodeCtx.close();
+  } catch (e) {
+    backToStep2('この動画から音声を取り出せませんでした。音声トラックが無いか、対応していない形式の可能性があります。');
+    return;
+  }
+  if (videoAnalysisCancelled) return;
+
+  const pitch = document.getElementById('audioPitchSelect').value || 'C';
+  const sensitivityRatio = 1 + parseFloat(document.getElementById('audioSensitivity').value) / 20; // 目安: 1.5〜5倍
+
+  const sampleRate = audioBuffer.sampleRate;
+  const totalSamples = audioBuffer.length;
+  const chCount = audioBuffer.numberOfChannels;
+  const mono = new Float32Array(totalSamples);
+  for (let c = 0; c < chCount; c++) {
+    const ch = audioBuffer.getChannelData(c);
+    for (let i = 0; i < totalSamples; i++) mono[i] += ch[i] / chCount;
+  }
+
+  const targetFreqs = noteTargetFrequencies(pitch);
+  // ダイアトニック音階の中で最も接近している「ミ-ファ」「シ-ド」の半音差
+  // （約20Hz、C4付近）を確実に分離できるよう、窓を大きめ（約186ms）に取る。
+  const WINDOW = 8192;
+  const HOP = 2048;
+  const HISTORY_LEN = 10;
+  const REFRACTORY_SEC = 0.3;
+  // 倍音は含めない：Skyの15音は2オクターブにまたがっており、ある音の
+  // 2倍音は必ず1オクターブ上の別の音の基音と一致してしまうため、
+  // 倍音を加算すると別の音を誤検出する原因になる。
+  const PEER_RATIO = 0.5; // その瞬間の最大値に対してこの割合未満の音は、他の音の裾（スペクトル漏れ）とみなして無視する
+  const totalSteps = Math.max(1, Math.floor((totalSamples - WINDOW) / HOP));
+  const hannWindow = buildHannWindow(WINDOW);
+  const windowedBuf = new Float32Array(WINDOW);
+
+  const history = targetFreqs.map(() => []);
+  const wasAbove = targetFreqs.map(() => false);
+  const lastOnsetTime = targetFreqs.map(() => -Infinity);
+  const noteEvents = [];
+
+  for (let step = 0; step < totalSteps; step++) {
+    if (videoAnalysisCancelled) return;
+    const offset = step * HOP;
+    const t = offset / sampleRate;
+    for (let i = 0; i < WINDOW; i++) windowedBuf[i] = mono[offset + i] * hannWindow[i];
+
+    const mags = targetFreqs.map(freq => goertzelOnWindowed(windowedBuf, sampleRate, freq));
+    const maxMag = Math.max(...mags);
+    targetFreqs.forEach((freq, i) => {
+      const mag = mags[i];
+      const hist = history[i];
+      hist.push(mag);
+      if (hist.length > HISTORY_LEN) hist.shift();
+      const baseline = hist.length >= 3 ? Math.min(...hist) : mag;
+      const risingEdge = mag > baseline * sensitivityRatio + 0.0006;
+      const isPeerDominant = mag > maxMag * PEER_RATIO;
+      const isAbove = risingEdge && isPeerDominant;
+      if (isAbove && !wasAbove[i] && (t - lastOnsetTime[i]) > REFRACTORY_SEC) {
+        noteEvents.push({ idx: i, time: Math.round(t * 1000) });
+        lastOnsetTime[i] = t;
+      }
+      wasAbove[i] = isAbove;
+    });
+
+    if (step % 20 === 0) {
+      const pct = Math.round((step / totalSteps) * 100);
+      progressFill.style.width = pct + '%';
+      progressText.textContent = `${pct}%（${noteEvents.length}個の音を検出）`;
+      await new Promise(res => setTimeout(res, 0));
+    }
+  }
+  if (videoAnalysisCancelled) return;
+
+  progressFill.style.width = '100%';
+  progressText.textContent = `解析完了：${noteEvents.length}個の音を検出しました`;
+
+  const { frames, bpm } = quantizeNoteEventsToFrames(noteEvents, 150);
+  const song = {
+    id: genId(),
+    name: (videoImportFile && videoImportFile.name) ? videoImportFile.name.replace(/\.[^.]+$/, '') : '音声から作成した楽譜',
+    bpm, pitch, instrument: 'Harp', frames, updatedAt: Date.now()
+  };
+  finishImport(song, statusEl, '（自動解析のため、内容を編集画面でご確認ください）', 'videoImportModal');
 }
 
 /* ================================================================
