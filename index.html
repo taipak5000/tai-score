@@ -47,11 +47,13 @@
       display: flex; align-items: center; justify-content: space-between;
     }
     .nav-title { font-size: 17px; font-weight: 600; letter-spacing: -0.3px; }
-    .sidebar-toggle-btn {
+    .nav-right { display: flex; align-items: center; gap: 8px; }
+    .sidebar-toggle-btn, .lang-toggle-btn {
       background: var(--card); border: 1px solid var(--sep); border-radius: var(--r-sm);
       padding: 6px 12px; font-size: 13px; font-weight: 600; color: var(--text);
       display: flex; align-items: center; gap: 6px; white-space: nowrap;
     }
+    /* lang-toggle-btn intentionally excluded: unlike the hamburger, it stays visible at desktop width too */
     @media (min-width: 850px) { .sidebar-toggle-btn { visibility: hidden; } }
 
     .sidebar-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.4); z-index: 499; }
@@ -415,8 +417,11 @@
 <body>
 
 <nav>
-  <div class="nav-title">🎵 楽譜づくり</div>
-  <button class="sidebar-toggle-btn" onclick="toggleSidebar()">☰ ツール</button>
+  <div class="nav-title" data-i18n="navTitle">🎵 楽譜づくり</div>
+  <div class="nav-right">
+    <button class="lang-toggle-btn" id="langToggleBtn" onclick="toggleLang()">EN</button>
+    <button class="sidebar-toggle-btn" data-i18n="sidebarToggle" onclick="toggleSidebar()">☰ ツール</button>
+  </div>
 </nav>
 
 <div class="sidebar-overlay" id="sidebarOverlay" onclick="toggleSidebar()"></div>
@@ -424,23 +429,23 @@
 <div class="app-layout">
   <aside class="sidebar" id="sidebar">
     <div class="sidebar-head">
-      <div class="sidebar-section-label">🔗 関連ツール</div>
+      <div class="sidebar-section-label" data-i18n="relatedTools">🔗 関連ツール</div>
       <button class="sidebar-close-btn" onclick="toggleSidebar()">✕</button>
     </div>
-    <a href="https://taipak5000.github.io/tai-item/" class="sidebar-nav-link">🗂️ アイテム所持管理</a>
-    <a href="https://taipak5000.github.io/tai-emote/" class="sidebar-nav-link">🎭 エモート所持率管理</a>
-    <a href="https://taipak5000.github.io/share/" class="sidebar-nav-link">📍 創作物管理ツール</a>
-    <a href="https://taipak5000.github.io/tai-nomacan/" class="sidebar-nav-link">🕯️ ノマキャン計算機</a>
-    <a href="https://taipak5000.github.io/star-candle/" class="sidebar-nav-link">🕯️ 星のキャンドル計算機</a>
-    <a href="https://taipak5000.github.io/companion/" class="sidebar-nav-link">✨ 精霊同行ツール</a>
-    <a href="https://taipak5000.github.io/tai-catalog/" class="sidebar-nav-link">🌳 精霊ツリー管理</a>
-    <a href="https://taipak5000.github.io/wings/" class="sidebar-nav-link">🪽 羽トラッカー</a>
-    <a href="https://taipak5000.github.io/tai-transfer/" class="sidebar-nav-link">🔄 データ引継ぎ</a>
+    <a href="https://taipak5000.github.io/tai-item/" class="sidebar-nav-link" data-i18n="toolItem">🗂️ アイテム所持管理</a>
+    <a href="https://taipak5000.github.io/tai-emote/" class="sidebar-nav-link" data-i18n="toolEmote">🎭 エモート所持率管理</a>
+    <a href="https://taipak5000.github.io/share/" class="sidebar-nav-link" data-i18n="toolShare">📍 創作物管理ツール</a>
+    <a href="https://taipak5000.github.io/tai-nomacan/" class="sidebar-nav-link" data-i18n="toolNomacan">🕯️ ノマキャン計算機</a>
+    <a href="https://taipak5000.github.io/star-candle/" class="sidebar-nav-link" data-i18n="toolStarCandle">🕯️ 星のキャンドル計算機</a>
+    <a href="https://taipak5000.github.io/companion/" class="sidebar-nav-link" data-i18n="toolCompanion">✨ 精霊同行ツール</a>
+    <a href="https://taipak5000.github.io/tai-catalog/" class="sidebar-nav-link" data-i18n="toolCatalog">🌳 精霊ツリー管理</a>
+    <a href="https://taipak5000.github.io/wings/" class="sidebar-nav-link" data-i18n="toolWings">🪽 羽トラッカー</a>
+    <a href="https://taipak5000.github.io/tai-transfer/" class="sidebar-nav-link" data-i18n="toolTransfer">🔄 データ引継ぎ</a>
   </aside>
 
   <div class="wrap">
     <div class="card" style="margin-top:14px;">
-      <p>Skyの5×3マス（ハープ等）の楽器で演奏できる楽譜を、自由に作成・保存・共有・練習できるツールです。
+      <p data-i18n-html="introText">Skyの5×3マス（ハープ等）の楽器で演奏できる楽譜を、自由に作成・保存・共有・練習できるツールです。
         <a href="https://sky-music.specy.app/" target="_blank" rel="noopener noreferrer">Sky Music Nightly</a>形式の楽譜ファイルの
         インポート・エクスポートにも対応しているほか、Sky Studio形式の楽譜ファイルの読み込みにも対応しているので、
         すでに公開されている楽譜もそのまま読み込めます。
@@ -448,19 +453,19 @@
     </div>
 
     <div class="view-tabs">
-      <button class="view-tab active" id="tabLibraryBtn" onclick="switchView('library')">📚 ライブラリ</button>
-      <button class="view-tab" id="tabEditorBtn" onclick="switchView('editor')">✏️ 作成・演奏</button>
-      <button class="view-tab" onclick="openFreeMode()">🎹 フリー演奏</button>
+      <button class="view-tab active" id="tabLibraryBtn" data-i18n="tabLibrary" onclick="switchView('library')">📚 ライブラリ</button>
+      <button class="view-tab" id="tabEditorBtn" data-i18n="tabEditor" onclick="switchView('editor')">✏️ 作成・演奏</button>
+      <button class="view-tab" data-i18n="tabFreePlay" onclick="openFreeMode()">🎹 フリー演奏</button>
     </div>
 
     <!-- ▸ ライブラリ -->
     <section class="view-section active" id="viewLibrary">
       <div class="lib-toolbar">
-        <input type="search" class="lib-search" id="librarySearch" placeholder="🔍 曲名で検索…" oninput="renderLibrary()">
-        <button class="new-song-btn secondary" onclick="openModal('importModal')">📥 読み込む</button>
-        <button class="new-song-btn secondary" onclick="openVideoImportModal()">🎥 動画から作成</button>
-        <button class="new-song-btn secondary" onclick="openImageImportModal()">🖼️ 楽譜画像から作成</button>
-        <button class="new-song-btn" onclick="createNewSong()">＋ 新規作成</button>
+        <input type="search" class="lib-search" id="librarySearch" data-i18n-placeholder="librarySearchPlaceholder" placeholder="🔍 曲名で検索…" oninput="renderLibrary()">
+        <button class="new-song-btn secondary" data-i18n="btnImport" onclick="openModal('importModal')">📥 読み込む</button>
+        <button class="new-song-btn secondary" data-i18n="btnVideoImport" onclick="openVideoImportModal()">🎥 動画から作成</button>
+        <button class="new-song-btn secondary" data-i18n="btnImageImport" onclick="openImageImportModal()">🖼️ 楽譜画像から作成</button>
+        <button class="new-song-btn" data-i18n="btnNewSong" onclick="createNewSong()">＋ 新規作成</button>
       </div>
       <div class="song-list" id="songList"><!-- JS --></div>
     </section>
@@ -469,14 +474,14 @@
     <section class="view-section" id="viewEditor">
       <div class="card" style="margin-top:14px;">
         <div class="editor-top-row">
-          <input type="text" id="songNameInput" placeholder="曲名" oninput="onSongMetaChange()">
+          <input type="text" id="songNameInput" data-i18n-placeholder="songNamePlaceholder" placeholder="曲名" oninput="onSongMetaChange()">
           <select id="songPitchInput" onchange="onSongMetaChange()"></select>
           <select id="songInstrumentInput" onchange="onSongMetaChange()">
-            <option value="Harp">🎼 楽器A</option>
-            <option value="Guitar">🎸 楽器B</option>
-            <option value="Bass">🎸 楽器C</option>
-            <option value="Flute">🪈 楽器D</option>
-            <option value="Bells">🔔 楽器E</option>
+            <option value="Harp" data-i18n="instrumentHarp">🎼 楽器A</option>
+            <option value="Guitar" data-i18n="instrumentGuitar">🎸 楽器B</option>
+            <option value="Bass" data-i18n="instrumentBass">🎸 楽器C</option>
+            <option value="Flute" data-i18n="instrumentFlute">🪈 楽器D</option>
+            <option value="Bells" data-i18n="instrumentBells">🔔 楽器E</option>
           </select>
         </div>
         <div class="bpm-row">
@@ -485,47 +490,47 @@
           <input type="number" id="bpmNumber" min="40" max="999" value="150" oninput="onBpmChange(this.value)">
         </div>
         <div class="tap-tempo-row">
-          <button type="button" class="tap-tempo-btn" id="tapTempoBtn" onclick="tapTempo()">🥁 タップでBPM測定</button>
-          <span class="tap-tempo-hint" id="tapTempoHint">リズムに合わせて連続でタップしてください</span>
+          <button type="button" class="tap-tempo-btn" id="tapTempoBtn" data-i18n="tapTempoBtn" onclick="tapTempo()">🥁 タップでBPM測定</button>
+          <span class="tap-tempo-hint" id="tapTempoHint" data-i18n="tapTempoHint">リズムに合わせて連続でタップしてください</span>
         </div>
         <div class="practice-range-row">
-          <label>練習・試験の範囲</label>
+          <label data-i18n="practiceRangeLabel">練習・試験の範囲</label>
           <input type="number" id="practiceRangeStart" min="1" value="1" onchange="onPracticeRangeChange()">
           <span class="range-sep">〜</span>
           <input type="number" id="practiceRangeEnd" min="1" value="1" onchange="onPracticeRangeChange()">
-          <span class="range-unit">マス目</span>
+          <span class="range-unit" data-i18n="rangeUnit">マス目</span>
         </div>
         <div class="transport">
-          <button class="transport-btn primary" id="playBtn" onclick="togglePlayback()">▶️ 再生</button>
-          <button class="transport-btn" id="stopBtn" onclick="stopPlayback()" style="display:none;">⏹️ 停止</button>
-          <button class="transport-btn" onclick="openPractice()">🐢 練習モード</button>
-          <button class="transport-btn" onclick="openTestMode()">📝 試験モード</button>
-          <button class="transport-btn" onclick="openModal('shareModal')">🔗 共有・保存</button>
-          <button class="transport-btn" onclick="openKeyBindModal()">⌨️ キー設定</button>
+          <button class="transport-btn primary" id="playBtn" data-i18n="playBtn" onclick="togglePlayback()">▶️ 再生</button>
+          <button class="transport-btn" id="stopBtn" data-i18n="stopBtn" onclick="stopPlayback()" style="display:none;">⏹️ 停止</button>
+          <button class="transport-btn" data-i18n="practiceModeBtn" onclick="openPractice()">🐢 練習モード</button>
+          <button class="transport-btn" data-i18n="testModeBtn" onclick="openTestMode()">📝 試験モード</button>
+          <button class="transport-btn" data-i18n="shareBtn" onclick="openModal('shareModal')">🔗 共有・保存</button>
+          <button class="transport-btn" data-i18n="keySettingsBtn" onclick="openKeyBindModal()">⌨️ キー設定</button>
         </div>
       </div>
 
       <div class="current-frame-card">
         <div class="current-frame-head">
-          <div class="current-frame-label">選択中のマス（クリックで音をON/OFF）</div>
+          <div class="current-frame-label" data-i18n="currentFrameLabel">選択中のマス（クリックで音をON/OFF）</div>
           <div class="input-mode-tabs">
-            <button type="button" class="input-mode-tab" data-mode="grid" onclick="setInputMode('grid')">⚪ グリッド</button>
-            <button type="button" class="input-mode-tab" data-mode="piano" onclick="setInputMode('piano')">🎹 ピアノ</button>
-            <button type="button" class="input-mode-tab" data-mode="staff" onclick="setInputMode('staff')">🎼 五線譜</button>
+            <button type="button" class="input-mode-tab" data-mode="grid" data-i18n="inputModeGrid" onclick="setInputMode('grid')">⚪ グリッド</button>
+            <button type="button" class="input-mode-tab" data-mode="piano" data-i18n="inputModePiano" onclick="setInputMode('piano')">🎹 ピアノ</button>
+            <button type="button" class="input-mode-tab" data-mode="staff" data-i18n="inputModeStaff" onclick="setInputMode('staff')">🎼 五線譜</button>
           </div>
         </div>
         <div class="big-grid" id="bigGrid"><!-- JS --></div>
         <div class="piano-keys-wrap" id="pianoKeysWrap" style="display:none;">
           <div class="piano-keys" id="pianoKeys"><!-- JS --></div>
-          <div class="piano-hint">Skyの楽器は白鍵（ドレミファソラシ）のみに対応しています</div>
+          <div class="piano-hint" data-i18n="pianoWhiteKeysHint">Skyの楽器は白鍵（ドレミファソラシ）のみに対応しています</div>
         </div>
         <div class="staff-wrap" id="staffWrap" style="display:none;">
           <svg id="staffSvg" class="staff-svg" viewBox="0 0 170 162"><!-- JS --></svg>
-          <div class="piano-hint">五線譜の位置をクリックして音をON/OFFできます</div>
+          <div class="piano-hint" data-i18n="staffClickHint">五線譜の位置をクリックして音をON/OFFできます</div>
         </div>
       </div>
 
-      <div class="sec-label" style="padding-top:4px;">🎼 譜面（クリックでそのマスへ移動）</div>
+      <div class="sec-label" style="padding-top:4px;" data-i18n="frameSectionLabel">🎼 譜面（クリックでそのマスへ移動）</div>
       <div class="frame-strip" id="frameStrip"><!-- JS --></div>
     </section>
   </div>
@@ -535,20 +540,20 @@
 <div class="modal-overlay" id="shareModal" onclick="if(event.target===this)closeModal('shareModal')">
   <div class="modal-card">
     <div class="modal-header">
-      <span class="modal-title">🔗 共有・保存</span>
+      <span class="modal-title" data-i18n="shareModalTitle">🔗 共有・保存</span>
       <button class="modal-close" onclick="closeModal('shareModal')">✕</button>
     </div>
-    <div class="hint">この楽譜専用のコードを作成し、別の端末やSNSで共有できます。ファイルとしても保存できます。</div>
-    <button type="button" class="action-btn primary" onclick="generateShareCode()">📋 共有コードを作成</button>
+    <div class="hint" data-i18n="shareHint1">この楽譜専用のコードを作成し、別の端末やSNSで共有できます。ファイルとしても保存できます。</div>
+    <button type="button" class="action-btn primary" data-i18n="createShareCodeBtn" onclick="generateShareCode()">📋 共有コードを作成</button>
     <div id="shareOutputArea"></div>
     <div style="height:14px; border-top:1px solid var(--sep); margin-top:14px;"></div>
-    <div class="hint" style="margin-top:14px;">文字だけの楽譜（テキスト譜面）を作成します。Sky音楽コミュニティで使われているABC譜（例: A1 B3C1 . A5）形式なので、他の方への説明にも使いやすく、LINEやDiscordにそのまま貼り付けて共有できます。貼り付けられた側は「読み込む」からこのテキストをそのまま読み込めます。</div>
-    <button type="button" class="action-btn secondary" onclick="generateTextSheet()">📝 テキスト譜面を作成</button>
+    <div class="hint" style="margin-top:14px;" data-i18n="shareHint2">文字だけの楽譜（テキスト譜面）を作成します。Sky音楽コミュニティで使われているABC譜（例: A1 B3C1 . A5）形式なので、他の方への説明にも使いやすく、LINEやDiscordにそのまま貼り付けて共有できます。貼り付けられた側は「読み込む」からこのテキストをそのまま読み込めます。</div>
+    <button type="button" class="action-btn secondary" data-i18n="createTextSheetBtn" onclick="generateTextSheet()">📝 テキスト譜面を作成</button>
     <div id="shareTextArea"></div>
     <div style="height:14px;"></div>
-    <div class="hint">Sky Music Nightly形式で保存すると、他の楽譜ツールでも開けます。</div>
-    <button type="button" class="action-btn secondary" onclick="downloadNativeFile()">⬇️ このサイトの形式でダウンロード</button>
-    <button type="button" class="action-btn secondary" onclick="downloadSpecyFile()">⬇️ Sky Music Nightly形式でダウンロード</button>
+    <div class="hint" data-i18n="shareHint3">Sky Music Nightly形式で保存すると、他の楽譜ツールでも開けます。</div>
+    <button type="button" class="action-btn secondary" data-i18n="downloadNativeBtn" onclick="downloadNativeFile()">⬇️ このサイトの形式でダウンロード</button>
+    <button type="button" class="action-btn secondary" data-i18n="downloadSpecyBtn" onclick="downloadSpecyFile()">⬇️ Sky Music Nightly形式でダウンロード</button>
     <div id="shareStatus" class="status-msg"></div>
   </div>
 </div>
@@ -557,12 +562,12 @@
 <div class="modal-overlay" id="importModal" onclick="if(event.target===this)closeModal('importModal')">
   <div class="modal-card">
     <div class="modal-header">
-      <span class="modal-title">📥 楽譜を読み込む</span>
+      <span class="modal-title" data-i18n="importModalTitle">📥 楽譜を読み込む</span>
       <button class="modal-close" onclick="closeModal('importModal')">✕</button>
     </div>
-    <div class="hint">共有コード、テキスト譜面（ABC譜）、またはこのサイト／Sky Music Nightly／Sky Studio形式の.json・.txtファイルを読み込めます。</div>
-    <textarea class="code-box" id="importCodeInput" placeholder="共有コードまたはテキスト譜面を貼り付け"></textarea>
-    <button type="button" class="action-btn secondary" onclick="importFromCode()">🔍 コードから読み込む</button>
+    <div class="hint" data-i18n="importHint">共有コード、テキスト譜面（ABC譜）、またはこのサイト／Sky Music Nightly／Sky Studio形式の.json・.txtファイルを読み込めます。</div>
+    <textarea class="code-box" id="importCodeInput" data-i18n-placeholder="importCodePlaceholder" placeholder="共有コードまたはテキスト譜面を貼り付け"></textarea>
+    <button type="button" class="action-btn secondary" data-i18n="loadFromCodeBtn" onclick="importFromCode()">🔍 コードから読み込む</button>
     <input type="file" id="importFileInput" accept=".json,.txt" onchange="importFromFile(event)">
     <div id="importStatus" class="status-msg"></div>
   </div>
@@ -572,10 +577,10 @@
 <div class="modal-overlay" id="videoImportModal" onclick="if(event.target===this)closeVideoImportModal()">
   <div class="modal-card">
     <div class="modal-header">
-      <span class="modal-title">🎥 動画から楽譜を作成</span>
+      <span class="modal-title" data-i18n="videoImportModalTitle">🎥 動画から楽譜を作成</span>
       <button class="modal-close" onclick="closeVideoImportModal()">✕</button>
     </div>
-    <div class="hint">演奏動画または演奏音声のファイルを選ぶと、自動で楽譜を作成します。ファイルはどこにもアップロードされず、すべてこの端末（ブラウザ）内だけで処理されます。自動解析のため完璧ではありません。作成後は編集画面で内容をご確認・修正してください。</div>
+    <div class="hint" data-i18n="videoImportHint">演奏動画または演奏音声のファイルを選ぶと、自動で楽譜を作成します。ファイルはどこにもアップロードされず、すべてこの端末（ブラウザ）内だけで処理されます。自動解析のため完璧ではありません。作成後は編集画面で内容をご確認・修正してください。</div>
 
     <div id="videoImportStep1">
       <input type="file" id="videoFileInput" accept="video/*,audio/*" onchange="onVideoFileSelected(event)">
@@ -583,36 +588,36 @@
 
     <div id="videoImportStep2" style="display:none;">
       <div class="input-mode-tabs" style="margin-top:12px;">
-        <button type="button" class="input-mode-tab" data-detect-mode="audio" onclick="setDetectMode('audio')">🎵 音声から検出</button>
-        <button type="button" class="input-mode-tab" data-detect-mode="video" onclick="setDetectMode('video')">🎥 映像から検出</button>
+        <button type="button" class="input-mode-tab" data-detect-mode="audio" data-i18n="detectModeAudio" onclick="setDetectMode('audio')">🎵 音声から検出</button>
+        <button type="button" class="input-mode-tab" data-detect-mode="video" data-i18n="detectModeVideo" onclick="setDetectMode('video')">🎥 映像から検出</button>
       </div>
 
       <div id="audioDetectPanel">
-        <div class="hint" style="margin-top:10px;">Skyの音は15個の決まった音階なので、その音の高さをもとに検出します。演奏の調（キー）が分かれば選んでください（分からなければCのままお試しください。うまく検出できない場合は調を変えて試してみてください）。</div>
+        <div class="hint" style="margin-top:10px;" data-i18n="audioDetectHint">Skyの音は15個の決まった音階なので、その音の高さをもとに検出します。演奏の調（キー）が分かれば選んでください（分からなければCのままお試しください。うまく検出できない場合は調を変えて試してみてください）。</div>
         <div class="bpm-row" style="margin-top:8px;">
-          <label>調</label>
+          <label data-i18n="pitchLabel">調</label>
           <select id="audioPitchSelect"></select>
         </div>
         <div class="video-sensitivity-row">
-          <label>感度</label>
+          <label data-i18n="sensitivityLabel">感度</label>
           <input type="range" id="audioSensitivity" min="10" max="80" value="30">
         </div>
         <label class="visual-refine-toggle">
           <input type="checkbox" id="useVisualRefineCheckbox" onchange="onToggleVisualRefine()">
-          映像でタイミングを補正する（手首など光る場所を指定・処理に時間がかかります）
+          <span data-i18n="visualRefineToggle">映像でタイミングを補正する（手首など光る場所を指定・処理に時間がかかります）</span>
         </label>
         <div id="audioCalibAnchor"></div>
-        <button type="button" class="action-btn primary" onclick="startAudioAnalysis()">🔍 音声から解析を始める</button>
+        <button type="button" class="action-btn primary" data-i18n="startAudioAnalysisBtn" onclick="startAudioAnalysis()">🔍 音声から解析を始める</button>
       </div>
 
       <div id="videoDetectPanel" style="display:none;">
-        <div class="hint" style="margin-top:10px;">① ボタンがよく見えるシーンまでスライダーで動画を動かし、② 下のスライダーで枠をSkyの3×5マス（楽器のボタン）に合わせてください。</div>
+        <div class="hint" style="margin-top:10px;" data-i18n="videoDetectHint">① ボタンがよく見えるシーンまでスライダーで動画を動かし、② 下のスライダーで枠をSkyの3×5マス（楽器のボタン）に合わせてください。</div>
         <div id="videoCalibAnchor"></div>
         <div class="video-sensitivity-row">
-          <label>感度</label>
+          <label data-i18n="sensitivityLabel">感度</label>
           <input type="range" id="videoSensitivity" min="5" max="100" value="30">
         </div>
-        <button type="button" class="action-btn primary" onclick="startVideoAnalysis()">🔍 この位置で解析を始める</button>
+        <button type="button" class="action-btn primary" data-i18n="startVideoAnalysisBtn" onclick="startVideoAnalysis()">🔍 この位置で解析を始める</button>
       </div>
 
       <!-- 映像検出モード／音声＋映像補正モードで共用するキャリブレーションUI。
@@ -624,19 +629,19 @@
           <canvas id="videoCalibCanvas"></canvas>
         </div>
         <div class="video-calib-controls">
-          <label>左端<input type="range" id="calibLeft" min="0" max="95" value="25" oninput="updateCalibFromSliders()"></label>
-          <label>上端<input type="range" id="calibTop" min="0" max="95" value="8" oninput="updateCalibFromSliders()"></label>
-          <label>幅<input type="range" id="calibWidth" min="5" max="100" value="40" oninput="updateCalibFromSliders()"></label>
-          <label>高さ<input type="range" id="calibHeight" min="5" max="100" value="32" oninput="updateCalibFromSliders()"></label>
+          <label><span data-i18n="calibLeftLabel">左端</span><input type="range" id="calibLeft" min="0" max="95" value="25" oninput="updateCalibFromSliders()"></label>
+          <label><span data-i18n="calibTopLabel">上端</span><input type="range" id="calibTop" min="0" max="95" value="8" oninput="updateCalibFromSliders()"></label>
+          <label><span data-i18n="calibWidthLabel">幅</span><input type="range" id="calibWidth" min="5" max="100" value="40" oninput="updateCalibFromSliders()"></label>
+          <label><span data-i18n="calibHeightLabel">高さ</span><input type="range" id="calibHeight" min="5" max="100" value="32" oninput="updateCalibFromSliders()"></label>
         </div>
       </div>
     </div>
 
     <div id="videoImportStep3" style="display:none;">
-      <div class="hint">解析中です…動画の長さによっては数十秒〜数分かかることがあります。</div>
+      <div class="hint" data-i18n="videoAnalyzingHint">解析中です…動画の長さによっては数十秒〜数分かかることがあります。</div>
       <div class="video-progress-bar"><div class="video-progress-fill" id="videoProgressFill"></div></div>
       <div id="videoProgressText" class="hint"></div>
-      <button type="button" class="action-btn secondary" onclick="cancelVideoAnalysis()">キャンセルしてやり直す</button>
+      <button type="button" class="action-btn secondary" data-i18n="cancelRetryBtn" onclick="cancelVideoAnalysis()">キャンセルしてやり直す</button>
     </div>
 
     <div id="videoImportStatus" class="status-msg"></div>
@@ -647,23 +652,23 @@
 <div class="modal-overlay" id="imageImportModal" onclick="if(event.target===this)closeImageImportModal()">
   <div class="modal-card">
     <div class="modal-header">
-      <span class="modal-title">🖼️ 楽譜画像から楽譜を作成</span>
+      <span class="modal-title" data-i18n="imageImportModalTitle">🖼️ 楽譜画像から楽譜を作成</span>
       <button class="modal-close" onclick="closeImageImportModal()">✕</button>
     </div>
-    <div class="hint">五線譜の画像（MuseScore等で書き出したPNG/JPGなど）を選ぶと、自動で楽譜を作成します。複数ページある場合はまとめて選ぶと、ファイル名順につなげて読み込みます。画像はどこにもアップロードされず、すべてこの端末（ブラウザ）内だけで処理されます。<br><br>
+    <div class="hint" data-i18n-html="imageImportHint">五線譜の画像（MuseScore等で書き出したPNG/JPGなど）を選ぶと、自動で楽譜を作成します。複数ページある場合はまとめて選ぶと、ファイル名順につなげて読み込みます。画像はどこにもアップロードされず、すべてこの端末（ブラウザ）内だけで処理されます。<br><br>
       ⚠️ 自動認識のため精度は完璧ではありません。特に「#・♭」は判定せずいったん自然音として割り当て、Skyの音域（2オクターブ）に収まるようオクターブを丸め込みます。作成後は編集画面で必ず内容をご確認・修正してください。</div>
 
     <div id="imageImportStep1">
       <input type="file" id="imageFileInput" accept="image/*" multiple onchange="onImageFilesSelected(event)">
       <div id="imageImportFileList" class="hint" style="margin-top:8px;"></div>
-      <button type="button" class="action-btn primary" onclick="startImageAnalysis()">🔍 解析を始める</button>
+      <button type="button" class="action-btn primary" data-i18n="startImageAnalysisBtn" onclick="startImageAnalysis()">🔍 解析を始める</button>
     </div>
 
     <div id="imageImportStep2" style="display:none;">
-      <div class="hint">解析中です…ページ数や画像サイズによっては時間がかかることがあります。</div>
+      <div class="hint" data-i18n="imageAnalyzingHint">解析中です…ページ数や画像サイズによっては時間がかかることがあります。</div>
       <div class="video-progress-bar"><div class="video-progress-fill" id="imageProgressFill"></div></div>
       <div id="imageProgressText" class="hint"></div>
-      <button type="button" class="action-btn secondary" onclick="cancelImageAnalysis()">キャンセルしてやり直す</button>
+      <button type="button" class="action-btn secondary" data-i18n="cancelRetryBtn" onclick="cancelImageAnalysis()">キャンセルしてやり直す</button>
     </div>
 
     <div id="imageImportStatus" class="status-msg"></div>
@@ -674,12 +679,12 @@
 <div class="modal-overlay" id="dmModal" onclick="if(event.target===this)closeModal('dmModal')">
   <div class="modal-card">
     <div class="modal-header">
-      <span class="modal-title">💾 データのバックアップ・復元</span>
+      <span class="modal-title" data-i18n="dmModalTitle">💾 データのバックアップ・復元</span>
       <button class="modal-close" onclick="closeModal('dmModal')">✕</button>
     </div>
-    <div class="hint">作成した楽譜はすべてこの端末のブラウザだけに保存されています。機種変更やブラウザの変更に備えて、
+    <div class="hint" data-i18n="dmHint">作成した楽譜はすべてこの端末のブラウザだけに保存されています。機種変更やブラウザの変更に備えて、
       ときどきファイルとしてバックアップすることをおすすめします。</div>
-    <button type="button" class="action-btn primary" onclick="dmExport()">⬇️ バックアップをダウンロード</button>
+    <button type="button" class="action-btn primary" data-i18n="dmDownloadBtn" onclick="dmExport()">⬇️ バックアップをダウンロード</button>
     <input type="file" class="wipe-alike" id="dmImportFile" accept=".json" onchange="dmImportFileSelected(event)">
     <div id="dmImportArea"></div>
     <div style="height:16px; border-top:1px solid var(--sep); margin-top:16px;"></div>
@@ -692,12 +697,12 @@
 <div class="modal-overlay" id="confirmModal" onclick="if(event.target===this)closeConfirm()">
   <div class="modal-card">
     <div class="modal-header">
-      <span class="modal-title" id="confirmModalTitle">確認</span>
+      <span class="modal-title" id="confirmModalTitle" data-i18n="confirmModalTitle">確認</span>
       <button class="modal-close" onclick="closeConfirm()">✕</button>
     </div>
     <div class="hint" id="confirmModalMessage"></div>
     <button type="button" class="action-btn secondary" id="confirmModalOkBtn" style="background:var(--red); color:#fff; border-color:var(--red);"></button>
-    <button type="button" class="action-btn secondary" onclick="closeConfirm()">キャンセル</button>
+    <button type="button" class="action-btn secondary" data-i18n="cancelBtn" onclick="closeConfirm()">キャンセル</button>
   </div>
 </div>
 
@@ -705,12 +710,12 @@
 <div class="modal-overlay" id="keyBindModal" onclick="if(event.target===this)closeKeyBindModal()">
   <div class="modal-card">
     <div class="modal-header">
-      <span class="modal-title">⌨️ キーボード設定</span>
+      <span class="modal-title" data-i18n="keyBindModalTitle">⌨️ キーボード設定</span>
       <button class="modal-close" onclick="closeKeyBindModal()">✕</button>
     </div>
-    <div class="hint">パソコンのキーボードで楽譜の作成・演奏ができます。「変更」を押してから、割り当てたいキーを押してください。すでに他のマスで使われているキーを選ぶと、入れ替わります。</div>
+    <div class="hint" data-i18n="keyBindHint">パソコンのキーボードで楽譜の作成・演奏ができます。「変更」を押してから、割り当てたいキーを押してください。すでに他のマスで使われているキーを選ぶと、入れ替わります。</div>
     <div class="keybind-list" id="keyBindList"><!-- JS --></div>
-    <button type="button" class="action-btn secondary" onclick="resetKeyBindings()">↩️ 初期設定（Y U I O P / H J K L ; / N M , . /）に戻す</button>
+    <button type="button" class="action-btn secondary" data-i18n="resetKeyBindingsBtn" onclick="resetKeyBindings()">↩️ 初期設定（Y U I O P / H J K L ; / N M , . /）に戻す</button>
   </div>
 </div>
 
@@ -719,7 +724,7 @@
   <div class="perf-header">
     <div style="display:flex; gap:6px;">
       <button type="button" class="perf-close" id="perfCloseBtn" onclick="closePerformance()">✕ 終了</button>
-      <button type="button" class="perf-close" onclick="openKeyBindModal()" title="キーボード設定">⌨️</button>
+      <button type="button" class="perf-close" onclick="openKeyBindModal()" data-i18n-title="keySettingsBtn" title="キーボード設定">⌨️</button>
     </div>
     <div class="perf-title" id="perfTitle"></div>
     <div class="perf-progress" id="perfProgress"></div>
@@ -730,14 +735,14 @@
 </div>
 
 <footer>
-  このサイトはSky 星を紡ぐ子どもたちの非公式ファンサイトです。thatgamecompanyは一切関与していません。<br>
-  演奏音はすべてブラウザ内で合成しており、ゲームから抽出した音源は使用していません。<br>
-  楽譜ファイルの形式は<a href="https://sky-music.specy.app/" target="_blank" rel="noopener noreferrer">Sky Music Nightly</a>（Specy氏）を参考にしています。<br>
-  作成・ご意見: <a href="https://x.com/Skyzztai" target="_blank" rel="noopener noreferrer">@Skyzztai</a>　／
-  <a href="https://odaibako.net/u/Skyzztai" target="_blank" rel="noopener noreferrer">リクエストフォーム</a><br>
+  <span data-i18n="footerDisclaimer">このサイトはSky 星を紡ぐ子どもたちの非公式ファンサイトです。thatgamecompanyは一切関与していません。</span><br>
+  <span data-i18n="footerAudioDisclaimer">演奏音はすべてブラウザ内で合成しており、ゲームから抽出した音源は使用していません。</span><br>
+  <span data-i18n-html="footerFormatCredit">楽譜ファイルの形式は<a href="https://sky-music.specy.app/" target="_blank" rel="noopener noreferrer">Sky Music Nightly</a>（Specy氏）を参考にしています。</span><br>
+  <span data-i18n="footerCreditLabel">作成・ご意見:</span> <a href="https://x.com/Skyzztai" target="_blank" rel="noopener noreferrer">@Skyzztai</a>　／
+  <a href="https://odaibako.net/u/Skyzztai" target="_blank" rel="noopener noreferrer" data-i18n="footerRequestForm">リクエストフォーム</a><br>
   <span style="font-size:12px; margin-top:4px; display:inline-block;">
-    <a href="https://taipak5000.github.io/tai-info/" target="_blank" rel="noopener noreferrer">⚙️ 設定・更新情報・クレジット・プライバシーポリシー</a>
-    　／　<button style="color:var(--pink-d); text-decoration:underline; font-size:12px;" onclick="openModal('dmModal')">💾 バックアップ・復元</button>
+    <a href="https://taipak5000.github.io/tai-info/" target="_blank" rel="noopener noreferrer" data-i18n="footerInfoLink">⚙️ 設定・更新情報・クレジット・プライバシーポリシー</a>
+    　／　<button style="color:var(--pink-d); text-decoration:underline; font-size:12px;" data-i18n="footerBackupBtn" onclick="openModal('dmModal')">💾 バックアップ・復元</button>
   </span>
 </footer>
 
@@ -755,9 +760,462 @@ const PITCHES = ["C","Db","D","Eb","E","F","Gb","G","Ab","A","Bb","B"];
 // Skyコミュニティで広く使われている「ABC譜」記法（上段=A、中段=B、下段=C、左から1〜5）
 const NOTE_ABC_CODES = ['A1','A2','A3','A4','A5','B1','B2','B3','B4','B5','C1','C2','C3','C4','C5'];
 const INSTRUMENT_LABELS = { Harp: '楽器A', Guitar: '楽器B', Bass: '楽器C', Flute: '楽器D', Bells: '楽器E' };
+const INSTRUMENT_LABELS_EN = { Harp: 'Instrument A', Guitar: 'Instrument B', Bass: 'Instrument C', Flute: 'Instrument D', Bells: 'Instrument E' };
 function instrumentCodeFromLabel(label) {
   const found = Object.keys(INSTRUMENT_LABELS).find(code => INSTRUMENT_LABELS[code] === label || code === label);
   return found || null;
+}
+// 現在の表示言語での楽器ラベル（テキスト譜面のヘッダー等、常に日本語で扱う箇所には使わない）
+function instrumentLabel(code) {
+  return (LANG === 'en' ? INSTRUMENT_LABELS_EN[code] : INSTRUMENT_LABELS[code]) || code;
+}
+// 音名表示（ド・レ・ミ…）。英語表示時はドレミ唱法のローマ字表記(Do/Re/Mi…)にする。
+const NOTE_LABELS_EN = ['Do','Re','Mi','Fa','Sol','La','Ti','Do','Re','Mi','Fa','Sol','La','Ti','Do'];
+function noteLabel(i) { return LANG === 'en' ? NOTE_LABELS_EN[i] : NOTE_LABELS[i]; }
+
+/* ================================================================
+   多言語対応（i18n）
+   sky_app_lang は taipak5000.github.io 系ツール共通のプレーンな
+   グローバルキー（プロフィールごとの保存枠の対象外。端末ごとの表示設定のため、
+   sky_app_theme と同じ扱い）。他サイトのloadX()/saveX()命名規則に合わせている。
+   ================================================================ */
+const LANG_KEY = 'sky_app_lang';
+function loadLang() {
+  const v = localStorage.getItem(LANG_KEY);
+  return v === 'en' ? 'en' : 'ja';
+}
+function saveLang(lang) { localStorage.setItem(LANG_KEY, lang === 'en' ? 'en' : 'ja'); }
+let LANG = loadLang();
+
+const I18N = {
+  ja: {
+    pageTitle: '楽譜づくり - Sky所持率管理',
+    navTitle: '🎵 楽譜づくり',
+    sidebarToggle: '☰ ツール',
+    relatedTools: '🔗 関連ツール',
+    toolItem: '🗂️ アイテム所持管理',
+    toolEmote: '🎭 エモート所持率管理',
+    toolShare: '📍 創作物管理ツール',
+    toolNomacan: '🕯️ ノマキャン計算機',
+    toolStarCandle: '🕯️ 星のキャンドル計算機',
+    toolCompanion: '✨ 精霊同行ツール',
+    toolCatalog: '🌳 精霊ツリー管理',
+    toolWings: '🪽 羽トラッカー',
+    toolTransfer: '🔄 データ引継ぎ',
+    introText: `Skyの5×3マス（ハープ等）の楽器で演奏できる楽譜を、自由に作成・保存・共有・練習できるツールです。
+        <a href="https://sky-music.specy.app/" target="_blank" rel="noopener noreferrer">Sky Music Nightly</a>形式の楽譜ファイルの
+        インポート・エクスポートにも対応しているほか、Sky Studio形式の楽譜ファイルの読み込みにも対応しているので、
+        すでに公開されている楽譜もそのまま読み込めます。
+        データはこの端末のブラウザだけに保存され、外部には送信されません。`,
+    tabLibrary: '📚 ライブラリ',
+    tabEditor: '✏️ 作成・演奏',
+    tabFreePlay: '🎹 フリー演奏',
+    librarySearchPlaceholder: '🔍 曲名で検索…',
+    btnImport: '📥 読み込む',
+    btnVideoImport: '🎥 動画から作成',
+    btnImageImport: '🖼️ 楽譜画像から作成',
+    btnNewSong: '＋ 新規作成',
+    songNamePlaceholder: '曲名',
+    instrumentHarp: '🎼 楽器A',
+    instrumentGuitar: '🎸 楽器B',
+    instrumentBass: '🎸 楽器C',
+    instrumentFlute: '🪈 楽器D',
+    instrumentBells: '🔔 楽器E',
+    tapTempoBtn: '🥁 タップでBPM測定',
+    tapTempoHint: 'リズムに合わせて連続でタップしてください',
+    practiceRangeLabel: '練習・試験の範囲',
+    rangeUnit: 'マス目',
+    playBtn: '▶️ 再生',
+    stopBtn: '⏹️ 停止',
+    practiceModeBtn: '🐢 練習モード',
+    testModeBtn: '📝 試験モード',
+    shareBtn: '🔗 共有・保存',
+    keySettingsBtn: '⌨️ キー設定',
+    currentFrameLabel: '選択中のマス（クリックで音をON/OFF）',
+    inputModeGrid: '⚪ グリッド',
+    inputModePiano: '🎹 ピアノ',
+    inputModeStaff: '🎼 五線譜',
+    pianoWhiteKeysHint: 'Skyの楽器は白鍵（ドレミファソラシ）のみに対応しています',
+    staffClickHint: '五線譜の位置をクリックして音をON/OFFできます',
+    frameSectionLabel: '🎼 譜面（クリックでそのマスへ移動）',
+    blackKeyTitle: 'Skyの楽器は黒鍵（半音）に対応していません',
+    shareModalTitle: '🔗 共有・保存',
+    shareHint1: 'この楽譜専用のコードを作成し、別の端末やSNSで共有できます。ファイルとしても保存できます。',
+    createShareCodeBtn: '📋 共有コードを作成',
+    shareHint2: '文字だけの楽譜（テキスト譜面）を作成します。Sky音楽コミュニティで使われているABC譜（例: A1 B3C1 . A5）形式なので、他の方への説明にも使いやすく、LINEやDiscordにそのまま貼り付けて共有できます。貼り付けられた側は「読み込む」からこのテキストをそのまま読み込めます。',
+    createTextSheetBtn: '📝 テキスト譜面を作成',
+    shareHint3: 'Sky Music Nightly形式で保存すると、他の楽譜ツールでも開けます。',
+    downloadNativeBtn: '⬇️ このサイトの形式でダウンロード',
+    downloadSpecyBtn: '⬇️ Sky Music Nightly形式でダウンロード',
+    copyShareCodeBtn: '📋 コードをコピー',
+    codeGenFailed: 'コードの作成に失敗しました。',
+    copySuccessShare: 'コピーしました。SNSやメッセージで貼り付けて共有できます。',
+    copyFailedShare: 'コピーに失敗しました。コードが選択された状態なので手動でコピーしてください。',
+    copyTextBtn: '📋 テキストをコピー',
+    downloadTextBtn: '⬇️ テキストファイルでダウンロード',
+    copySuccessText: 'コピーしました。LINEやDiscordに貼り付けて共有できます。貼り付けられた側は「読み込む」からこのテキストをそのまま読み込めます。',
+    copyFailedText: 'コピーに失敗しました。テキストが選択された状態なので手動でコピーしてください。',
+    downloadedToast: 'ダウンロードしました',
+    importModalTitle: '📥 楽譜を読み込む',
+    importHint: '共有コード、テキスト譜面（ABC譜）、またはこのサイト／Sky Music Nightly／Sky Studio形式の.json・.txtファイルを読み込めます。',
+    importCodePlaceholder: '共有コードまたはテキスト譜面を貼り付け',
+    loadFromCodeBtn: '🔍 コードから読み込む',
+    importFailedCode: 'コードの読み込みに失敗しました。コードが正しいかご確認ください。',
+    importFailedFile: 'ファイルの読み込みに失敗しました。対応形式のファイルかご確認ください。',
+    importedSongStatus: '「{name}」を読み込みました。{note}',
+    multiSongNote: '（{count}曲含まれていましたが、最初の1曲のみ読み込みました）',
+    importedSongDefaultName: 'インポートした楽譜',
+    videoImportModalTitle: '🎥 動画から楽譜を作成',
+    videoImportHint: '演奏動画または演奏音声のファイルを選ぶと、自動で楽譜を作成します。ファイルはどこにもアップロードされず、すべてこの端末（ブラウザ）内だけで処理されます。自動解析のため完璧ではありません。作成後は編集画面で内容をご確認・修正してください。',
+    detectModeAudio: '🎵 音声から検出',
+    detectModeVideo: '🎥 映像から検出',
+    audioDetectHint: 'Skyの音は15個の決まった音階なので、その音の高さをもとに検出します。演奏の調（キー）が分かれば選んでください（分からなければCのままお試しください。うまく検出できない場合は調を変えて試してみてください）。',
+    pitchLabel: '調',
+    sensitivityLabel: '感度',
+    visualRefineToggle: '映像でタイミングを補正する（手首など光る場所を指定・処理に時間がかかります）',
+    startAudioAnalysisBtn: '🔍 音声から解析を始める',
+    videoDetectHint: '① ボタンがよく見えるシーンまでスライダーで動画を動かし、② 下のスライダーで枠をSkyの3×5マス（楽器のボタン）に合わせてください。',
+    startVideoAnalysisBtn: '🔍 この位置で解析を始める',
+    calibVisualHint: '音を弾いた瞬間に動く場所（手首など）が見えるシーンまでスライダーで動画を動かし、その場所に枠を合わせてください。',
+    calibLeftLabel: '左端',
+    calibTopLabel: '上端',
+    calibWidthLabel: '幅',
+    calibHeightLabel: '高さ',
+    videoAnalyzingHint: '解析中です…動画の長さによっては数十秒〜数分かかることがあります。',
+    cancelRetryBtn: 'キャンセルしてやり直す',
+    videoLoadFailed: 'このファイルを読み込めませんでした。お使いのブラウザが対応していない形式か、ファイルが壊れている可能性があります。別の動画・音声ファイル（.mp4、.mp3など）でお試しください。',
+    detectedCountProgress: '{pct}%（{count}個の音を検出）',
+    analysisCompleteCount: '解析完了：{count}個の音を検出しました',
+    videoDefaultSongName: '動画から作成した楽譜',
+    autoAnalysisNote: '（自動解析のため、内容を編集画面でご確認ください）',
+    audioLoadingText: '音声を読み込んでいます…',
+    audioExtractFailed: 'このファイルから音声を取り出せませんでした。音声トラックが無いか、対応していない形式の可能性があります。',
+    notesDetectedCount: '{count}個の音を検出しました',
+    visualRefiningText: '映像でタイミングを補正しています…',
+    visualRefiningProgress: '映像でタイミングを補正中… {pct}%',
+    audioDefaultSongName: '音声から作成した楽譜',
+    imageImportModalTitle: '🖼️ 楽譜画像から楽譜を作成',
+    imageImportHint: `五線譜の画像（MuseScore等で書き出したPNG/JPGなど）を選ぶと、自動で楽譜を作成します。複数ページある場合はまとめて選ぶと、ファイル名順につなげて読み込みます。画像はどこにもアップロードされず、すべてこの端末（ブラウザ）内だけで処理されます。<br><br>
+      ⚠️ 自動認識のため精度は完璧ではありません。特に「#・♭」は判定せずいったん自然音として割り当て、Skyの音域（2オクターブ）に収まるようオクターブを丸め込みます。作成後は編集画面で必ず内容をご確認・修正してください。`,
+    startImageAnalysisBtn: '🔍 解析を始める',
+    imageAnalyzingHint: '解析中です…ページ数や画像サイズによっては時間がかかることがあります。',
+    noImageSelectedToast: '画像を選んでください',
+    imageSelectedCount: '{n}枚選択中：{names}',
+    imageAnalyzingProgress: '画像を解析しています…（{page}/{total}枚目）',
+    imageLoadFailed: '画像を読み込めませんでした。対応形式（.png、.jpgなど）かご確認ください。',
+    staffNotDetected: '五線や音符を検出できませんでした。五線がはっきり写っている画像でお試しください。',
+    imageDefaultSongName: '楽譜画像から作成した楽譜',
+    imageAutoAnalysisNote: '（画像からの自動認識のため、音の高さ・タイミングとも必ず編集画面でご確認・修正ください。#・♭やオクターブは特に自動判定の精度が低いです）',
+    dmModalTitle: '💾 データのバックアップ・復元',
+    dmHint: '作成した楽譜はすべてこの端末のブラウザだけに保存されています。機種変更やブラウザの変更に備えて、ときどきファイルとしてバックアップすることをおすすめします。',
+    dmDownloadBtn: '⬇️ バックアップをダウンロード',
+    dmBackupDownloaded: 'バックアップをダウンロードしました。',
+    dmSongsFound: '{count}件の楽譜が見つかりました。',
+    dmRestoreBtn: '✅ 復元する（今のデータは上書きされます）',
+    dmInvalidFile: 'このツールで作成したバックアップファイルではないようです。',
+    dmRestored: '復元しました。',
+    dmWipeAllBtn: '🗑️ 全ての楽譜を削除',
+    dmWipeConfirmText: '本当にすべての楽譜を削除しますか？この操作は取り消せません。',
+    dmWipeConfirmBtn: '削除する',
+    dmWiped: '削除しました。',
+    confirmModalTitle: '確認',
+    cancelBtn: 'キャンセル',
+    deleteSongConfirm: 'この楽譜を削除しますか？この操作は取り消せません。',
+    deleteConfirmBtn: '🗑️ 削除する',
+    keyBindModalTitle: '⌨️ キーボード設定',
+    keyBindHint: 'パソコンのキーボードで楽譜の作成・演奏ができます。「変更」を押してから、割り当てたいキーを押してください。すでに他のマスで使われているキーを選ぶと、入れ替わります。',
+    resetKeyBindingsBtn: '↩️ 初期設定（Y U I O P / H J K L ; / N M , . /）に戻す',
+    footerDisclaimer: 'このサイトはSky 星を紡ぐ子どもたちの非公式ファンサイトです。thatgamecompanyは一切関与していません。',
+    footerAudioDisclaimer: '演奏音はすべてブラウザ内で合成しており、ゲームから抽出した音源は使用していません。',
+    footerFormatCredit: '楽譜ファイルの形式は<a href="https://sky-music.specy.app/" target="_blank" rel="noopener noreferrer">Sky Music Nightly</a>（Specy氏）を参考にしています。',
+    footerCreditLabel: '作成・ご意見:',
+    footerRequestForm: 'リクエストフォーム',
+    footerInfoLink: '⚙️ 設定・更新情報・クレジット・プライバシーポリシー',
+    footerBackupBtn: '💾 バックアップ・復元',
+    untitledSong: '無題',
+    newSongName: '新しい楽譜',
+    duplicateSuffix: ' のコピー',
+    duplicatedToast: '複製しました',
+    deletedToast: '削除しました',
+    emptyLibraryText: 'まだ楽譜がありません。「＋ 新規作成」から作ってみましょう。',
+    songCardMeta: '{frames}マス・{notes}音　・　BPM{bpm}　・　更新: {date}',
+    openBtn: '✏️ 開く',
+    duplicateBtn: '📄 複製',
+    deleteBtn: '🗑️ 削除',
+    pitchOptionLabel: '調: {p}',
+    lastFrameCannotDelete: '最後の1マスは削除できません',
+    tapAgainHint: 'もう一度タップ…',
+    tapMeasuredHint: '{count}回タップ・BPM {bpm}（測定中…もう少しタップして精度アップ）',
+    playingLabel: '⏸️ 再生中…',
+    noSongToast: '楽譜がありません',
+    noNotesInRangePractice: '練習する音がこの範囲にありません',
+    noNotesInRangeTest: '試験する音がこの範囲にありません',
+    rangeLabelTemplate: '（{start}〜{end}マス目）',
+    practiceModeTitle: '🐢 練習モード：{name}{range}',
+    testModeTitle: '📝 試験モード：{name}{range}',
+    perfCloseEnd: '✕ 終了',
+    perfCloseClose: '✕ 閉じる',
+    freePlayModeTitle: '🎹 フリー演奏モード',
+    freePlayFooterHint: '楽譜には関係なく、自由に押して演奏を楽しめます',
+    wrongAnswerFooter: '❌ 不正解（ミス{count}回）。もう一度そのマスから挑戦しましょう',
+    passNoMistake: '🎉 ノーミスで合格です！閉じてもう一度開くと最初からになります。',
+    passWithMistakes: '🎉 試験終了（ミス{count}回）。閉じてもう一度開くと最初からになります。',
+    performedToEnd: '🎉 最後まで演奏できました！閉じてもう一度開くと最初からになります。',
+    practiceTargetFooter: '光っているマスを押しましょう',
+    testTargetFooter: 'お手本なしで、正しいマスを押しましょう',
+    keybindNoteIdx: 'マス{n}',
+    keybindWaitingInput: '入力待ち…',
+    keybindCancelBtn: 'キャンセル',
+    keybindChangeBtn: '変更',
+    resetKeyBindingsToast: 'キー割り当てを初期設定に戻しました',
+    keySwapToast: '「{label}」（マス{n}）と入れ替えました',
+    sharedSongLoadedToast: '共有された楽譜「{name}」を読み込みました'
+  },
+  en: {
+    pageTitle: 'Sheet Music Maker - Sky Collection Tracker',
+    navTitle: '🎵 Sheet Music Maker',
+    sidebarToggle: '☰ Tools',
+    relatedTools: '🔗 Related Tools',
+    toolItem: '🗂️ Item Collection',
+    toolEmote: '🎭 Emote Collection',
+    toolShare: '📍 Creation Manager',
+    toolNomacan: '🕯️ Nomacan Calculator',
+    toolStarCandle: '🕯️ Star Candle Calculator',
+    toolCompanion: '✨ Spirit Companion Tool',
+    toolCatalog: '🌳 Spirit Tree Manager',
+    toolWings: '🪽 Wing Tracker',
+    toolTransfer: '🔄 Data Transfer',
+    introText: `A free tool for creating, saving, sharing, and practicing sheet music playable on Sky's 5×3-key
+        instruments (Harp, etc). It also supports importing and exporting
+        <a href="https://sky-music.specy.app/" target="_blank" rel="noopener noreferrer">Sky Music Nightly</a>-format
+        sheet music files, as well as loading Sky Studio-format files, so sheet music already published elsewhere
+        can be loaded as-is.
+        Your data is stored only in this device's browser and is never sent anywhere else.`,
+    tabLibrary: '📚 Library',
+    tabEditor: '✏️ Create & Play',
+    tabFreePlay: '🎹 Free Play',
+    librarySearchPlaceholder: '🔍 Search by title…',
+    btnImport: '📥 Load',
+    btnVideoImport: '🎥 Create from Video',
+    btnImageImport: '🖼️ Create from Sheet Image',
+    btnNewSong: '+ New Song',
+    songNamePlaceholder: 'Song title',
+    instrumentHarp: '🎼 Instrument A',
+    instrumentGuitar: '🎸 Instrument B',
+    instrumentBass: '🎸 Instrument C',
+    instrumentFlute: '🪈 Instrument D',
+    instrumentBells: '🔔 Instrument E',
+    tapTempoBtn: '🥁 Tap for BPM',
+    tapTempoHint: 'Tap repeatedly in rhythm',
+    practiceRangeLabel: 'Practice / Test Range',
+    rangeUnit: 'tiles',
+    playBtn: '▶️ Play',
+    stopBtn: '⏹️ Stop',
+    practiceModeBtn: '🐢 Practice Mode',
+    testModeBtn: '📝 Test Mode',
+    shareBtn: '🔗 Share & Save',
+    keySettingsBtn: '⌨️ Key Settings',
+    currentFrameLabel: 'Selected tile (click to toggle a note on/off)',
+    inputModeGrid: '⚪ Grid',
+    inputModePiano: '🎹 Piano',
+    inputModeStaff: '🎼 Staff',
+    pianoWhiteKeysHint: "Sky's instruments only support white keys (Do Re Mi Fa Sol La Ti)",
+    staffClickHint: 'Click a position on the staff to toggle a note on/off',
+    frameSectionLabel: '🎼 Sheet (click a tile to jump to it)',
+    blackKeyTitle: "Sky's instruments don't support black keys (semitones)",
+    shareModalTitle: '🔗 Share & Save',
+    shareHint1: 'Create a code just for this song to share it with another device or on social media. You can also save it as a file.',
+    createShareCodeBtn: '📋 Create Share Code',
+    shareHint2: 'Creates a text-only version of the sheet music (text sheet). It uses the ABC notation (e.g. A1 B3C1 . A5) commonly used in the Sky music community, so it\'s easy to explain to others and can be pasted directly into LINE or Discord. The person you send it to can load this text as-is from "Load".',
+    createTextSheetBtn: '📝 Create Text Sheet',
+    shareHint3: 'Saving in Sky Music Nightly format lets you open it in other sheet music tools too.',
+    downloadNativeBtn: "⬇️ Download in This Site's Format",
+    downloadSpecyBtn: '⬇️ Download in Sky Music Nightly Format',
+    copyShareCodeBtn: '📋 Copy Code',
+    codeGenFailed: 'Failed to create the code.',
+    copySuccessShare: 'Copied. You can paste it into a social media post or message to share.',
+    copyFailedShare: 'Copy failed. The code is selected, so please copy it manually.',
+    copyTextBtn: '📋 Copy Text',
+    downloadTextBtn: '⬇️ Download as Text File',
+    copySuccessText: 'Copied. You can paste it into LINE or Discord to share. The recipient can load this text as-is from "Load".',
+    copyFailedText: 'Copy failed. The text is selected, so please copy it manually.',
+    downloadedToast: 'Downloaded',
+    importModalTitle: '📥 Load Sheet Music',
+    importHint: 'You can load a share code, a text sheet (ABC notation), or a .json/.txt file in this site\'s, Sky Music Nightly\'s, or Sky Studio\'s format.',
+    importCodePlaceholder: 'Paste a share code or text sheet',
+    loadFromCodeBtn: '🔍 Load from Code',
+    importFailedCode: 'Failed to load the code. Please check that the code is correct.',
+    importFailedFile: 'Failed to load the file. Please check that it is a supported format.',
+    importedSongStatus: 'Loaded "{name}". {note}',
+    multiSongNote: ' (This contained {count} songs, but only the first one was loaded.)',
+    importedSongDefaultName: 'Imported Song',
+    videoImportModalTitle: '🎥 Create Sheet Music from Video',
+    videoImportHint: "Select a performance video or audio file and sheet music will be created automatically. The file is never uploaded anywhere — everything is processed entirely on this device (in the browser). Automatic analysis isn't perfect. After creating it, please review and correct the content in the editor.",
+    detectModeAudio: '🎵 Detect from Audio',
+    detectModeVideo: '🎥 Detect from Video',
+    audioDetectHint: "Sky's notes are always one of 15 fixed pitches, so detection is based on pitch. Select the performance's key if you know it (if not, try leaving it at C; if detection doesn't work well, try changing the key).",
+    pitchLabel: 'Key',
+    sensitivityLabel: 'Sensitivity',
+    visualRefineToggle: 'Refine timing using video (specify a spot that lights up, like the wrist — this takes longer to process)',
+    startAudioAnalysisBtn: '🔍 Start Analysis from Audio',
+    videoDetectHint: "① Use the slider to move to a scene where the buttons are clearly visible, then ② use the slider below to fit the frame to Sky's 3×5 tiles (the instrument's buttons).",
+    startVideoAnalysisBtn: '🔍 Start Analysis at This Position',
+    calibVisualHint: "Use the slider to move to a scene where the spot that moves when a note is played (like the wrist) is visible, then fit the frame to that spot.",
+    calibLeftLabel: 'Left',
+    calibTopLabel: 'Top',
+    calibWidthLabel: 'Width',
+    calibHeightLabel: 'Height',
+    videoAnalyzingHint: 'Analyzing… this can take anywhere from tens of seconds to a few minutes depending on the video length.',
+    cancelRetryBtn: 'Cancel and Start Over',
+    videoLoadFailed: "This file couldn't be loaded. Your browser may not support this format, or the file may be corrupted. Please try a different video/audio file (e.g. .mp4, .mp3).",
+    detectedCountProgress: '{pct}% ({count} notes detected)',
+    analysisCompleteCount: 'Analysis complete: {count} notes detected',
+    videoDefaultSongName: 'Song from Video',
+    autoAnalysisNote: ' (Created by automatic analysis — please review the content in the editor.)',
+    audioLoadingText: 'Loading audio…',
+    audioExtractFailed: "Couldn't extract audio from this file. It may have no audio track, or the format may not be supported.",
+    notesDetectedCount: '{count} notes detected',
+    visualRefiningText: 'Refining timing using video…',
+    visualRefiningProgress: 'Refining timing using video… {pct}%',
+    audioDefaultSongName: 'Song from Audio',
+    imageImportModalTitle: '🖼️ Create Sheet Music from a Sheet Music Image',
+    imageImportHint: `Select images of sheet music (e.g. PNG/JPG exported from MuseScore) and sheet music will be created automatically. If there are multiple pages, select them all together and they'll be joined in filename order. Images are never uploaded anywhere — everything is processed entirely on this device (in the browser).<br><br>
+      ⚠️ Automatic recognition isn't perfectly accurate. In particular, sharps/flats ("#"/"♭") are not detected and notes are assigned as natural notes, then rounded to an octave that fits within Sky's range (2 octaves). After creating it, please be sure to review and correct the content in the editor.`,
+    startImageAnalysisBtn: '🔍 Start Analysis',
+    imageAnalyzingHint: 'Analyzing… this can take a while depending on the number of pages and image sizes.',
+    noImageSelectedToast: 'Please select an image',
+    imageSelectedCount: '{n} selected: {names}',
+    imageAnalyzingProgress: 'Analyzing image… ({page}/{total})',
+    imageLoadFailed: 'The image could not be loaded. Please check that it is a supported format (.png, .jpg, etc).',
+    staffNotDetected: 'No staff or notes could be detected. Please try an image where the staff is clearly visible.',
+    imageDefaultSongName: 'Song from Sheet Music Image',
+    imageAutoAnalysisNote: ' (Created by automatic recognition from an image — please be sure to review and correct both pitch and timing in the editor. Sharps/flats and octaves in particular tend to be less accurate.)',
+    dmModalTitle: '💾 Backup & Restore Data',
+    dmHint: "All the sheet music you've created is stored only in this device's browser. We recommend backing it up to a file occasionally in case you switch devices or browsers.",
+    dmDownloadBtn: '⬇️ Download Backup',
+    dmBackupDownloaded: 'Backup downloaded.',
+    dmSongsFound: 'Found {count} song(s).',
+    dmRestoreBtn: '✅ Restore (this will overwrite your current data)',
+    dmInvalidFile: "This doesn't look like a backup file created by this tool.",
+    dmRestored: 'Restored.',
+    dmWipeAllBtn: '🗑️ Delete All Sheet Music',
+    dmWipeConfirmText: 'Are you sure you want to delete all sheet music? This cannot be undone.',
+    dmWipeConfirmBtn: 'Delete',
+    dmWiped: 'Deleted.',
+    confirmModalTitle: 'Confirm',
+    cancelBtn: 'Cancel',
+    deleteSongConfirm: 'Delete this song? This cannot be undone.',
+    deleteConfirmBtn: '🗑️ Delete',
+    keyBindModalTitle: '⌨️ Keyboard Settings',
+    keyBindHint: 'You can create and play sheet music using your computer keyboard. Press "Change", then press the key you want to assign. Choosing a key already used by another tile will swap them.',
+    resetKeyBindingsBtn: '↩️ Reset to Default (Y U I O P / H J K L ; / N M , . /)',
+    footerDisclaimer: 'This is an unofficial fan site for Sky: Children of the Light. thatgamecompany is not involved in any way.',
+    footerAudioDisclaimer: 'All playback sounds are synthesized entirely in the browser — no audio extracted from the game is used.',
+    footerFormatCredit: 'The sheet music file format is based on <a href="https://sky-music.specy.app/" target="_blank" rel="noopener noreferrer">Sky Music Nightly</a> (by Specy).',
+    footerCreditLabel: 'Created by / feedback:',
+    footerRequestForm: 'Request form',
+    footerInfoLink: "⚙️ Settings / What's New / Credits / Privacy Policy",
+    footerBackupBtn: '💾 Backup / Restore',
+    untitledSong: 'Untitled',
+    newSongName: 'New Song',
+    duplicateSuffix: ' Copy',
+    duplicatedToast: 'Duplicated',
+    deletedToast: 'Deleted',
+    emptyLibraryText: 'No sheet music yet. Try creating one with "+ New Song".',
+    songCardMeta: '{frames} tiles · {notes} notes　·　BPM {bpm}　·　Updated: {date}',
+    openBtn: '✏️ Open',
+    duplicateBtn: '📄 Duplicate',
+    deleteBtn: '🗑️ Delete',
+    pitchOptionLabel: 'Key: {p}',
+    lastFrameCannotDelete: "Can't delete the last remaining tile",
+    tapAgainHint: 'Tap again…',
+    tapMeasuredHint: '{count} taps · BPM {bpm} (measuring… keep tapping for better accuracy)',
+    playingLabel: '⏸️ Playing…',
+    noSongToast: 'No sheet music',
+    noNotesInRangePractice: 'There are no notes to practice in this range',
+    noNotesInRangeTest: 'There are no notes to test in this range',
+    rangeLabelTemplate: ' (tiles {start}–{end})',
+    practiceModeTitle: '🐢 Practice Mode: {name}{range}',
+    testModeTitle: '📝 Test Mode: {name}{range}',
+    perfCloseEnd: '✕ End',
+    perfCloseClose: '✕ Close',
+    freePlayModeTitle: '🎹 Free Play Mode',
+    freePlayFooterHint: 'Play freely, unrelated to any sheet music',
+    wrongAnswerFooter: '❌ Incorrect ({count} miss(es)). Try that tile again from the start.',
+    passNoMistake: '🎉 Perfect, no mistakes! Close and reopen to start over.',
+    passWithMistakes: '🎉 Test complete ({count} miss(es)). Close and reopen to start over.',
+    performedToEnd: '🎉 You played all the way through! Close and reopen to start over.',
+    practiceTargetFooter: 'Press the tiles that light up',
+    testTargetFooter: 'Press the correct tiles with no example shown',
+    keybindNoteIdx: 'Tile {n}',
+    keybindWaitingInput: 'Waiting for input…',
+    keybindCancelBtn: 'Cancel',
+    keybindChangeBtn: 'Change',
+    resetKeyBindingsToast: 'Key bindings reset to default',
+    keySwapToast: 'Swapped with "{label}" (tile {n})',
+    sharedSongLoadedToast: 'Loaded the shared song "{name}"'
+  }
+};
+
+function t(key, vars) {
+  const dict = I18N[LANG] || I18N.ja;
+  let str = dict[key] !== undefined ? dict[key] : (I18N.ja[key] !== undefined ? I18N.ja[key] : key);
+  if (vars) {
+    Object.keys(vars).forEach(k => { str = str.split('{' + k + '}').join(vars[k]); });
+  }
+  return str;
+}
+
+function applyI18n() {
+  document.documentElement.lang = LANG;
+  document.title = t('pageTitle');
+  document.querySelectorAll('[data-i18n]').forEach(el => {
+    el.textContent = t(el.getAttribute('data-i18n'));
+  });
+  document.querySelectorAll('[data-i18n-html]').forEach(el => {
+    el.innerHTML = t(el.getAttribute('data-i18n-html'));
+  });
+  document.querySelectorAll('[data-i18n-placeholder]').forEach(el => {
+    el.placeholder = t(el.getAttribute('data-i18n-placeholder'));
+  });
+  document.querySelectorAll('[data-i18n-title]').forEach(el => {
+    el.title = t(el.getAttribute('data-i18n-title'));
+  });
+  const langBtn = document.getElementById('langToggleBtn');
+  if (langBtn) langBtn.textContent = LANG === 'ja' ? 'EN' : '日本語';
+}
+
+// 言語切り替え時、既に描画済みの動的コンテンツ（ライブラリ・エディタ・
+// キーボード設定モーダル・演奏オーバーレイなど）を、今表示中のものだけ再描画する
+function refreshDynamicUI() {
+  const editorActive = currentSong && document.getElementById('viewEditor').classList.contains('active');
+  populatePitchSelect();
+  if (editorActive) {
+    document.getElementById('songPitchInput').value = currentSong.pitch;
+    renderFrameStrip();
+    renderBigGrid();
+  }
+  if (document.getElementById('viewLibrary').classList.contains('active')) renderLibrary();
+  if (document.getElementById('keyBindModal').classList.contains('open')) renderKeyBindModal();
+  if (document.getElementById('dmModal').classList.contains('open')) dmRenderWipeArea();
+  if (document.getElementById('perfOverlay').classList.contains('open')) {
+    renderPerfGrid();
+    if (perfMode === 'free') {
+      document.getElementById('perfTitle').textContent = t('freePlayModeTitle');
+      document.getElementById('perfFooter').textContent = t('freePlayFooterHint');
+      renderFreePlayInstrumentRow();
+    } else if (perfMode === 'practice' || perfMode === 'test') {
+      highlightPerfTargets();
+    }
+    document.getElementById('perfCloseBtn').textContent = perfMode === 'free' ? t('perfCloseClose') : t('perfCloseEnd');
+  }
+}
+
+function toggleLang() {
+  LANG = LANG === 'ja' ? 'en' : 'ja';
+  saveLang(LANG);
+  applyI18n();
+  refreshDynamicUI();
 }
 
 /* ================================================================
@@ -813,7 +1271,7 @@ let selectedFrameIndex = 0;
 
 function createNewSong() {
   currentSong = {
-    id: genId(), name: '新しい楽譜', bpm: 150, pitch: 'C', instrument: 'Harp',
+    id: genId(), name: t('newSongName'), bpm: 150, pitch: 'C', instrument: 'Harp',
     frames: [[], [], [], [], [], [], [], []], updatedAt: Date.now()
   };
   selectedFrameIndex = 0;
@@ -843,11 +1301,11 @@ function persistCurrentSong() {
 }
 
 function deleteSong(id) {
-  showConfirm('この楽譜を削除しますか？この操作は取り消せません。', () => {
+  showConfirm(t('deleteSongConfirm'), () => {
     saveSongs(loadSongs().filter(s => s.id !== id));
     renderLibrary();
-    showToast('削除しました');
-  }, '🗑️ 削除する');
+    showToast(t('deletedToast'));
+  }, t('deleteConfirmBtn'));
 }
 
 /* ================================================================
@@ -879,12 +1337,12 @@ function duplicateSong(id) {
   if (!song) return;
   const clone = JSON.parse(JSON.stringify(song));
   clone.id = genId();
-  clone.name = song.name + ' のコピー';
+  clone.name = song.name + t('duplicateSuffix');
   clone.updatedAt = Date.now();
   songs.unshift(clone);
   saveSongs(songs);
   renderLibrary();
-  showToast('複製しました');
+  showToast(t('duplicatedToast'));
 }
 
 /* ================================================================
@@ -908,8 +1366,8 @@ function renderLibrary() {
 
   const container = document.getElementById('songList');
   if (songs.length === 0) {
-    container.innerHTML = `<div class="empty-state">まだ楽譜がありません。「＋ 新規作成」から作ってみましょう。<br><br>
-      <button class="mini-btn primary" onclick="openModal('importModal')">📥 楽譜を読み込む</button></div>`;
+    container.innerHTML = `<div class="empty-state">${t('emptyLibraryText')}<br><br>
+      <button class="mini-btn primary" onclick="openModal('importModal')">${escapeHtml(t('importModalTitle'))}</button></div>`;
     return;
   }
   container.innerHTML = songs.map(s => {
@@ -920,14 +1378,14 @@ function renderLibrary() {
       <div class="song-card">
         <div class="song-card-head">
           <div>
-            <div class="song-card-name">${escapeHtml(s.name || '無題')}</div>
-            <div class="song-card-meta">${s.frames.length}マス・${noteCount}音　・　BPM${s.bpm}　・　更新: ${dateStr}</div>
+            <div class="song-card-name">${escapeHtml(s.name || t('untitledSong'))}</div>
+            <div class="song-card-meta">${escapeHtml(t('songCardMeta', { frames: s.frames.length, notes: noteCount, bpm: s.bpm, date: dateStr }))}</div>
           </div>
         </div>
         <div class="song-card-btns">
-          <button class="mini-btn primary" onclick="openEditor('${s.id}')">✏️ 開く</button>
-          <button class="mini-btn" onclick="duplicateSong('${s.id}')">📄 複製</button>
-          <button class="mini-btn danger" onclick="deleteSong('${s.id}')">🗑️ 削除</button>
+          <button class="mini-btn primary" onclick="openEditor('${s.id}')">${escapeHtml(t('openBtn'))}</button>
+          <button class="mini-btn" onclick="duplicateSong('${s.id}')">${escapeHtml(t('duplicateBtn'))}</button>
+          <button class="mini-btn danger" onclick="deleteSong('${s.id}')">${escapeHtml(t('deleteBtn'))}</button>
         </div>
       </div>`;
   }).join('');
@@ -938,7 +1396,7 @@ function renderLibrary() {
    ================================================================ */
 function populatePitchSelect() {
   const sel = document.getElementById('songPitchInput');
-  sel.innerHTML = PITCHES.map(p => `<option value="${p}">調: ${p}</option>`).join('');
+  sel.innerHTML = PITCHES.map(p => `<option value="${p}">${escapeHtml(t('pitchOptionLabel', { p }))}</option>`).join('');
 }
 
 function renderEditor() {
@@ -991,9 +1449,9 @@ function getPracticeRange() {
 function renderBigGrid() {
   const grid = document.getElementById('bigGrid');
   const frame = currentSong.frames[selectedFrameIndex] || [];
-  grid.innerHTML = NOTE_LABELS.map((label, i) => {
+  grid.innerHTML = NOTE_LABELS.map((_, i) => {
     const on = frame.includes(i);
-    return `<div class="big-note${on ? ' on' : ''}" data-idx="${i}" onclick="toggleNote(${i})">${label}<span class="key-badge">${escapeHtml(keyDisplayLabel(keyBindings[i]))}</span></div>`;
+    return `<div class="big-note${on ? ' on' : ''}" data-idx="${i}" onclick="toggleNote(${i})">${escapeHtml(noteLabel(i))}<span class="key-badge">${escapeHtml(keyDisplayLabel(keyBindings[i]))}</span></div>`;
   }).join('');
   renderPianoKeys();
   renderStaffPicker();
@@ -1031,12 +1489,12 @@ function hasBlackKeyAfter(i) {
 function renderPianoKeys() {
   const wrap = document.getElementById('pianoKeys');
   const frame = currentSong.frames[selectedFrameIndex] || [];
-  wrap.innerHTML = NOTE_LABELS.map((label, i) => {
+  wrap.innerHTML = NOTE_LABELS.map((_, i) => {
     const on = frame.includes(i);
     const octaveStart = i === 7 || i === 14;
-    const blackKey = hasBlackKeyAfter(i) ? '<div class="piano-black-key" title="Skyの楽器は黒鍵（半音）に対応していません"></div>' : '';
+    const blackKey = hasBlackKeyAfter(i) ? `<div class="piano-black-key" title="${escapeHtml(t('blackKeyTitle'))}"></div>` : '';
     const keyBadge = `<span class="key-badge">${escapeHtml(keyDisplayLabel(keyBindings[i]))}</span>`;
-    return `<div class="piano-key${on ? ' on' : ''}${octaveStart ? ' octave-start' : ''}" data-idx="${i}" onclick="toggleNote(${i})">${blackKey}${keyBadge}${label}</div>`;
+    return `<div class="piano-key${on ? ' on' : ''}${octaveStart ? ' octave-start' : ''}" data-idx="${i}" onclick="toggleNote(${i})">${blackKey}${keyBadge}${escapeHtml(noteLabel(i))}</div>`;
   }).join('');
 }
 
@@ -1066,7 +1524,7 @@ function renderStaffPicker() {
     const y = staffY(i);
     html += `<line x1="${STAFF_LINE_LEFT}" y1="${y}" x2="${STAFF_LINE_RIGHT}" y2="${y}" stroke="var(--text-3)" stroke-width="1"/>`;
   });
-  NOTE_LABELS.forEach((label, i) => {
+  NOTE_LABELS.forEach((_, i) => {
     const y = staffY(i);
     const on = frame.includes(i);
     if (STAFF_LEDGER_INDICES.includes(i)) {
@@ -1076,7 +1534,7 @@ function renderStaffPicker() {
       <g class="staff-note-slot" data-idx="${i}" onclick="toggleNote(${i})">
         <rect x="${STAFF_NOTE_X - 16}" y="${y - 8}" width="70" height="16" fill="transparent" pointer-events="all" style="cursor:pointer;"/>
         <ellipse cx="${STAFF_NOTE_X}" cy="${y}" rx="6.4" ry="5" fill="${on ? 'var(--note-on)' : 'var(--card)'}" stroke="${on ? 'var(--note-on)' : 'var(--text-3)'}" stroke-width="1.4"/>
-        <text x="${STAFF_NOTE_X + 14}" y="${y + 4}" font-size="11" font-weight="600" fill="var(--text-2)">${escapeHtml(label)}</text>
+        <text x="${STAFF_NOTE_X + 14}" y="${y + 4}" font-size="11" font-weight="600" fill="var(--text-2)">${escapeHtml(noteLabel(i))}</text>
         <text x="${STAFF_NOTE_X + 36}" y="${y + 4}" font-size="9.5" font-weight="700" fill="var(--text-3)">${escapeHtml(keyDisplayLabel(keyBindings[i]))}</text>
       </g>`;
   });
@@ -1141,7 +1599,7 @@ function addFrame() {
 }
 
 function deleteFrame(fi) {
-  if (currentSong.frames.length <= 1) { showToast('最後の1マスは削除できません'); return; }
+  if (currentSong.frames.length <= 1) { showToast(t('lastFrameCannotDelete')); return; }
   currentSong.frames.splice(fi, 1);
   if (selectedFrameIndex >= currentSong.frames.length) selectedFrameIndex = currentSong.frames.length - 1;
   persistCurrentSong();
@@ -1152,7 +1610,7 @@ function deleteFrame(fi) {
 
 function onSongMetaChange() {
   if (!currentSong) return;
-  currentSong.name = document.getElementById('songNameInput').value || '無題';
+  currentSong.name = document.getElementById('songNameInput').value || t('untitledSong');
   currentSong.pitch = document.getElementById('songPitchInput').value;
   currentSong.instrument = document.getElementById('songInstrumentInput').value;
   persistCurrentSong();
@@ -1189,7 +1647,7 @@ function tapTempo() {
 
   const hint = document.getElementById('tapTempoHint');
   if (tapTempoTimes.length < 2) {
-    hint.textContent = 'もう一度タップ…';
+    hint.textContent = t('tapAgainHint');
     return;
   }
 
@@ -1198,7 +1656,7 @@ function tapTempo() {
   const avgMs = intervals.reduce((a, b) => a + b, 0) / intervals.length;
   const bpm = Math.max(40, Math.min(300, Math.round(60000 / avgMs)));
   onBpmChange(bpm);
-  hint.textContent = `${tapTempoTimes.length}回タップ・BPM ${bpm}（測定中…もう少しタップして精度アップ）`;
+  hint.textContent = t('tapMeasuredHint', { count: tapTempoTimes.length, bpm });
 }
 
 /* ================================================================
@@ -1321,7 +1779,7 @@ function togglePlayback() {
   stopPlayback();
   isPlaying = true;
   document.getElementById('playBtn').classList.add('active');
-  document.getElementById('playBtn').textContent = '⏸️ 再生中…';
+  document.getElementById('playBtn').textContent = t('playingLabel');
   document.getElementById('stopBtn').style.display = 'flex';
   let i = selectedFrameIndex;
   const intervalMs = 60000 / currentSong.bpm;
@@ -1340,7 +1798,7 @@ function stopPlayback() {
   playbackTimer = null;
   isPlaying = false;
   document.getElementById('playBtn').classList.remove('active');
-  document.getElementById('playBtn').textContent = '▶️ 再生';
+  document.getElementById('playBtn').textContent = t('playBtn');
   document.getElementById('stopBtn').style.display = 'none';
   clearPlayingHighlight();
 }
@@ -1375,13 +1833,13 @@ function openTestMode() { startPerfSession('test'); }
 
 function startPerfSession(mode) {
   if (!currentSong || currentSong.frames.length === 0) {
-    showToast('楽譜がありません');
+    showToast(t('noSongToast'));
     return;
   }
   const range = getPracticeRange();
   const hasNotes = currentSong.frames.slice(range.start, range.end + 1).some(f => f.length > 0);
   if (!hasNotes) {
-    showToast(mode === 'practice' ? '練習する音がこの範囲にありません' : '試験する音がこの範囲にありません');
+    showToast(mode === 'practice' ? t('noNotesInRangePractice') : t('noNotesInRangeTest'));
     return;
   }
   stopPlayback();
@@ -1390,11 +1848,12 @@ function startPerfSession(mode) {
   perfRangeEnd = range.end;
   perfMistakeCount = 0;
   const isFullRange = range.start === 0 && range.end === currentSong.frames.length - 1;
-  const rangeLabel = isFullRange ? '' : `（${range.start + 1}〜${range.end + 1}マス目）`;
+  const rangeLabel = isFullRange ? '' : t('rangeLabelTemplate', { start: range.start + 1, end: range.end + 1 });
+  const songName = currentSong.name || t('untitledSong');
   document.getElementById('perfTitle').textContent = mode === 'practice'
-    ? `🐢 練習モード：${currentSong.name || '無題'}${rangeLabel}`
-    : `📝 試験モード：${currentSong.name || '無題'}${rangeLabel}`;
-  document.getElementById('perfCloseBtn').textContent = '✕ 終了';
+    ? t('practiceModeTitle', { name: songName, range: rangeLabel })
+    : t('testModeTitle', { name: songName, range: rangeLabel });
+  document.getElementById('perfCloseBtn').textContent = t('perfCloseEnd');
   document.getElementById('perfInstrumentRow').style.display = 'none';
   renderPerfGrid();
   perfFrameIndex = perfRangeStart - 1;
@@ -1405,10 +1864,10 @@ function startPerfSession(mode) {
 function openFreeMode() {
   stopPlayback();
   perfMode = 'free';
-  document.getElementById('perfTitle').textContent = '🎹 フリー演奏モード';
+  document.getElementById('perfTitle').textContent = t('freePlayModeTitle');
   document.getElementById('perfProgress').textContent = '';
-  document.getElementById('perfFooter').textContent = '楽譜には関係なく、自由に押して演奏を楽しめます';
-  document.getElementById('perfCloseBtn').textContent = '✕ 閉じる';
+  document.getElementById('perfFooter').textContent = t('freePlayFooterHint');
+  document.getElementById('perfCloseBtn').textContent = t('perfCloseClose');
   document.getElementById('perfInstrumentRow').style.display = 'flex';
   renderFreePlayInstrumentRow();
   renderPerfGrid();
@@ -1419,7 +1878,7 @@ function renderFreePlayInstrumentRow() {
   const row = document.getElementById('perfInstrumentRow');
   const icons = { Harp: '🎼', Guitar: '🎸', Bass: '🎸', Flute: '🪈', Bells: '🔔' };
   row.innerHTML = Object.keys(INSTRUMENT_LABELS).map(code => `
-    <button type="button" class="perf-instrument-btn${code === freePlayInstrument ? ' active' : ''}" onclick="setFreePlayInstrument('${code}')">${icons[code] || ''} ${escapeHtml(INSTRUMENT_LABELS[code])}</button>
+    <button type="button" class="perf-instrument-btn${code === freePlayInstrument ? ' active' : ''}" onclick="setFreePlayInstrument('${code}')">${icons[code] || ''} ${escapeHtml(instrumentLabel(code))}</button>
   `).join('');
 }
 
@@ -1435,7 +1894,7 @@ function closePerformance() {
 // clickだと指を離した瞬間にしか発火せず、複数指での同時押しが正しく機能しないため。
 function renderPerfGrid() {
   const grid = document.getElementById('perfGrid');
-  grid.innerHTML = NOTE_LABELS.map((label, i) => `<div class="perf-key" data-idx="${i}"><span class="perf-key-label">${label}</span><span class="perf-key-hint">${escapeHtml(keyDisplayLabel(keyBindings[i]))}</span></div>`).join('');
+  grid.innerHTML = NOTE_LABELS.map((_, i) => `<div class="perf-key" data-idx="${i}"><span class="perf-key-label">${escapeHtml(noteLabel(i))}</span><span class="perf-key-hint">${escapeHtml(keyDisplayLabel(keyBindings[i]))}</span></div>`).join('');
   grid.querySelectorAll('.perf-key').forEach(el => {
     // touch-action:noneだけでは一部のブラウザでダブルタップズームを
     // 抑止しきれない場合があるため、touchstartのpreventDefaultも保険で入れる
@@ -1475,7 +1934,7 @@ function onPerfKeyPress(idx) {
       el.classList.add('miss-flash');
       setTimeout(() => el.classList.remove('miss-flash'), 250);
     }
-    document.getElementById('perfFooter').textContent = `❌ 不正解（ミス${perfMistakeCount}回）。もう一度そのマスから挑戦しましょう`;
+    document.getElementById('perfFooter').textContent = t('wrongAnswerFooter', { count: perfMistakeCount });
   }
 }
 
@@ -1491,10 +1950,10 @@ function goToNextPerfFrame() {
     clearPerfTargets();
     if (perfMode === 'test') {
       document.getElementById('perfFooter').textContent = perfMistakeCount === 0
-        ? '🎉 ノーミスで合格です！閉じてもう一度開くと最初からになります。'
-        : `🎉 試験終了（ミス${perfMistakeCount}回）。閉じてもう一度開くと最初からになります。`;
+        ? t('passNoMistake')
+        : t('passWithMistakes', { count: perfMistakeCount });
     } else {
-      document.getElementById('perfFooter').textContent = '🎉 最後まで演奏できました！閉じてもう一度開くと最初からになります。';
+      document.getElementById('perfFooter').textContent = t('performedToEnd');
     }
     document.getElementById('perfProgress').textContent = `${totalInRange} / ${totalInRange}`;
     return;
@@ -1503,10 +1962,10 @@ function goToNextPerfFrame() {
   document.getElementById('perfProgress').textContent = `${posInRange} / ${totalInRange}`;
   if (perfMode === 'practice') {
     highlightPerfTargets();
-    document.getElementById('perfFooter').textContent = '光っているマスを押しましょう';
+    document.getElementById('perfFooter').textContent = t('practiceTargetFooter');
   } else {
     clearPerfTargets();
-    document.getElementById('perfFooter').textContent = 'お手本なしで、正しいマスを押しましょう';
+    document.getElementById('perfFooter').textContent = t('testTargetFooter');
   }
 }
 function highlightPerfTargets() {
@@ -1536,13 +1995,13 @@ function closeKeyBindModal() {
 }
 function renderKeyBindModal() {
   const wrap = document.getElementById('keyBindList');
-  wrap.innerHTML = NOTE_LABELS.map((label, i) => {
+  wrap.innerHTML = NOTE_LABELS.map((_, i) => {
     const capturing = capturingKeyIndex === i;
     return `
       <div class="keybind-row${capturing ? ' capturing' : ''}">
-        <div class="keybind-note">${label}<span class="keybind-note-idx">マス${i + 1}</span></div>
-        <div class="keybind-key-display">${capturing ? '入力待ち…' : escapeHtml(keyDisplayLabel(keyBindings[i]))}</div>
-        <button type="button" class="mini-btn${capturing ? ' primary' : ''}" onclick="startKeyCapture(${i})">${capturing ? 'キャンセル' : '変更'}</button>
+        <div class="keybind-note">${escapeHtml(noteLabel(i))}<span class="keybind-note-idx">${escapeHtml(t('keybindNoteIdx', { n: i + 1 }))}</span></div>
+        <div class="keybind-key-display">${capturing ? escapeHtml(t('keybindWaitingInput')) : escapeHtml(keyDisplayLabel(keyBindings[i]))}</div>
+        <button type="button" class="mini-btn${capturing ? ' primary' : ''}" onclick="startKeyCapture(${i})">${capturing ? escapeHtml(t('keybindCancelBtn')) : escapeHtml(t('keybindChangeBtn'))}</button>
       </div>`;
   }).join('');
 }
@@ -1556,7 +2015,7 @@ function resetKeyBindings() {
   capturingKeyIndex = null;
   renderKeyBindModal();
   refreshAllKeyHints();
-  showToast('キー割り当てを初期設定に戻しました');
+  showToast(t('resetKeyBindingsToast'));
 }
 function refreshAllKeyHints() {
   if (currentSong && document.getElementById('viewEditor').classList.contains('active')) renderBigGrid();
@@ -1582,7 +2041,7 @@ function handleGlobalKeydown(e) {
     const swapIdx = keyBindings.findIndex((k, idx) => idx !== capturingKeyIndex && k === newKey);
     if (swapIdx >= 0) {
       keyBindings[swapIdx] = keyBindings[capturingKeyIndex];
-      showToast(`「${NOTE_LABELS[swapIdx]}」（マス${swapIdx + 1}）と入れ替えました`);
+      showToast(t('keySwapToast', { label: noteLabel(swapIdx), n: swapIdx + 1 }));
     }
     keyBindings[capturingKeyIndex] = newKey;
     saveKeyBindings(keyBindings);
@@ -1664,10 +2123,10 @@ async function generateShareCode() {
     lastShareCode = await encodeShareCode({ kind: 'tai-score-song', v: 1, song: currentSong });
     outputEl.innerHTML = `
       <textarea class="code-box" id="shareCodeOutput" readonly onclick="this.select()">${escapeHtml(lastShareCode)}</textarea>
-      <button type="button" class="action-btn secondary" onclick="copyShareCode()">📋 コードをコピー</button>`;
+      <button type="button" class="action-btn secondary" onclick="copyShareCode()">${escapeHtml(t('copyShareCodeBtn'))}</button>`;
   } catch (e) {
     statusEl.className = 'status-msg err';
-    statusEl.textContent = 'コードの作成に失敗しました。';
+    statusEl.textContent = t('codeGenFailed');
   }
 }
 async function copyShareCode() {
@@ -1678,10 +2137,10 @@ async function copyShareCode() {
   try {
     await navigator.clipboard.writeText(ta.value);
     statusEl.className = 'status-msg ok';
-    statusEl.textContent = 'コピーしました。SNSやメッセージで貼り付けて共有できます。';
+    statusEl.textContent = t('copySuccessShare');
   } catch (e) {
     statusEl.className = 'status-msg err';
-    statusEl.textContent = 'コピーに失敗しました。コードが選択された状態なので手動でコピーしてください。';
+    statusEl.textContent = t('copyFailedShare');
   }
 }
 
@@ -1728,7 +2187,7 @@ function isAbcTextSheet(text) {
   return tokens.length > 0 && tokens.every(tok => /^(\.|([A-C][1-5])+)$/i.test(tok));
 }
 function textSheetToSong(text) {
-  let name = 'インポートした楽譜', bpm = 150, pitch = 'C', instrument = 'Harp';
+  let name = t('importedSongDefaultName'), bpm = 150, pitch = 'C', instrument = 'Harp';
   const bodyLines = [];
   text.split(/\r?\n/).forEach(line => {
     const trimmed = line.trim();
@@ -1755,8 +2214,8 @@ function generateTextSheet() {
   const text = songToTextSheet(currentSong);
   document.getElementById('shareTextArea').innerHTML = `
     <textarea class="code-box" id="shareTextOutput" readonly onclick="this.select()" style="min-height:130px; font-family:monospace;">${escapeHtml(text)}</textarea>
-    <button type="button" class="action-btn secondary" onclick="copyTextSheet()">📋 テキストをコピー</button>
-    <button type="button" class="action-btn secondary" onclick="downloadTextSheet()">⬇️ テキストファイルでダウンロード</button>`;
+    <button type="button" class="action-btn secondary" onclick="copyTextSheet()">${escapeHtml(t('copyTextBtn'))}</button>
+    <button type="button" class="action-btn secondary" onclick="downloadTextSheet()">${escapeHtml(t('downloadTextBtn'))}</button>`;
 }
 async function copyTextSheet() {
   const ta = document.getElementById('shareTextOutput');
@@ -1766,15 +2225,15 @@ async function copyTextSheet() {
   try {
     await navigator.clipboard.writeText(ta.value);
     statusEl.className = 'status-msg ok';
-    statusEl.textContent = 'コピーしました。LINEやDiscordに貼り付けて共有できます。貼り付けられた側は「読み込む」からこのテキストをそのまま読み込めます。';
+    statusEl.textContent = t('copySuccessText');
   } catch (e) {
     statusEl.className = 'status-msg err';
-    statusEl.textContent = 'コピーに失敗しました。テキストが選択された状態なので手動でコピーしてください。';
+    statusEl.textContent = t('copyFailedText');
   }
 }
 function downloadTextSheet() {
   downloadBlob(songToTextSheet(currentSong), `${currentSong.name || 'song'}.txt`, 'text/plain');
-  showToast('ダウンロードしました');
+  showToast(t('downloadedToast'));
 }
 
 function downloadBlob(content, filename, type) {
@@ -1788,12 +2247,12 @@ function downloadBlob(content, filename, type) {
 function downloadNativeFile() {
   downloadBlob(JSON.stringify({ kind: 'tai-score-song', v: 1, song: currentSong }, null, 1),
     `${currentSong.name || 'song'}.taiscore.json`, 'application/json');
-  showToast('ダウンロードしました');
+  showToast(t('downloadedToast'));
 }
 function downloadSpecyFile() {
   downloadBlob(JSON.stringify(songToSpecyFormat(currentSong), null, 1),
     `${currentSong.name || 'song'}.json`, 'application/json');
-  showToast('ダウンロードしました');
+  showToast(t('downloadedToast'));
 }
 
 /* ================================================================
@@ -1818,7 +2277,7 @@ function specyFormatToSong(data) {
   const columns = data.columns || [];
   return {
     id: genId(),
-    name: data.name || 'インポートした楽譜',
+    name: data.name || t('importedSongDefaultName'),
     bpm: data.bpm || 150,
     pitch: data.pitch || 'C',
     instrument: (data.instruments && data.instruments[0] && data.instruments[0].name) || 'Harp',
@@ -1909,7 +2368,7 @@ function oldSkyStudioFormatToSong(data) {
 
   const { frames, bpm } = quantizeNoteEventsToFrames(notes, Number(data.bpm));
   const pitch = PITCHES[Number.isInteger(data.pitchLevel) ? data.pitchLevel : 0] || 'C';
-  let name = data.name || 'インポートした楽譜';
+  let name = data.name || t('importedSongDefaultName');
   if (data.author) name += `（${data.author}）`;
 
   return { id: genId(), name, bpm, pitch, instrument: 'Harp', frames, updatedAt: Date.now() };
@@ -1931,7 +2390,7 @@ function pickImportableSong(parsed) {
   let extraNote = '';
   if (Array.isArray(parsed)) {
     if (parsed.length === 0) throw new Error('empty array');
-    if (parsed.length > 1) extraNote = `（${parsed.length}曲含まれていましたが、最初の1曲のみ読み込みました）`;
+    if (parsed.length > 1) extraNote = t('multiSongNote', { count: parsed.length });
     parsed = parsed[0];
   }
   let song;
@@ -1970,7 +2429,7 @@ async function importFromCode() {
     finishImport(song, statusEl, extraNote);
   } catch (e) {
     statusEl.className = 'status-msg err';
-    statusEl.textContent = 'コードの読み込みに失敗しました。コードが正しいかご確認ください。';
+    statusEl.textContent = t('importFailedCode');
   }
 }
 function importFromFile(event) {
@@ -1991,7 +2450,7 @@ function importFromFile(event) {
       finishImport(song, statusEl, extraNote);
     } catch (e) {
       statusEl.className = 'status-msg err';
-      statusEl.textContent = 'ファイルの読み込みに失敗しました。対応形式のファイルかご確認ください。';
+      statusEl.textContent = t('importFailedFile');
     }
   };
   reader.readAsArrayBuffer(file);
@@ -2004,7 +2463,7 @@ function finishImport(song, statusEl, extraNote, modalId) {
   songs.unshift(song);
   saveSongs(songs);
   statusEl.className = 'status-msg ok';
-  statusEl.textContent = `「${song.name}」を読み込みました。${extraNote || ''}`;
+  statusEl.textContent = t('importedSongStatus', { name: song.name, note: extraNote || '' });
   if (modalId === 'importModal') {
     const codeInput = document.getElementById('importCodeInput');
     if (codeInput) codeInput.value = '';
@@ -2052,16 +2511,16 @@ function setDetectMode(mode) {
   document.getElementById('videoDetectPanel').style.display = mode === 'video' ? 'block' : 'none';
   document.querySelectorAll('.input-mode-tab[data-detect-mode]').forEach(btn => btn.classList.toggle('active', btn.dataset.detectMode === mode));
   if (mode === 'video') {
-    showCalibArea('videoCalibAnchor', 'grid', '① ボタンがよく見えるシーンまでスライダーで動画を動かし、② 下のスライダーで枠をSkyの3×5マス（楽器のボタン）に合わせてください。');
+    showCalibArea('videoCalibAnchor', 'grid', t('videoDetectHint'));
   } else if (document.getElementById('useVisualRefineCheckbox').checked) {
-    showCalibArea('audioCalibAnchor', 'single', '音を弾いた瞬間に動く場所（手首など）が見えるシーンまでスライダーで動画を動かし、その場所に枠を合わせてください。');
+    showCalibArea('audioCalibAnchor', 'single', t('calibVisualHint'));
   } else {
     document.getElementById('calibArea').style.display = 'none';
   }
 }
 function onToggleVisualRefine() {
   if (document.getElementById('useVisualRefineCheckbox').checked) {
-    showCalibArea('audioCalibAnchor', 'single', '音を弾いた瞬間に動く場所（手首など）が見えるシーンまでスライダーで動画を動かし、その場所に枠を合わせてください。');
+    showCalibArea('audioCalibAnchor', 'single', t('calibVisualHint'));
   } else {
     document.getElementById('calibArea').style.display = 'none';
   }
@@ -2126,7 +2585,7 @@ async function onVideoFileSelected(event) {
   ]);
   if (loadResult !== 'ok') {
     statusEl.className = 'status-msg err';
-    statusEl.textContent = 'このファイルを読み込めませんでした。お使いのブラウザが対応していない形式か、ファイルが壊れている可能性があります。別の動画・音声ファイル（.mp4、.mp3など）でお試しください。';
+    statusEl.textContent = t('videoLoadFailed');
     event.target.value = '';
     return;
   }
@@ -2282,9 +2741,9 @@ async function startVideoAnalysis() {
 
   for (let step = 0; step < totalSteps; step++) {
     if (videoAnalysisCancelled) return;
-    const t = step * STEP_SEC;
-    if (t > duration) break;
-    await seekVideoTo(t);
+    const tSec = step * STEP_SEC;
+    if (tSec > duration) break;
+    await seekVideoTo(tSec);
     ctx.drawImage(videoImportEl, 0, 0, vw, vh);
 
     centers.forEach((c, i) => {
@@ -2294,9 +2753,9 @@ async function startVideoAnalysis() {
       if (hist.length > HISTORY_LEN) hist.shift();
       const baseline = hist.length >= 3 ? Math.min(...hist) : brightness;
       const isAbove = brightness > baseline + sensitivity;
-      if (isAbove && !wasAbove[i] && (t - lastOnsetTime[i]) > REFRACTORY_SEC) {
-        noteEvents.push({ idx: c.idx, time: Math.round(t * 1000) });
-        lastOnsetTime[i] = t;
+      if (isAbove && !wasAbove[i] && (tSec - lastOnsetTime[i]) > REFRACTORY_SEC) {
+        noteEvents.push({ idx: c.idx, time: Math.round(tSec * 1000) });
+        lastOnsetTime[i] = tSec;
       }
       wasAbove[i] = isAbove;
     });
@@ -2304,23 +2763,23 @@ async function startVideoAnalysis() {
     if (step % 5 === 0) {
       const pct = Math.round((step / totalSteps) * 100);
       progressFill.style.width = pct + '%';
-      progressText.textContent = `${pct}%（${noteEvents.length}個の音を検出）`;
+      progressText.textContent = t('detectedCountProgress', { pct, count: noteEvents.length });
       await new Promise(res => setTimeout(res, 0)); // 画面が固まらないよう一呼吸おく
     }
   }
   if (videoAnalysisCancelled) return;
 
   progressFill.style.width = '100%';
-  progressText.textContent = `解析完了：${noteEvents.length}個の音を検出しました`;
+  progressText.textContent = t('analysisCompleteCount', { count: noteEvents.length });
 
   const { frames, bpm } = quantizeNoteEventsToFrames(noteEvents, 150);
   const song = {
     id: genId(),
-    name: (videoImportFile && videoImportFile.name) ? videoImportFile.name.replace(/\.[^.]+$/, '') : '動画から作成した楽譜',
+    name: (videoImportFile && videoImportFile.name) ? videoImportFile.name.replace(/\.[^.]+$/, '') : t('videoDefaultSongName'),
     bpm, pitch: 'C', instrument: 'Harp', frames, updatedAt: Date.now()
   };
   const statusEl = document.getElementById('videoImportStatus');
-  finishImport(song, statusEl, '（自動解析のため、内容を編集画面でご確認ください）', 'videoImportModal');
+  finishImport(song, statusEl, t('autoAnalysisNote'), 'videoImportModal');
 }
 
 function cancelVideoAnalysis() {
@@ -2460,7 +2919,7 @@ async function startAudioAnalysis() {
   const progressFill = document.getElementById('videoProgressFill');
   const progressText = document.getElementById('videoProgressText');
   progressFill.style.width = '0%';
-  progressText.textContent = '音声を読み込んでいます…';
+  progressText.textContent = t('audioLoadingText');
   const statusEl = document.getElementById('videoImportStatus');
 
   const backToStep2 = (message) => {
@@ -2477,7 +2936,7 @@ async function startAudioAnalysis() {
     audioBuffer = await decodeCtx.decodeAudioData(arrayBuffer);
     decodeCtx.close();
   } catch (e) {
-    backToStep2('このファイルから音声を取り出せませんでした。音声トラックが無いか、対応していない形式の可能性があります。');
+    backToStep2(t('audioExtractFailed'));
     return;
   }
   if (videoAnalysisCancelled) return;
@@ -2520,7 +2979,7 @@ async function startAudioAnalysis() {
   for (let step = 0; step < totalSteps; step++) {
     if (videoAnalysisCancelled) return;
     const offset = step * HOP;
-    const t = offset / sampleRate;
+    const tSec = offset / sampleRate;
     for (let i = 0; i < WINDOW; i++) windowedBuf[i] = mono[offset + i] * hannWindow[i];
 
     const mags = targetFreqs.map(freq => goertzelOnWindowed(windowedBuf, sampleRate, freq));
@@ -2534,9 +2993,9 @@ async function startAudioAnalysis() {
       const risingEdge = mag > baseline * sensitivityRatio + 0.0006;
       const isPeerDominant = mag > maxMag * PEER_RATIO;
       const isAbove = risingEdge && isPeerDominant;
-      if (isAbove && !wasAbove[i] && (t - lastOnsetTime[i]) > REFRACTORY_SEC) {
-        noteEvents.push({ idx: i, time: Math.round(t * 1000) });
-        lastOnsetTime[i] = t;
+      if (isAbove && !wasAbove[i] && (tSec - lastOnsetTime[i]) > REFRACTORY_SEC) {
+        noteEvents.push({ idx: i, time: Math.round(tSec * 1000) });
+        lastOnsetTime[i] = tSec;
       }
       wasAbove[i] = isAbove;
     });
@@ -2544,21 +3003,21 @@ async function startAudioAnalysis() {
     if (step % 20 === 0) {
       const pct = Math.round((step / totalSteps) * 100);
       progressFill.style.width = pct + '%';
-      progressText.textContent = `${pct}%（${noteEvents.length}個の音を検出）`;
+      progressText.textContent = t('detectedCountProgress', { pct, count: noteEvents.length });
       await new Promise(res => setTimeout(res, 0));
     }
   }
   if (videoAnalysisCancelled) return;
 
   progressFill.style.width = '100%';
-  progressText.textContent = `${noteEvents.length}個の音を検出しました`;
+  progressText.textContent = t('notesDetectedCount', { count: noteEvents.length });
 
   if (document.getElementById('useVisualRefineCheckbox').checked && videoImportEl && videoImportEl.videoWidth) {
-    progressText.textContent = '映像でタイミングを補正しています…';
+    progressText.textContent = t('visualRefiningText');
     const visualOnsets = await detectVisualOnsetTimes(async (step, total) => {
       const pct = Math.round((step / total) * 100);
       progressFill.style.width = pct + '%';
-      progressText.textContent = `映像でタイミングを補正中… ${pct}%`;
+      progressText.textContent = t('visualRefiningProgress', { pct });
       await new Promise(res => setTimeout(res, 0));
     });
     if (videoAnalysisCancelled) return;
@@ -2566,15 +3025,15 @@ async function startAudioAnalysis() {
   }
 
   progressFill.style.width = '100%';
-  progressText.textContent = `解析完了：${noteEvents.length}個の音を検出しました`;
+  progressText.textContent = t('analysisCompleteCount', { count: noteEvents.length });
 
   const { frames, bpm } = quantizeNoteEventsToFrames(noteEvents, 150);
   const song = {
     id: genId(),
-    name: (videoImportFile && videoImportFile.name) ? videoImportFile.name.replace(/\.[^.]+$/, '') : '音声から作成した楽譜',
+    name: (videoImportFile && videoImportFile.name) ? videoImportFile.name.replace(/\.[^.]+$/, '') : t('audioDefaultSongName'),
     bpm, pitch, instrument: 'Harp', frames, updatedAt: Date.now()
   };
-  finishImport(song, statusEl, '（自動解析のため、内容を編集画面でご確認ください）', 'videoImportModal');
+  finishImport(song, statusEl, t('autoAnalysisNote'), 'videoImportModal');
 }
 
 /* ================================================================
@@ -2622,8 +3081,9 @@ function onImageFilesSelected(event) {
   const files = Array.from(event.target.files || []);
   if (files.length === 0) return;
   imageImportFiles = files;
+  const sep = LANG === 'en' ? ', ' : '、';
   document.getElementById('imageImportFileList').textContent =
-    `${files.length}枚選択中：` + files.map(f => f.name).join('、');
+    t('imageSelectedCount', { n: files.length, names: files.map(f => f.name).join(sep) });
 }
 
 function loadImageBitmapFromFile(file) {
@@ -2956,7 +3416,7 @@ function analyzeSheetImage(bitmap) {
 
 async function startImageAnalysis() {
   imageAnalysisCancelled = false;
-  if (imageImportFiles.length === 0) { showToast('画像を選んでください'); return; }
+  if (imageImportFiles.length === 0) { showToast(t('noImageSelectedToast')); return; }
   document.getElementById('imageImportStep1').style.display = 'none';
   document.getElementById('imageImportStep2').style.display = 'block';
   const progressFill = document.getElementById('imageProgressFill');
@@ -2975,7 +3435,7 @@ async function startImageAnalysis() {
 
   for (let pageIdx = 0; pageIdx < sortedFiles.length; pageIdx++) {
     if (imageAnalysisCancelled) return;
-    progressText.textContent = `画像を解析しています…（${pageIdx + 1}/${sortedFiles.length}枚目）`;
+    progressText.textContent = t('imageAnalyzingProgress', { page: pageIdx + 1, total: sortedFiles.length });
     progressFill.style.width = `${Math.round((pageIdx / sortedFiles.length) * 90)}%`;
     await new Promise(r => setTimeout(r, 0));
 
@@ -3019,8 +3479,8 @@ async function startImageAnalysis() {
     document.getElementById('imageImportStep1').style.display = 'block';
     statusEl.className = 'status-msg err';
     statusEl.textContent = pagesOk === 0
-      ? '画像を読み込めませんでした。対応形式（.png、.jpgなど）かご確認ください。'
-      : '五線や音符を検出できませんでした。五線がはっきり写っている画像でお試しください。';
+      ? t('imageLoadFailed')
+      : t('staffNotDetected');
     return;
   }
 
@@ -3061,10 +3521,10 @@ async function startImageAnalysis() {
   const { frames, bpm } = quantizeNoteEventsToFrames(notesForQuantize, 150);
   const song = {
     id: genId(),
-    name: (sortedFiles[0].name || '楽譜画像から作成した楽譜').replace(/\.[^.]+$/, ''),
+    name: (sortedFiles[0].name || t('imageDefaultSongName')).replace(/\.[^.]+$/, ''),
     bpm, pitch: 'C', instrument: 'Harp', frames, updatedAt: Date.now()
   };
-  finishImport(song, statusEl, '（画像からの自動認識のため、音の高さ・タイミングとも必ず編集画面でご確認・修正ください。#・♭やオクターブは特に自動判定の精度が低いです）', 'imageImportModal');
+  finishImport(song, statusEl, t('imageAutoAnalysisNote'), 'imageImportModal');
 }
 
 /* ================================================================
@@ -3083,7 +3543,7 @@ async function loadSongFromUrlHash() {
       songs.unshift(song);
       saveSongs(songs);
       openEditor(song.id);
-      showToast(`共有された楽譜「${song.name}」を読み込みました`);
+      showToast(t('sharedSongLoadedToast', { name: song.name }));
     }
   } catch (e) { /* 不正なリンクは無視 */ }
 }
@@ -3099,7 +3559,7 @@ function dmExport() {
   downloadBlob(JSON.stringify(payload, null, 1), `tai-score-backup_${new Date().toISOString().slice(0,10)}.json`, 'application/json');
   const statusEl = document.getElementById('dmStatus');
   statusEl.className = 'status-msg ok';
-  statusEl.textContent = 'バックアップをダウンロードしました。';
+  statusEl.textContent = t('dmBackupDownloaded');
 }
 let dmPendingImportData = null;
 function dmImportFileSelected(event) {
@@ -3115,12 +3575,12 @@ function dmImportFileSelected(event) {
       dmPendingImportData = data;
       const count = (JSON.parse(data[SONGS_KEY]) || []).length;
       document.getElementById('dmImportArea').innerHTML =
-        `<div class="status-msg">${count}件の楽譜が見つかりました。</div>
-         <button type="button" class="action-btn primary" onclick="dmConfirmImport()">✅ 復元する（今のデータは上書きされます）</button>`;
+        `<div class="status-msg">${escapeHtml(t('dmSongsFound', { count }))}</div>
+         <button type="button" class="action-btn primary" onclick="dmConfirmImport()">${escapeHtml(t('dmRestoreBtn'))}</button>`;
       statusEl.textContent = '';
     } catch (e) {
       statusEl.className = 'status-msg err';
-      statusEl.textContent = 'このツールで作成したバックアップファイルではないようです。';
+      statusEl.textContent = t('dmInvalidFile');
     }
   };
   reader.readAsText(file);
@@ -3130,32 +3590,33 @@ function dmConfirmImport() {
   if (!dmPendingImportData) return;
   localStorage.setItem(SONGS_KEY, dmPendingImportData[SONGS_KEY]);
   document.getElementById('dmStatus').className = 'status-msg ok';
-  document.getElementById('dmStatus').textContent = '復元しました。';
+  document.getElementById('dmStatus').textContent = t('dmRestored');
   document.getElementById('dmImportArea').innerHTML = '';
   dmPendingImportData = null;
   renderLibrary();
 }
 function dmRenderWipeArea() {
   document.getElementById('dmWipeArea').innerHTML =
-    `<button type="button" class="mini-btn danger" onclick="dmStartWipe()">🗑️ 全ての楽譜を削除</button>`;
+    `<button type="button" class="mini-btn danger" onclick="dmStartWipe()">${escapeHtml(t('dmWipeAllBtn'))}</button>`;
 }
 function dmStartWipe() {
   document.getElementById('dmWipeArea').innerHTML = `
-    <div class="status-msg err">本当にすべての楽譜を削除しますか？この操作は取り消せません。</div>
-    <button type="button" class="action-btn secondary" onclick="dmConfirmWipe()" style="background:var(--red); color:#fff; border-color:var(--red);">削除する</button>
-    <button type="button" class="action-btn secondary" onclick="dmRenderWipeArea()">キャンセル</button>`;
+    <div class="status-msg err">${escapeHtml(t('dmWipeConfirmText'))}</div>
+    <button type="button" class="action-btn secondary" onclick="dmConfirmWipe()" style="background:var(--red); color:#fff; border-color:var(--red);">${escapeHtml(t('dmWipeConfirmBtn'))}</button>
+    <button type="button" class="action-btn secondary" onclick="dmRenderWipeArea()">${escapeHtml(t('cancelBtn'))}</button>`;
 }
 function dmConfirmWipe() {
   localStorage.removeItem(SONGS_KEY);
   dmRenderWipeArea();
   document.getElementById('dmStatus').className = 'status-msg ok';
-  document.getElementById('dmStatus').textContent = '削除しました。';
+  document.getElementById('dmStatus').textContent = t('dmWiped');
   renderLibrary();
 }
 
 /* ================================================================
    初期化
    ================================================================ */
+applyI18n();
 populatePitchSelect();
 dmRenderWipeArea();
 renderLibrary();
