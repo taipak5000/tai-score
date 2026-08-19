@@ -11,6 +11,19 @@
   <meta name="theme-color" content="#FF2D55">
   <title>楽譜づくり - Sky所持率管理</title>
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <script>
+    // 🌓 描画前にテーマを確定させ、ダークモード時に一瞬でも明るい背景が
+    // 表示されてしまう「ちらつき」を防止する（下部の本体スクリプト読み込み前に同期実行）
+    (function () {
+      try {
+        var saved = localStorage.getItem('sky_app_theme');
+        var isDark = saved ? (saved === 'dark') : window.matchMedia('(prefers-color-scheme: dark)').matches;
+        document.documentElement.setAttribute('data-theme', isDark ? 'dark' : 'light');
+      } catch (e) {
+        document.documentElement.setAttribute('data-theme', 'light');
+      }
+    })();
+  </script>
   <style>
     :root {
       --bg:        #F2F2F7;
@@ -30,6 +43,18 @@
       --note-off:  #E5E5EA;
       --note-on:   #FF2D55;
     }
+    /* 🌙 ダークモード用のカラー上書き（sky_app_theme。:root の値はライトモード用のまま変更しない） */
+    [data-theme="dark"] {
+      --bg:        #000000;
+      --card:      #1C1C1E;
+      --sep:       rgba(255,255,255,0.14);
+      --pink-d:    #FF6482;
+      --pink-bg:   rgba(255,45,85,0.18);
+      --text:      #F2F2F7;
+      --text-2:    #98989D;
+      --text-3:    #636366;
+      --note-off:  #3A3A3C;
+    }
     *, *::before, *::after { margin:0; padding:0; box-sizing:border-box; }
     a { text-decoration:none; color:inherit; -webkit-tap-highlight-color:transparent; }
     button { cursor:pointer; border:none; background:none; font-family:inherit; }
@@ -46,14 +71,15 @@
       border-bottom: 0.5px solid var(--sep); padding: 14px 20px 12px;
       display: flex; align-items: center; justify-content: space-between;
     }
+    [data-theme="dark"] nav { background: rgba(0,0,0,0.88); }
     .nav-title { font-size: 17px; font-weight: 600; letter-spacing: -0.3px; }
     .nav-right { display: flex; align-items: center; gap: 8px; }
-    .sidebar-toggle-btn, .lang-toggle-btn {
+    .sidebar-toggle-btn, .lang-toggle-btn, .settings-toggle-btn {
       background: var(--card); border: 1px solid var(--sep); border-radius: var(--r-sm);
       padding: 6px 12px; font-size: 13px; font-weight: 600; color: var(--text);
       display: flex; align-items: center; gap: 6px; white-space: nowrap;
     }
-    /* lang-toggle-btn intentionally excluded: unlike the hamburger, it stays visible at desktop width too */
+    /* lang-toggle-btn / settings-toggle-btn intentionally excluded: unlike the hamburger, they stay visible at desktop width too */
     @media (min-width: 850px) { .sidebar-toggle-btn { visibility: hidden; } }
 
     .sidebar-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.4); z-index: 499; }
@@ -233,6 +259,7 @@
     .big-note.on .key-badge { color: rgba(255,255,255,0.8); background: rgba(255,255,255,0.18); }
     .piano-key .key-badge { top: 4px; left: 4px; right: auto; }
     .piano-key.on .key-badge { color: rgba(255,255,255,0.8); background: rgba(255,255,255,0.18); }
+    [data-theme="dark"] .key-badge { background: rgba(0,0,0,0.5); color: var(--text-2); }
 
     .current-frame-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 10px; flex-wrap: wrap; }
     .current-frame-head .current-frame-label { margin-bottom: 0; }
@@ -247,7 +274,7 @@
     .piano-keys { display: flex; gap: 3px; min-width: max-content; padding: 4px 2px 2px; }
     .piano-key {
       position: relative;
-      width: 38px; height: 130px; background: #fff; border: 1.5px solid var(--sep); border-radius: 0 0 8px 8px;
+      width: 38px; height: 130px; background: var(--card); border: 1.5px solid var(--sep); border-radius: 0 0 8px 8px;
       display: flex; align-items: flex-end; justify-content: center; padding-bottom: 10px;
       font-size: 12px; font-weight: 700; color: var(--text-2); flex-shrink: 0;
       transition: background 0.08s, transform 0.08s; user-select: none; cursor: pointer;
@@ -384,7 +411,7 @@
     .perf-key-label { font-size: clamp(15px, 5vw, 28px); font-weight: 700; line-height: 1; }
     .perf-key-hint { font-size: clamp(9px, 2vw, 12px); font-weight: 700; opacity: 0.5; letter-spacing: 0.5px; }
     .perf-key:active, .perf-key.pressed-flash { transform: scale(0.93); background: var(--pink-bg); color: var(--pink-d); }
-    .perf-key.target { background: #fff; color: var(--pink-d); box-shadow: 0 0 0 3px var(--pink) inset; animation: perfPulse 0.9s ease-in-out infinite; }
+    .perf-key.target { background: var(--card); color: var(--pink-d); box-shadow: 0 0 0 3px var(--pink) inset; animation: perfPulse 0.9s ease-in-out infinite; }
     .perf-key.hit { background: var(--green); color: #fff; box-shadow: none; animation: none; }
     .perf-key.miss-flash { background: var(--red); color: #fff; }
     @keyframes perfPulse {
@@ -406,6 +433,12 @@
     }
     .keybind-row.capturing .keybind-key-display { color: var(--pink-d); border-color: var(--pink); }
 
+    /* ── 表示設定モーダル ─────────────────────────── */
+    .settings-section-label { font-size: 12.5px; font-weight: 700; color: var(--text-2); margin-bottom: 8px; }
+    .settings-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 2px 0; }
+    .shortcut-list { display: flex; flex-direction: column; gap: 8px; margin-top: 12px; }
+    .shortcut-row { display: flex; align-items: center; gap: 10px; font-size: 12.5px; color: var(--text-2); }
+
     .toast {
       position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%) translateY(20px);
       background: rgba(28,28,30,0.92); color: #fff; padding: 10px 18px; border-radius: 999px;
@@ -420,6 +453,7 @@
   <div class="nav-title" data-i18n="navTitle">🎵 楽譜づくり</div>
   <div class="nav-right">
     <button class="lang-toggle-btn" id="langToggleBtn" onclick="toggleLang()">EN</button>
+    <button class="settings-toggle-btn" data-i18n-title="settingsModalTitle" title="⚙️ 表示設定" onclick="settingsOpen()">⚙️</button>
     <button class="sidebar-toggle-btn" data-i18n="sidebarToggle" onclick="toggleSidebar()">☰ ツール</button>
   </div>
 </nav>
@@ -719,6 +753,34 @@
   </div>
 </div>
 
+<!-- ▸ 表示設定モーダル（ダークモード・キーボードショートカット。既存の「⌨️ キーボード設定」＝音マスの
+     キー割り当てとは別の、全ツール共通の機能） -->
+<div class="modal-overlay" id="settingsModal" onclick="if(event.target===this)closeModal('settingsModal')">
+  <div class="modal-card">
+    <div class="modal-header">
+      <span class="modal-title" data-i18n="settingsModalTitle">⚙️ 表示設定</span>
+      <button class="modal-close" onclick="closeModal('settingsModal')">✕</button>
+    </div>
+
+    <div class="settings-section-label" data-i18n="settingsDisplaySection">🌙 表示</div>
+    <div class="settings-row">
+      <span data-i18n="settingsDarkModeLabel">ダークモード</span>
+      <button type="button" class="mini-btn primary" id="themeToggleBtn" onclick="toggleTheme()">🌙 ダーク</button>
+    </div>
+
+    <div class="settings-section-label" style="margin-top:18px;" data-i18n="settingsShortcutsSection">⌨️ キーボードショートカット</div>
+    <label class="settings-row" style="cursor:pointer;">
+      <span data-i18n="settingsShortcutsEnableLabel">ショートカットを有効にする</span>
+      <input type="checkbox" id="shortcutsEnabledCheckbox" style="accent-color:var(--pink); width:17px; height:17px; flex-shrink:0;" onchange="onShortcutsEnabledChange(event)">
+    </label>
+    <div class="shortcut-list">
+      <div class="shortcut-row"><span class="keybind-key-display" style="min-width:34px;">?</span><span data-i18n="settingsShortcutOpen">この設定を開く</span></div>
+      <div class="shortcut-row"><span class="keybind-key-display" style="min-width:34px;">D</span><span data-i18n="settingsShortcutTheme">ダークモード切替</span></div>
+      <div class="shortcut-row"><span class="keybind-key-display" style="min-width:34px;">Esc</span><span data-i18n="settingsShortcutEsc">開いているウィンドウを閉じる</span></div>
+    </div>
+  </div>
+</div>
+
 <!-- ▸ 演奏オーバーレイ（練習モード／フリー演奏モード共通、画面いっぱいに固定表示） -->
 <div class="perf-overlay" id="perfOverlay">
   <div class="perf-header">
@@ -969,7 +1031,17 @@ const I18N = {
     keybindChangeBtn: '変更',
     resetKeyBindingsToast: 'キー割り当てを初期設定に戻しました',
     keySwapToast: '「{label}」（マス{n}）と入れ替えました',
-    sharedSongLoadedToast: '共有された楽譜「{name}」を読み込みました'
+    sharedSongLoadedToast: '共有された楽譜「{name}」を読み込みました',
+    settingsModalTitle: '⚙️ 表示設定',
+    settingsDisplaySection: '🌙 表示',
+    settingsDarkModeLabel: 'ダークモード',
+    themeDark: '🌙 ダーク',
+    themeLight: '☀️ ライト',
+    settingsShortcutsSection: '⌨️ キーボードショートカット',
+    settingsShortcutsEnableLabel: 'ショートカットを有効にする',
+    settingsShortcutOpen: 'この設定を開く',
+    settingsShortcutTheme: 'ダークモード切替',
+    settingsShortcutEsc: '開いているウィンドウを閉じる'
   },
   en: {
     pageTitle: 'Sheet Music Maker - Sky Collection Tracker',
@@ -1153,7 +1225,17 @@ const I18N = {
     keybindChangeBtn: 'Change',
     resetKeyBindingsToast: 'Key bindings reset to default',
     keySwapToast: 'Swapped with "{label}" (tile {n})',
-    sharedSongLoadedToast: 'Loaded the shared song "{name}"'
+    sharedSongLoadedToast: 'Loaded the shared song "{name}"',
+    settingsModalTitle: '⚙️ Display Settings',
+    settingsDisplaySection: '🌙 Display',
+    settingsDarkModeLabel: 'Dark Mode',
+    themeDark: '🌙 Dark',
+    themeLight: '☀️ Light',
+    settingsShortcutsSection: '⌨️ Keyboard Shortcuts',
+    settingsShortcutsEnableLabel: 'Enable keyboard shortcuts',
+    settingsShortcutOpen: 'Open this settings panel',
+    settingsShortcutTheme: 'Toggle dark mode',
+    settingsShortcutEsc: 'Close the open window'
   }
 };
 
@@ -2026,10 +2108,72 @@ function refreshAllKeyHints() {
 }
 
 /* ================================================================
+   ⚙️ 表示設定（ダークモード・キーボードショートカット）
+   sky_app_theme・sky_shortcuts_enabled は taipak5000.github.io 系ツール共通の
+   プレーンなグローバルキー（プロフィールごとの保存枠の対象外。端末ごとの
+   表示設定のため、sky_app_lang と同じ扱い）。
+   ================================================================ */
+const THEME_KEY = 'sky_app_theme';
+function isDarkMode() { return document.documentElement.getAttribute('data-theme') === 'dark'; }
+function applyThemeToDOM(isDark) {
+  document.documentElement.setAttribute('data-theme', isDark ? 'dark' : 'light');
+  const btn = document.getElementById('themeToggleBtn');
+  if (btn) btn.textContent = t(isDark ? 'themeDark' : 'themeLight');
+}
+function toggleTheme() {
+  const next = !isDarkMode();
+  applyThemeToDOM(next);
+  try { localStorage.setItem(THEME_KEY, next ? 'dark' : 'light'); } catch (e) { /* プライベートブラウジング等でlocalStorageが使えない場合も表示は継続する */ }
+}
+
+const SHORTCUTS_KEY = 'sky_shortcuts_enabled';
+function skyShortcutsEnabled() {
+  try {
+    const v = localStorage.getItem(SHORTCUTS_KEY);
+    return v === null ? true : v === '1'; // 未設定時は有効扱い
+  } catch (e) { return true; }
+}
+function onShortcutsEnabledChange(e) {
+  try { localStorage.setItem(SHORTCUTS_KEY, e.target.checked ? '1' : '0'); } catch (err) { /* 無視 */ }
+}
+function settingsOpen() {
+  applyThemeToDOM(isDarkMode()); // モーダルを開くたびボタン表示を現在のテーマに合わせ直す
+  const cb = document.getElementById('shortcutsEnabledCheckbox');
+  if (cb) cb.checked = skyShortcutsEnabled();
+  openModal('settingsModal');
+}
+
+// 現在ライブラリ画面を閲覧中か（演奏オーバーレイが手前に開いている場合は含まない）。
+// ?・d ショートカットは、マス目への入力・演奏・キー割り当てが一切発生し得ないこの場面でのみ
+// 有効にする（handleGlobalKeydown 側でも idx<0 のときだけ通る分岐に置いているため、
+// 音マスに d や ? を割り当てているユーザーには自動的に無効化される＝二重の安全策）。
+function isLibraryViewActive() {
+  return document.getElementById('viewLibrary').classList.contains('active') &&
+    !document.getElementById('perfOverlay').classList.contains('open');
+}
+
+// Escapeで閉じるモーダルを、開いている中から1つだけ選んで閉じる。後始末（状態リセット）が
+// 必要なモーダルは専用のclose関数を呼ぶ。演奏オーバーレイ（.perf-overlay）はmodal-overlayでは
+// ないため、ここでは一切対象にならない（＝演奏中にEscapeを押しても演奏オーバーレイは閉じない）。
+function closeTopmostOpenModal() {
+  if (document.getElementById('confirmModal').classList.contains('open')) { closeConfirm(); return; }
+  if (document.getElementById('keyBindModal').classList.contains('open')) { closeKeyBindModal(); return; }
+  if (document.getElementById('videoImportModal').classList.contains('open')) { closeVideoImportModal(); return; }
+  if (document.getElementById('imageImportModal').classList.contains('open')) { closeImageImportModal(); return; }
+  if (document.getElementById('settingsModal').classList.contains('open')) { closeModal('settingsModal'); return; }
+  if (document.getElementById('shareModal').classList.contains('open')) { closeModal('shareModal'); return; }
+  if (document.getElementById('importModal').classList.contains('open')) { closeModal('importModal'); return; }
+  if (document.getElementById('dmModal').classList.contains('open')) { closeModal('dmModal'); return; }
+}
+
+/* ================================================================
    キーボード操作の受付
    ・キー割り当て待ち中はそのキーを割り当てる（Escでキャンセル）
+   ・Escapeは、割り当て待ち中でなければ開いているモーダルを閉じる（全ツール共通）
    ・演奏オーバーレイが開いていれば演奏（onPerfKeyPress）
    ・エディタ画面を表示中なら作成（toggleNote＝マスのON/OFF切替）
+   ・どの音マスにも一致しないキーでライブラリ画面閲覧中に限り、?（表示設定を開く）・
+     d/D（ダークモード切替）を全ツール共通ショートカットとして受け付ける
    ・他のモーダルが開いている時や、入力欄にフォーカスがある時は無効
    ================================================================ */
 function handleGlobalKeydown(e) {
@@ -2052,13 +2196,28 @@ function handleGlobalKeydown(e) {
     return;
   }
 
+  // Escapeは「開いているモーダルを閉じる」共通ショートカット。クリックアウトサイドで閉じる
+  // 既存の挙動と同格のUXのため、sky_shortcuts_enabledのON/OFFに関わらず常に有効。
+  if (e.key === 'Escape') {
+    if (document.querySelector('.modal-overlay.open')) { closeTopmostOpenModal(); e.preventDefault(); }
+    return;
+  }
+
   if (document.querySelector('.modal-overlay.open')) return;
   const activeTag = document.activeElement && document.activeElement.tagName;
   if (activeTag === 'INPUT' || activeTag === 'TEXTAREA' || activeTag === 'SELECT') return;
   if (e.metaKey || e.ctrlKey || e.altKey) return;
 
   const idx = keyBindings.indexOf(normalizeKeyEvent(e));
-  if (idx < 0) return;
+  if (idx < 0) {
+    // どの音マスにも割り当てられていないキー。ライブラリ画面閲覧中（演奏・編集・キー割り当ての
+    // 入力が一切発生し得ない場面）に限り、?/d を全ツール共通ショートカットとして受け付ける。
+    if (isLibraryViewActive() && skyShortcutsEnabled()) {
+      if (e.key === '?') { e.preventDefault(); settingsOpen(); return; }
+      if (e.key === 'd' || e.key === 'D') { e.preventDefault(); toggleTheme(); return; }
+    }
+    return;
+  }
 
   if (perfMode && document.getElementById('perfOverlay').classList.contains('open')) {
     onPerfKeyPress(idx);
@@ -3617,6 +3776,7 @@ function dmConfirmWipe() {
    初期化
    ================================================================ */
 applyI18n();
+applyThemeToDOM(isDarkMode());
 populatePitchSelect();
 dmRenderWipeArea();
 renderLibrary();
