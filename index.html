@@ -795,12 +795,6 @@
       <button type="button" class="mini-btn primary" id="themeToggleBtn" onclick="toggleTheme()">🌙 ダーク</button>
     </div>
 
-    <div class="settings-section-label" style="margin-top:18px;" data-i18n="settingsLangSection">🌐 言語</div>
-    <div class="settings-lang-row">
-      <button type="button" class="mini-btn lang-select-btn" id="settingsLangJaBtn" onclick="setLang('ja')">日本語</button>
-      <button type="button" class="mini-btn lang-select-btn" id="settingsLangEnBtn" onclick="setLang('en')">English</button>
-    </div>
-
     <div class="settings-section-label" style="margin-top:18px;" data-i18n="settingsShortcutsSection">⌨️ キーボードショートカット</div>
     <label class="settings-row" style="cursor:pointer;">
       <span data-i18n="settingsShortcutsEnableLabel">ショートカットを有効にする</span>
@@ -811,6 +805,14 @@
       <div class="shortcut-row"><span class="keybind-key-display" style="min-width:34px;">D</span><span data-i18n="settingsShortcutTheme">ダークモード切替</span></div>
       <div class="shortcut-row"><span class="keybind-key-display" style="min-width:34px;">Esc</span><span data-i18n="settingsShortcutEsc">開いているウィンドウを閉じる</span></div>
     </div>
+
+    <div class="settings-section-label" style="margin-top:18px;" data-i18n="settingsLangSection">🌐 言語</div>
+    <div class="settings-lang-row">
+      <button type="button" class="mini-btn lang-select-btn" id="settingsLangJaBtn" onclick="setLang('ja')">日本語</button>
+      <button type="button" class="mini-btn lang-select-btn" id="settingsLangEnBtn" onclick="setLang('en')">English</button>
+    </div>
+
+    <button type="button" class="action-btn secondary" style="margin-top:18px;" data-i18n="settingsCloseBtn" onclick="closeModal('settingsModal')">閉じる</button>
   </div>
 </div>
 
@@ -1095,6 +1097,7 @@ const I18N = {
     settingsShortcutTheme: 'ダークモード切替',
     settingsShortcutEsc: '開いているウィンドウを閉じる',
     settingsLangSection: '🌐 言語',
+    settingsCloseBtn: '閉じる',
     dockLibrary: 'ライブラリ',
     dockEditor: '作成・演奏',
     dockTools: '他のツール',
@@ -1294,6 +1297,7 @@ const I18N = {
     settingsShortcutTheme: 'Toggle dark mode',
     settingsShortcutEsc: 'Close the open window',
     settingsLangSection: '🌐 Language',
+    settingsCloseBtn: 'Close',
     dockLibrary: 'Library',
     dockEditor: 'Create',
     dockTools: 'Other Tools',
