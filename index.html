@@ -437,6 +437,8 @@
     /* ── 表示設定モーダル ─────────────────────────── */
     .settings-section-label { font-size: 12.5px; font-weight: 700; color: var(--text-2); margin-bottom: 8px; }
     .settings-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 2px 0; }
+    .settings-lang-row { display: flex; gap: 8px; flex-wrap: wrap; padding: 2px 0; }
+    .lang-select-btn.active { background: var(--pink); color: #fff; }
     .shortcut-list { display: flex; flex-direction: column; gap: 8px; margin-top: 12px; }
     .shortcut-row { display: flex; align-items: center; gap: 10px; font-size: 12.5px; color: var(--text-2); }
 
@@ -793,6 +795,12 @@
       <button type="button" class="mini-btn primary" id="themeToggleBtn" onclick="toggleTheme()">🌙 ダーク</button>
     </div>
 
+    <div class="settings-section-label" style="margin-top:18px;" data-i18n="settingsLangSection">🌐 言語</div>
+    <div class="settings-lang-row">
+      <button type="button" class="mini-btn lang-select-btn" id="settingsLangJaBtn" onclick="setLang('ja')">日本語</button>
+      <button type="button" class="mini-btn lang-select-btn" id="settingsLangEnBtn" onclick="setLang('en')">English</button>
+    </div>
+
     <div class="settings-section-label" style="margin-top:18px;" data-i18n="settingsShortcutsSection">⌨️ キーボードショートカット</div>
     <label class="settings-row" style="cursor:pointer;">
       <span data-i18n="settingsShortcutsEnableLabel">ショートカットを有効にする</span>
@@ -1086,6 +1094,7 @@ const I18N = {
     settingsShortcutOpen: 'この設定を開く',
     settingsShortcutTheme: 'ダークモード切替',
     settingsShortcutEsc: '開いているウィンドウを閉じる',
+    settingsLangSection: '🌐 言語',
     dockLibrary: 'ライブラリ',
     dockEditor: '作成・演奏',
     dockTools: '他のツール',
@@ -1284,6 +1293,7 @@ const I18N = {
     settingsShortcutOpen: 'Open this settings panel',
     settingsShortcutTheme: 'Toggle dark mode',
     settingsShortcutEsc: 'Close the open window',
+    settingsLangSection: '🌐 Language',
     dockLibrary: 'Library',
     dockEditor: 'Create',
     dockTools: 'Other Tools',
@@ -1317,6 +1327,17 @@ function applyI18n() {
   });
   const langBtn = document.getElementById('langToggleBtn');
   if (langBtn) langBtn.textContent = LANG === 'ja' ? 'EN' : '日本語';
+  syncLangSelectButtons();
+}
+
+// 表示設定モーダル内の言語セレクター（日本語／English）のハイライトを、
+// 現在の LANG に合わせ直す。ボタン自体の文字（「日本語」「English」）は
+// 常にその言語自身の表記のまま固定で、LANG によって翻訳はしない。
+function syncLangSelectButtons() {
+  const jaBtn = document.getElementById('settingsLangJaBtn');
+  const enBtn = document.getElementById('settingsLangEnBtn');
+  if (jaBtn) jaBtn.classList.toggle('active', LANG === 'ja');
+  if (enBtn) enBtn.classList.toggle('active', LANG === 'en');
 }
 
 // 言語切り替え時、既に描画済みの動的コンテンツ（ライブラリ・エディタ・
@@ -1346,10 +1367,20 @@ function refreshDynamicUI() {
 }
 
 function toggleLang() {
-  LANG = LANG === 'ja' ? 'en' : 'ja';
+  setLang(LANG === 'ja' ? 'en' : 'ja');
+}
+
+// 表示設定モーダルの言語セレクター用：ボタンを押すたびに切り替えるのではなく、
+// 指定した言語に直接切り替える。既に選択中の言語を指定した場合は何もしない
+// （無駄な再描画・保存を避ける安全な no-op）。
+function setLang(lang) {
+  lang = lang === 'en' ? 'en' : 'ja';
+  if (LANG === lang) return;
+  LANG = lang;
   saveLang(LANG);
   applyI18n();
   refreshDynamicUI();
+  applyThemeToDOM(isDarkMode()); // ダークモードボタンのラベル（言語依存）も追従させる
 }
 
 /* ================================================================
@@ -2192,6 +2223,7 @@ function settingsOpen() {
   applyThemeToDOM(isDarkMode()); // モーダルを開くたびボタン表示を現在のテーマに合わせ直す
   const cb = document.getElementById('shortcutsEnabledCheckbox');
   if (cb) cb.checked = skyShortcutsEnabled();
+  syncLangSelectButtons(); // モーダルを開くたびハイライトを現在の言語に合わせ直す
   openModal('settingsModal');
 }
 
