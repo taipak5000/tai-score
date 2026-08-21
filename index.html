@@ -148,7 +148,7 @@
     .song-list { display: flex; flex-direction: column; gap: 10px; margin-top: 14px; }
     .song-card { background: var(--card); border-radius: var(--r); padding: 14px; box-shadow: 0 1px 4px rgba(0,0,0,0.07); }
     .song-card-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
-    .song-card-name { font-size: 15px; font-weight: 700; }
+    .song-card-name { font-size: 15px; font-weight: 700; overflow-wrap: break-word; word-break: break-word; }
     .song-card-meta { font-size: 12px; color: var(--text-2); margin-top: 3px; }
     .song-card-btns { display: flex; gap: 6px; margin-top: 10px; flex-wrap: wrap; }
     .mini-btn {
@@ -1438,7 +1438,13 @@ function genId() { return Date.now().toString(36) + Math.random().toString(36).s
 let currentSong = null; // 編集中の曲（保存前はライブラリに存在しない場合もある）
 let selectedFrameIndex = 0;
 
+let creatingNewSong = false;
 function createNewSong() {
+  // 連打防止: 短時間の連続クリックで空の曲が複数作られてしまうのを防ぐ
+  if (creatingNewSong) return;
+  creatingNewSong = true;
+  setTimeout(() => { creatingNewSong = false; }, 1500);
+
   currentSong = {
     id: genId(), name: t('newSongName'), bpm: 150, pitch: 'C', instrument: 'Harp',
     frames: [[], [], [], [], [], [], [], []], updatedAt: Date.now()
