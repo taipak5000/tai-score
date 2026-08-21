@@ -526,6 +526,7 @@
         <button class="new-song-btn secondary" data-i18n="btnImport" onclick="openModal('importModal')">📥 読み込む</button>
         <button class="new-song-btn secondary" data-i18n="btnVideoImport" onclick="openVideoImportModal()">🎥 動画から作成</button>
         <button class="new-song-btn secondary" data-i18n="btnImageImport" onclick="openImageImportModal()">🖼️ 楽譜画像から作成</button>
+        <button class="new-song-btn secondary" data-i18n="btnMidiImport" onclick="openMidiImportModal()">🎹 MIDIから作成</button>
         <button class="new-song-btn" data-i18n="btnNewSong" onclick="createNewSong()">＋ 新規作成</button>
       </div>
       <div class="song-list" id="songList"><!-- JS --></div>
@@ -733,6 +734,19 @@
     </div>
 
     <div id="imageImportStatus" class="status-msg"></div>
+  </div>
+</div>
+
+<!-- ▸ MIDIから楽譜を作成モーダル -->
+<div class="modal-overlay" id="midiImportModal" onclick="if(event.target===this)closeMidiImportModal()">
+  <div class="modal-card">
+    <div class="modal-header">
+      <span class="modal-title" data-i18n="midiImportModalTitle">🎹 MIDIから楽譜を作成</span>
+      <button class="modal-close" onclick="closeMidiImportModal()">✕</button>
+    </div>
+    <div class="hint" data-i18n="midiImportHint">標準MIDIファイル（.mid・.midi）を選ぶと、自動で楽譜を作成します。ファイルはどこにもアップロードされず、すべてこの端末（ブラウザ）内だけで処理されます。⚠️ 自動変換のため完璧ではありません。Skyの楽器で鳴らせない音（半音や音域外の音）は、オクターブ移動や最も近い音への置き換えで対応します。作成後は編集画面で内容を必ずご確認・修正してください。</div>
+    <input type="file" id="midiFileInput" accept=".mid,.midi,audio/midi,audio/x-midi" onchange="onMidiFileSelected(event)">
+    <div id="midiImportStatus" class="status-msg"></div>
   </div>
 </div>
 
@@ -1022,6 +1036,14 @@ const I18N = {
     staffNotDetected: '五線や音符を検出できませんでした。五線がはっきり写っている画像でお試しください。',
     imageDefaultSongName: '楽譜画像から作成した楽譜',
     imageAutoAnalysisNote: '（画像からの自動認識のため、音の高さ・タイミングとも必ず編集画面でご確認・修正ください。#・♭やオクターブは特に自動判定の精度が低いです）',
+    btnMidiImport: '🎹 MIDIから作成',
+    midiImportModalTitle: '🎹 MIDIから楽譜を作成',
+    midiImportHint: '標準MIDIファイル（.mid・.midi）を選ぶと、自動で楽譜を作成します。ファイルはどこにもアップロードされず、すべてこの端末（ブラウザ）内だけで処理されます。⚠️ 自動変換のため完璧ではありません。Skyの楽器で鳴らせない音（半音や音域外の音）は、オクターブ移動や最も近い音への置き換えで対応します。作成後は編集画面で内容を必ずご確認・修正してください。',
+    midiConvertingText: '変換しています…',
+    midiParseFailed: 'このMIDIファイルを読み込めませんでした。壊れているか、対応していない形式の可能性があります。',
+    midiNoNotesFound: 'このMIDIファイルには演奏できる音（ノート）が見つかりませんでした。',
+    midiDefaultSongName: 'MIDIから作成した楽譜',
+    midiAutoAnalysisNote: '（MIDIからの自動変換のため、内容を編集画面でご確認・修正ください。半音や音域外の音は、Skyの音域に収まるよう最も近い音に置き換えられています）',
     dmModalTitle: '💾 データのバックアップ・復元',
     dmHint: '作成した楽譜はすべてこの端末のブラウザだけに保存されています。機種変更やブラウザの変更に備えて、ときどきファイルとしてバックアップすることをおすすめします。',
     dmDownloadBtn: '⬇️ バックアップをダウンロード',
@@ -1222,6 +1244,14 @@ const I18N = {
     staffNotDetected: 'No staff or notes could be detected. Please try an image where the staff is clearly visible.',
     imageDefaultSongName: 'Song from Sheet Music Image',
     imageAutoAnalysisNote: ' (Created by automatic recognition from an image — please be sure to review and correct both pitch and timing in the editor. Sharps/flats and octaves in particular tend to be less accurate.)',
+    btnMidiImport: '🎹 Create from MIDI',
+    midiImportModalTitle: '🎹 Create Sheet Music from MIDI',
+    midiImportHint: "Select a standard MIDI file (.mid / .midi) and sheet music will be created automatically. The file is never uploaded anywhere — everything is processed entirely on this device (in the browser). ⚠️ Automatic conversion isn't perfect. Notes Sky's instrument can't play (semitones or notes outside its range) are handled by shifting octaves and/or replacing them with the closest playable note. After creating it, please be sure to review and correct the content in the editor.",
+    midiConvertingText: 'Converting…',
+    midiParseFailed: "This MIDI file couldn't be read. It may be corrupted or in an unsupported format.",
+    midiNoNotesFound: 'No playable notes were found in this MIDI file.',
+    midiDefaultSongName: 'Song from MIDI',
+    midiAutoAnalysisNote: " (Created by automatic conversion from MIDI — please review and correct the content in the editor. Semitones and notes outside Sky's range have been replaced with the closest playable note within its range.)",
     dmModalTitle: '💾 Backup & Restore Data',
     dmHint: "All the sheet music you've created is stored only in this device's browser. We recommend backing it up to a file occasionally in case you switch devices or browsers.",
     dmDownloadBtn: '⬇️ Download Backup',
@@ -3778,6 +3808,290 @@ async function startImageAnalysis() {
     bpm, pitch: 'C', instrument: 'Harp', frames, updatedAt: Date.now()
   };
   finishImport(song, statusEl, t('imageAutoAnalysisNote'), 'imageImportModal');
+}
+
+/* ================================================================
+   MIDIファイル（標準MIDIファイル/SMF）から楽譜を作成
+   外部ライブラリは使わず、ArrayBufferのバイト列からフォーマット0/1/2の
+   SMFを直接パースする（ヘッダーチャンク＋MTrkチャンク群、可変長数値
+   （VLQ）のデルタタイム、ランニングステータス、テンポ／トラック名の
+   メタイベントに対応）。
+   ・全トラックのノートオン（ベロシティ0はノートオフ扱い）を1本の
+     絶対ティック時系列に統合する（ドラムトラック＝チャンネル10は
+     旋律ではないため対象外にする）。
+   ・音の高さ：曲のMIDIノート番号をSkyの音域（NOTE_MIDI、C4〜C6の
+     全音階15音）へ、まずオクターブ単位で音域に近づけてから、最も
+     近い音へスナップする（半音はSkyの楽器で鳴らせないため、音域内でも
+     常にこのスナップが働く）。
+   ・タイミング：ファイル自身のticksPerQuarterNote（4分音符あたりの
+     ティック数）から16分音符ぶんのグリッド幅を求め、そのグリッドへ
+     ノートの開始ティックをスナップして、このサイトのマス目（frames）
+     に変換する。人間の演奏による微妙なズレはこの量子化で吸収され、
+     きれいなマス目に収まる。曲が長大でマス数が増えすぎる場合は
+     8分音符・4分音符…と段階的にグリッドを粗くして安全な範囲に収める。
+   ・テンポ：テンポ変更イベント（0xFF 0x51）をすべて拾い、区間の長さで
+     重み付けした平均テンポをBPMとして採用する（イベントが無ければ
+     120BPM）。
+   ================================================================ */
+function midiError(msgKey) {
+  const err = new Error(msgKey);
+  err.midiUserMessage = msgKey;
+  return err;
+}
+
+function readUint32(bytes, pos) {
+  return ((bytes[pos] << 24) | (bytes[pos + 1] << 16) | (bytes[pos + 2] << 8) | bytes[pos + 3]) >>> 0;
+}
+function readUint16(bytes, pos) {
+  return (bytes[pos] << 8) | bytes[pos + 1];
+}
+// 可変長数値（Variable Length Quantity）：各バイトの上位1bitが継続フラグ、下位7bitが値
+function readVarLen(bytes, pos, limit) {
+  let value = 0, b, count = 0;
+  do {
+    if (pos >= limit || count++ > 5) throw midiError('midiParseFailed');
+    b = bytes[pos++];
+    value = (value << 7) | (b & 0x7f);
+  } while (b & 0x80);
+  return [value >>> 0, pos];
+}
+function decodeMidiText(byteSubarray) {
+  try { return new TextDecoder('utf-8').decode(byteSubarray).trim(); } catch (e) { return ''; }
+}
+
+function parseMidiHeader(bytes) {
+  if (bytes.length < 14) throw midiError('midiParseFailed');
+  // "MThd"
+  if (bytes[0] !== 0x4D || bytes[1] !== 0x54 || bytes[2] !== 0x68 || bytes[3] !== 0x64) throw midiError('midiParseFailed');
+  const headerLen = readUint32(bytes, 4);
+  const format = readUint16(bytes, 8);
+  const trackCount = readUint16(bytes, 10);
+  const divisionRaw = readUint16(bytes, 12);
+  let ticksPerQuarter = null, smpte = null;
+  if (divisionRaw & 0x8000) {
+    // SMPTEタイムコード形式（映像同期用途などで稀に使われる）：
+    // 上位バイトが「-フレームレート」、下位バイトが1フレームあたりのティック数
+    const framesPerSecond = (256 - ((divisionRaw >> 8) & 0xFF)) || 30;
+    const ticksPerFrame = (divisionRaw & 0xFF) || 4;
+    smpte = { framesPerSecond, ticksPerFrame };
+  } else {
+    ticksPerQuarter = divisionRaw & 0x7FFF;
+  }
+  if (!smpte && ticksPerQuarter <= 0) throw midiError('midiParseFailed');
+  return { format, trackCount, ticksPerQuarter, smpte, headerEnd: 8 + headerLen };
+}
+
+// 1トラック（MTrkチャンクの中身）をイベント列にパースする。
+// ノートオフ自体はこのサイトの形式（開始タイミングのみを記録）に不要なため保持しない。
+function parseMidiTrackEvents(bytes, start, end) {
+  const events = [];
+  let pos = start, tick = 0, runningStatus = 0;
+  while (pos < end) {
+    let delta;
+    [delta, pos] = readVarLen(bytes, pos, end);
+    tick += delta;
+    if (pos >= end) break;
+
+    let statusByte = bytes[pos];
+    if (statusByte & 0x80) {
+      pos++;
+      if (statusByte < 0xF0) runningStatus = statusByte; // ランニングステータスの対象はチャンネルメッセージのみ
+    } else {
+      statusByte = runningStatus; // データバイトから開始＝ランニングステータスを使う
+      if (!statusByte) break; // 直前にステータスバイトが無いのに参照している＝不正なデータ
+    }
+
+    if (statusByte === 0xFF) {
+      // メタイベント
+      if (pos >= end) break;
+      const metaType = bytes[pos++];
+      let len; [len, pos] = readVarLen(bytes, pos, end);
+      const dataStart = pos, dataEnd = pos + len;
+      if (dataEnd > end) break;
+      if (metaType === 0x51 && len >= 3) {
+        events.push({ tick, type: 'tempo', usPerQuarter: (bytes[dataStart] << 16) | (bytes[dataStart + 1] << 8) | bytes[dataStart + 2] });
+      } else if (metaType === 0x03) {
+        events.push({ tick, type: 'trackName', text: decodeMidiText(bytes.subarray(dataStart, dataEnd)) });
+      }
+      // 0x2F（トラック終端）やその他のメタイベントは内容不要のため読み飛ばすのみ
+      pos = dataEnd;
+    } else if (statusByte === 0xF0 || statusByte === 0xF7) {
+      // SysEx：長さぶん読み飛ばす
+      let len; [len, pos] = readVarLen(bytes, pos, end);
+      pos += len;
+    } else if (statusByte >= 0x80 && statusByte <= 0xEF) {
+      const type = statusByte & 0xF0, channel = statusByte & 0x0F;
+      if (pos >= end) break;
+      const d1 = bytes[pos++];
+      if (type === 0xC0 || type === 0xD0) {
+        // プログラムチェンジ／チャンネルアフタータッチ：データ1バイトのみ
+      } else {
+        if (pos >= end) break;
+        const d2 = bytes[pos++];
+        if (type === 0x90 && d2 > 0) events.push({ tick, type: 'noteOn', note: d1, channel }); // velocity 0のノートオンはノートオフ扱い（ここでは単に無視）
+        // ノートオフ・コントロールチェンジ・ピッチベンド等は譜面のマス目には不要なので記録しない
+      }
+    } else {
+      break; // 未知のステータスバイト：これ以上安全に読み進められない
+    }
+  }
+  return events;
+}
+
+function parseMidiFile(arrayBuffer) {
+  const bytes = new Uint8Array(arrayBuffer);
+  const header = parseMidiHeader(bytes);
+  const tracks = [];
+  let pos = header.headerEnd;
+  while (pos + 8 <= bytes.length) {
+    const id = String.fromCharCode(bytes[pos], bytes[pos + 1], bytes[pos + 2], bytes[pos + 3]);
+    const len = readUint32(bytes, pos + 4);
+    const dataStart = pos + 8, dataEnd = dataStart + len;
+    if (dataEnd > bytes.length) break; // 末尾が壊れている／切れているファイル：それまでに読めた分だけ使う
+    if (id === 'MTrk') tracks.push(parseMidiTrackEvents(bytes, dataStart, dataEnd));
+    pos = dataEnd;
+  }
+  if (tracks.length === 0) throw midiError('midiParseFailed');
+  return { ticksPerQuarter: header.ticksPerQuarter, smpte: header.smpte, tracks };
+}
+
+// MIDIノート番号を、このサイト（＝Skyの楽器）の15音（NOTE_MIDI）のどれかへ変換する。
+// まず音域の外なら丸ごとオクターブ単位（12半音）で音域に近づけ、それでも半音のズレが
+// 残る場合（Skyの楽器はダイアトニック音階のみ＝黒鍵に対応していないため）は
+// 最も近い音へスナップする。
+// （楽譜画像インポートが使う既存の midiToSkyIndex と全く同じアルゴリズムのため、
+// 　二重実装を避けてそちらをそのまま再利用する）
+function mapMidiNoteToSkyIndex(midiNote) {
+  return midiToSkyIndex(midiNote);
+}
+
+// 区間の長さ（tick）で重み付けした平均テンポ（マイクロ秒/4分音符）を求める。
+// 最初のテンポイベントより前の区間にも、そのテンポを適用する。
+function averageMidiTempo(tempoEvents, endTick) {
+  if (tempoEvents.length === 0) return 500000; // デフォルト 120BPM
+  const points = [];
+  tempoEvents.forEach(te => {
+    if (points.length && points[points.length - 1].tick === te.tick) points[points.length - 1].usPerQuarter = te.usPerQuarter;
+    else points.push({ tick: te.tick, usPerQuarter: te.usPerQuarter });
+  });
+  if (points[0].tick > 0) points.unshift({ tick: 0, usPerQuarter: points[0].usPerQuarter });
+  let total = 0, weighted = 0;
+  for (let i = 0; i < points.length; i++) {
+    const segStart = points[i].tick;
+    const segEnd = i + 1 < points.length ? points[i + 1].tick : Math.max(endTick, segStart);
+    const segLen = Math.max(0, segEnd - segStart);
+    total += segLen;
+    weighted += segLen * points[i].usPerQuarter;
+  }
+  return total > 0 ? weighted / total : points[0].usPerQuarter;
+}
+
+function midiToSong(midi, fileName) {
+  // SMPTE分解能（稀）の場合は、4分音符=120BPMとして仮のticksPerQuarterに換算する
+  let ticksPerQuarter = midi.ticksPerQuarter;
+  if (!ticksPerQuarter) {
+    const ticksPerSecond = midi.smpte.framesPerSecond * midi.smpte.ticksPerFrame;
+    ticksPerQuarter = Math.max(1, Math.round(ticksPerSecond * 0.5));
+  }
+
+  // 全トラックのイベントを1本のタイムラインへ統合する
+  let trackName = '';
+  const tempoEvents = [];
+  const noteOnEvents = [];
+  midi.tracks.forEach(events => {
+    events.forEach(ev => {
+      if (ev.type === 'tempo') {
+        tempoEvents.push({ tick: ev.tick, usPerQuarter: ev.usPerQuarter });
+      } else if (ev.type === 'trackName') {
+        if (!trackName && ev.text) trackName = ev.text;
+      } else if (ev.type === 'noteOn' && ev.channel !== 9 && ev.note >= 0 && ev.note <= 127) {
+        // channel 9（表記上のMIDIチャンネル10）はGM規格上のドラム（打楽器）専用チャンネルで、
+        // ノート番号が音の高さではなく楽器の種類を表すため、旋律としては取り込まない
+        noteOnEvents.push({ tick: ev.tick, note: ev.note });
+      }
+    });
+  });
+  if (noteOnEvents.length === 0) throw midiError('midiNoNotesFound');
+
+  tempoEvents.sort((a, b) => a.tick - b.tick);
+  const maxTick = noteOnEvents.reduce((m, ev) => Math.max(m, ev.tick), 0);
+  const usPerQuarter = averageMidiTempo(tempoEvents, maxTick);
+
+  // 16分音符ぶんのグリッドへスナップする。曲がとても長い／密な場合は、マス数が
+  // 演奏に現実的な範囲に収まるよう、8分音符→4分音符→2分音符の順に粗くする。
+  const FRAME_CAP = 3000;
+  const gridCandidates = [ticksPerQuarter / 4, ticksPerQuarter / 2, ticksPerQuarter, ticksPerQuarter * 2];
+  let gridTicks = Math.max(1, Math.round(gridCandidates[0]));
+  let maxFrameIndex = Math.round(maxTick / gridTicks);
+  for (let i = 1; i < gridCandidates.length && maxFrameIndex > FRAME_CAP; i++) {
+    gridTicks = Math.max(1, Math.round(gridCandidates[i]));
+    maxFrameIndex = Math.round(maxTick / gridTicks);
+  }
+
+  const frameNotes = new Map(); // frameIndex -> Set(skyIndex)
+  noteOnEvents.forEach(ev => {
+    const skyIndex = mapMidiNoteToSkyIndex(ev.note);
+    const frameIndex = Math.round(ev.tick / gridTicks);
+    if (!frameNotes.has(frameIndex)) frameNotes.set(frameIndex, new Set());
+    frameNotes.get(frameIndex).add(skyIndex);
+  });
+  if (frameNotes.size === 0) throw midiError('midiNoNotesFound');
+
+  const totalFrames = Math.max(1, maxFrameIndex + 1);
+  const frames = [];
+  for (let i = 0; i < totalFrames; i++) {
+    frames.push(frameNotes.has(i) ? [...frameNotes.get(i)].sort((a, b) => a - b) : []);
+  }
+
+  // BPM＝このサイトにおける「1マスあたりの再生間隔」から逆算した値
+  // （60000 / フレーム1個分の実際のミリ秒数）
+  const frameMs = (usPerQuarter / 1000) * (gridTicks / ticksPerQuarter);
+  const bpm = Math.max(40, Math.min(999, Math.round(60000 / frameMs)));
+
+  const name = (trackName && trackName.trim())
+    || (fileName ? fileName.replace(/\.[^.]+$/, '').trim() : '')
+    || t('midiDefaultSongName');
+
+  return { id: genId(), name: name || t('midiDefaultSongName'), bpm, pitch: 'C', instrument: 'Harp', frames, updatedAt: Date.now() };
+}
+
+function openMidiImportModal() {
+  document.getElementById('midiFileInput').value = '';
+  const statusEl = document.getElementById('midiImportStatus');
+  statusEl.textContent = '';
+  statusEl.className = 'status-msg';
+  openModal('midiImportModal');
+}
+function closeMidiImportModal() {
+  closeModal('midiImportModal');
+}
+async function onMidiFileSelected(event) {
+  const file = event.target.files[0];
+  event.target.value = '';
+  if (!file) return;
+  const statusEl = document.getElementById('midiImportStatus');
+  statusEl.className = 'status-msg';
+  statusEl.textContent = t('midiConvertingText');
+  // 大きめのファイルでも「変換しています…」が一瞬でも画面に描画されてから
+  // 重い処理に入るよう、1フレーム分だけ処理を後回しにする
+  await new Promise(resolve => setTimeout(resolve, 0));
+
+  const reader = new FileReader();
+  reader.onload = () => {
+    try {
+      const midi = parseMidiFile(reader.result);
+      const song = midiToSong(midi, file.name);
+      finishImport(song, statusEl, t('midiAutoAnalysisNote'), 'midiImportModal');
+    } catch (e) {
+      statusEl.className = 'status-msg err';
+      statusEl.textContent = t(e && e.midiUserMessage ? e.midiUserMessage : 'midiParseFailed');
+    }
+  };
+  reader.onerror = () => {
+    statusEl.className = 'status-msg err';
+    statusEl.textContent = t('midiParseFailed');
+  };
+  reader.readAsArrayBuffer(file);
 }
 
 /* ================================================================
