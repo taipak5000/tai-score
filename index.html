@@ -36,11 +36,11 @@
       --blue:      #007AFF;
       --red:       #FF3B30;
       --text:      #1C1C1E;
-      --text-2:    #8E8E93;
+      --text-2:    #58585D;
       --text-3:    #C7C7CC;
       --r:         16px;
       --r-sm:      10px;
-      --note-off:  #E5E5EA;
+      --note-off:  #D1D1D6;
       --note-on:   #FF2D55;
     }
     /* 🌙 ダークモード用のカラー上書き（sky_app_theme。:root の値はライトモード用のまま変更しない） */
@@ -53,7 +53,7 @@
       --text:      #F2F2F7;
       --text-2:    #98989D;
       --text-3:    #636366;
-      --note-off:  #3A3A3C;
+      --note-off:  #2C2C2E;
     }
     *, *::before, *::after { margin:0; padding:0; box-sizing:border-box; }
     a { text-decoration:none; color:inherit; -webkit-tap-highlight-color:transparent; }
@@ -336,11 +336,6 @@
     .status-msg.ok { color: var(--green); }
     .status-msg.err { color: var(--red); }
 
-    input[type="file"].wipe-alike {
-      width: 100%; box-sizing: border-box; font-size: 12.5px; color: var(--text-2);
-      border: 1px dashed var(--sep); border-radius: var(--r-sm); padding: 10px 12px; margin-top: 10px;
-    }
-
     /* ── 動画から楽譜を作成モーダル ─────────────────────────── */
     #videoImportModal .modal-card { max-width: 560px; }
     #videoFileInput {
@@ -423,6 +418,9 @@
 
     /* ── キーボード設定モーダル（演奏オーバーレイより手前に出す） ─────────── */
     #keyBindModal { z-index: 850; }
+    /* 表示設定モーダルも、?ショートカットが演奏オーバーレイ（フリー演奏／練習／テスト）
+       表示中にも効くようになったため、同様に演奏オーバーレイより手前に出す。 */
+    #settingsModal { z-index: 850; }
     .keybind-list { display: flex; flex-direction: column; gap: 6px; margin: 14px 0; max-height: 50vh; overflow-y: auto; }
     .keybind-row { display: flex; align-items: center; gap: 10px; padding: 8px 10px; border-radius: var(--r-sm); background: var(--bg); }
     .keybind-row.capturing { background: var(--pink-bg); box-shadow: 0 0 0 1.5px var(--pink) inset; animation: perfPulse 0.9s ease-in-out infinite; }
@@ -630,7 +628,8 @@
     <div class="hint" data-i18n="importHint">共有コード、テキスト譜面（ABC譜）、またはこのサイト／Sky Music Nightly／Sky Studio形式の.json・.txtファイルを読み込めます。</div>
     <textarea class="code-box" id="importCodeInput" data-i18n-placeholder="importCodePlaceholder" placeholder="共有コードまたはテキスト譜面を貼り付け"></textarea>
     <button type="button" class="action-btn secondary" data-i18n="loadFromCodeBtn" onclick="importFromCode()">🔍 コードから読み込む</button>
-    <input type="file" id="importFileInput" accept=".json,.txt" onchange="importFromFile(event)">
+    <input type="file" id="importFileInput" accept=".json,.txt" style="display:none" onchange="importFromFile(event)">
+    <button type="button" class="action-btn secondary" data-i18n="loadFromFileBtn" onclick="document.getElementById('importFileInput').click()">📂 ファイルを選択</button>
     <div id="importStatus" class="status-msg"></div>
   </div>
 </div>
@@ -760,7 +759,8 @@
     <div class="hint" data-i18n="dmHint">作成した楽譜はすべてこの端末のブラウザだけに保存されています。機種変更やブラウザの変更に備えて、
       ときどきファイルとしてバックアップすることをおすすめします。</div>
     <button type="button" class="action-btn primary" data-i18n="dmDownloadBtn" onclick="dmExport()">⬇️ バックアップをダウンロード</button>
-    <input type="file" class="wipe-alike" id="dmImportFile" accept=".json" onchange="dmImportFileSelected(event)">
+    <input type="file" id="dmImportFile" accept=".json" style="display:none" onchange="dmImportFileSelected(event)">
+    <button type="button" class="action-btn secondary" data-i18n="dmImportFileBtn" onclick="document.getElementById('dmImportFile').click()">📂 ファイルを選択</button>
     <div id="dmImportArea"></div>
     <div style="height:16px; border-top:1px solid var(--sep); margin-top:16px;"></div>
     <div id="dmWipeArea" style="margin-top:14px;"></div>
@@ -990,6 +990,7 @@ const I18N = {
     importHint: '共有コード、テキスト譜面（ABC譜）、またはこのサイト／Sky Music Nightly／Sky Studio形式の.json・.txtファイルを読み込めます。',
     importCodePlaceholder: '共有コードまたはテキスト譜面を貼り付け',
     loadFromCodeBtn: '🔍 コードから読み込む',
+    loadFromFileBtn: '📂 ファイルを選択',
     importFailedCode: 'コードの読み込みに失敗しました。コードが正しいかご確認ください。',
     importFailedFile: 'ファイルの読み込みに失敗しました。対応形式のファイルかご確認ください。',
     importedSongStatus: '「{name}」を読み込みました。{note}',
@@ -1047,6 +1048,7 @@ const I18N = {
     dmModalTitle: '💾 データのバックアップ・復元',
     dmHint: '作成した楽譜はすべてこの端末のブラウザだけに保存されています。機種変更やブラウザの変更に備えて、ときどきファイルとしてバックアップすることをおすすめします。',
     dmDownloadBtn: '⬇️ バックアップをダウンロード',
+    dmImportFileBtn: '📂 ファイルを選択',
     dmBackupDownloaded: 'バックアップをダウンロードしました。',
     dmSongsFound: '{count}件の楽譜が見つかりました。',
     dmRestoreBtn: '✅ 復元する（今のデータは上書きされます）',
@@ -1198,6 +1200,7 @@ const I18N = {
     importHint: 'You can load a share code, a text sheet (ABC notation), or a .json/.txt file in this site\'s, Sky Music Nightly\'s, or Sky Studio\'s format.',
     importCodePlaceholder: 'Paste a share code or text sheet',
     loadFromCodeBtn: '🔍 Load from Code',
+    loadFromFileBtn: '📂 Choose File',
     importFailedCode: 'Failed to load the code. Please check that the code is correct.',
     importFailedFile: 'Failed to load the file. Please check that it is a supported format.',
     importedSongStatus: 'Loaded "{name}". {note}',
@@ -1255,6 +1258,7 @@ const I18N = {
     dmModalTitle: '💾 Backup & Restore Data',
     dmHint: "All the sheet music you've created is stored only in this device's browser. We recommend backing it up to a file occasionally in case you switch devices or browsers.",
     dmDownloadBtn: '⬇️ Download Backup',
+    dmImportFileBtn: '📂 Choose File',
     dmBackupDownloaded: 'Backup downloaded.',
     dmSongsFound: 'Found {count} song(s).',
     dmRestoreBtn: '✅ Restore (this will overwrite your current data)',
@@ -1536,7 +1540,13 @@ document.getElementById('confirmModalOkBtn').addEventListener('click', () => {
   if (cb) cb();
 });
 
+let duplicatingSong = false;
 function duplicateSong(id) {
+  // 連打防止: 短時間の連続クリックで複製が複数作られてしまうのを防ぐ（createNewSongと同じ対策）
+  if (duplicatingSong) return;
+  duplicatingSong = true;
+  setTimeout(() => { duplicatingSong = false; }, 1500);
+
   const songs = loadSongs();
   const song = songs.find(s => s.id === id);
   if (!song) return;
@@ -2267,15 +2277,6 @@ function settingsOpen() {
   openModal('settingsModal');
 }
 
-// 現在ライブラリ画面を閲覧中か（演奏オーバーレイが手前に開いている場合は含まない）。
-// ?・d ショートカットは、マス目への入力・演奏・キー割り当てが一切発生し得ないこの場面でのみ
-// 有効にする（handleGlobalKeydown 側でも idx<0 のときだけ通る分岐に置いているため、
-// 音マスに d や ? を割り当てているユーザーには自動的に無効化される＝二重の安全策）。
-function isLibraryViewActive() {
-  return document.getElementById('viewLibrary').classList.contains('active') &&
-    !document.getElementById('perfOverlay').classList.contains('open');
-}
-
 // Escapeで閉じるモーダルを、開いている中から1つだけ選んで閉じる。後始末（状態リセット）が
 // 必要なモーダルは専用のclose関数を呼ぶ。演奏オーバーレイ（.perf-overlay）はmodal-overlayでは
 // ないため、ここでは一切対象にならない（＝演奏中にEscapeを押しても演奏オーバーレイは閉じない）。
@@ -2296,8 +2297,10 @@ function closeTopmostOpenModal() {
    ・Escapeは、割り当て待ち中でなければ開いているモーダルを閉じる（全ツール共通）
    ・演奏オーバーレイが開いていれば演奏（onPerfKeyPress）
    ・エディタ画面を表示中なら作成（toggleNote＝マスのON/OFF切替）
-   ・どの音マスにも一致しないキーでライブラリ画面閲覧中に限り、?（表示設定を開く）・
-     d/D（ダークモード切替）を全ツール共通ショートカットとして受け付ける
+   ・どの音マスにも一致しないキーであれば、画面（ライブラリ／エディタ／フリー演奏／
+     練習・テスト）を問わず、?（表示設定を開く）・d/D（ダークモード切替）を
+     全ツール共通ショートカットとして受け付ける（音マスに割り当て済みのキーは
+     常にそちらが優先されるため、二重に発火することはない）
    ・他のモーダルが開いている時や、入力欄にフォーカスがある時は無効
    ================================================================ */
 function handleGlobalKeydown(e) {
@@ -2334,9 +2337,10 @@ function handleGlobalKeydown(e) {
 
   const idx = keyBindings.indexOf(normalizeKeyEvent(e));
   if (idx < 0) {
-    // どの音マスにも割り当てられていないキー。ライブラリ画面閲覧中（演奏・編集・キー割り当ての
-    // 入力が一切発生し得ない場面）に限り、?/d を全ツール共通ショートカットとして受け付ける。
-    if (isLibraryViewActive() && skyShortcutsEnabled()) {
+    // どの音マスにも割り当てられていないキー。画面を問わず、?/d を全ツール共通
+    // ショートカットとして受け付ける（音マスに割り当て済みのキーはこの分岐に
+    // 入って来ないため、演奏・編集・キー割り当てと衝突することはない）。
+    if (skyShortcutsEnabled()) {
       if (e.key === '?') { e.preventDefault(); settingsOpen(); return; }
       if (e.key === 'd' || e.key === 'D') { e.preventDefault(); toggleTheme(); return; }
     }
@@ -2515,7 +2519,7 @@ async function copyTextSheet() {
   }
 }
 function downloadTextSheet() {
-  downloadBlob(songToTextSheet(currentSong), `${currentSong.name || 'song'}.txt`, 'text/plain');
+  downloadBlob(songToTextSheet(currentSong), `${sanitizeFilename(currentSong.name || 'song')}.txt`, 'text/plain');
   showToast(t('downloadedToast'));
 }
 
@@ -2527,14 +2531,20 @@ function downloadBlob(content, filename, type) {
   document.body.appendChild(a); a.click(); a.remove();
   URL.revokeObjectURL(url);
 }
+// ダウンロードファイル名としてそのまま使えない文字（/ \ : * ? " < > |）を置き換える。
+// 曲名にはユーザーが自由な文字を入力できるため、Windows等でファイル名に使えない
+// 記号が含まれているとダウンロードに失敗する場合があるのを防ぐ。
+function sanitizeFilename(str) {
+  return String(str).replace(/[\\/:*?"<>|]/g, '_').trim() || 'song';
+}
 function downloadNativeFile() {
   downloadBlob(JSON.stringify({ kind: 'tai-score-song', v: 1, song: currentSong }, null, 1),
-    `${currentSong.name || 'song'}.taiscore.json`, 'application/json');
+    `${sanitizeFilename(currentSong.name || 'song')}.taiscore.json`, 'application/json');
   showToast(t('downloadedToast'));
 }
 function downloadSpecyFile() {
   downloadBlob(JSON.stringify(songToSpecyFormat(currentSong), null, 1),
-    `${currentSong.name || 'song'}.json`, 'application/json');
+    `${sanitizeFilename(currentSong.name || 'song')}.json`, 'application/json');
   showToast(t('downloadedToast'));
 }
 
