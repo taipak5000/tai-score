@@ -598,9 +598,9 @@
 
 <!-- ▸ 共有・保存モーダル -->
 <div class="modal-overlay" id="shareModal" onclick="if(event.target===this)closeModal('shareModal')">
-  <div class="modal-card">
+  <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="shareModalTitle" tabindex="-1">
     <div class="modal-header">
-      <span class="modal-title" data-i18n="shareModalTitle">🔗 共有・保存</span>
+      <span class="modal-title" id="shareModalTitle" data-i18n="shareModalTitle">🔗 共有・保存</span>
       <button class="modal-close" onclick="closeModal('shareModal')">✕</button>
     </div>
     <div class="hint" data-i18n="shareHint1">この楽譜専用のコードを作成し、別の端末やSNSで共有できます。ファイルとしても保存できます。</div>
@@ -620,9 +620,9 @@
 
 <!-- ▸ インポートモーダル -->
 <div class="modal-overlay" id="importModal" onclick="if(event.target===this)closeModal('importModal')">
-  <div class="modal-card">
+  <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="importModalTitle" tabindex="-1">
     <div class="modal-header">
-      <span class="modal-title" data-i18n="importModalTitle">📥 楽譜を読み込む</span>
+      <span class="modal-title" id="importModalTitle" data-i18n="importModalTitle">📥 楽譜を読み込む</span>
       <button class="modal-close" onclick="closeModal('importModal')">✕</button>
     </div>
     <div class="hint" data-i18n="importHint">共有コード、テキスト譜面（ABC譜）、またはこのサイト／Sky Music Nightly／Sky Studio形式の.json・.txtファイルを読み込めます。</div>
@@ -636,9 +636,9 @@
 
 <!-- ▸ 動画から楽譜を作成モーダル -->
 <div class="modal-overlay" id="videoImportModal" onclick="if(event.target===this)closeVideoImportModal()">
-  <div class="modal-card">
+  <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="videoImportModalTitle" tabindex="-1">
     <div class="modal-header">
-      <span class="modal-title" data-i18n="videoImportModalTitle">🎥 動画から楽譜を作成</span>
+      <span class="modal-title" id="videoImportModalTitle" data-i18n="videoImportModalTitle">🎥 動画から楽譜を作成</span>
       <button class="modal-close" onclick="closeVideoImportModal()">✕</button>
     </div>
     <div class="hint" data-i18n="videoImportHint">演奏動画または演奏音声のファイルを選ぶと、自動で楽譜を作成します。ファイルはどこにもアップロードされず、すべてこの端末（ブラウザ）内だけで処理されます。自動解析のため完璧ではありません。作成後は編集画面で内容をご確認・修正してください。</div>
@@ -711,9 +711,9 @@
 
 <!-- ▸ 楽譜画像から楽譜を作成モーダル -->
 <div class="modal-overlay" id="imageImportModal" onclick="if(event.target===this)closeImageImportModal()">
-  <div class="modal-card">
+  <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="imageImportModalTitle" tabindex="-1">
     <div class="modal-header">
-      <span class="modal-title" data-i18n="imageImportModalTitle">🖼️ 楽譜画像から楽譜を作成</span>
+      <span class="modal-title" id="imageImportModalTitle" data-i18n="imageImportModalTitle">🖼️ 楽譜画像から楽譜を作成</span>
       <button class="modal-close" onclick="closeImageImportModal()">✕</button>
     </div>
     <div class="hint" data-i18n-html="imageImportHint">五線譜の画像（MuseScore等で書き出したPNG/JPGなど）を選ぶと、自動で楽譜を作成します。複数ページある場合はまとめて選ぶと、ファイル名順につなげて読み込みます。画像はどこにもアップロードされず、すべてこの端末（ブラウザ）内だけで処理されます。<br><br>
@@ -738,9 +738,9 @@
 
 <!-- ▸ MIDIから楽譜を作成モーダル -->
 <div class="modal-overlay" id="midiImportModal" onclick="if(event.target===this)closeMidiImportModal()">
-  <div class="modal-card">
+  <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="midiImportModalTitle" tabindex="-1">
     <div class="modal-header">
-      <span class="modal-title" data-i18n="midiImportModalTitle">🎹 MIDIから楽譜を作成</span>
+      <span class="modal-title" id="midiImportModalTitle" data-i18n="midiImportModalTitle">🎹 MIDIから楽譜を作成</span>
       <button class="modal-close" onclick="closeMidiImportModal()">✕</button>
     </div>
     <div class="hint" data-i18n="midiImportHint">標準MIDIファイル（.mid・.midi）を選ぶと、自動で楽譜を作成します。ファイルはどこにもアップロードされず、すべてこの端末（ブラウザ）内だけで処理されます。⚠️ 自動変換のため完璧ではありません。Skyの楽器で鳴らせない音（半音や音域外の音）は、オクターブ移動や最も近い音への置き換えで対応します。作成後は編集画面で内容を必ずご確認・修正してください。</div>
@@ -751,9 +751,9 @@
 
 <!-- ▸ データバックアップ／復元モーダル -->
 <div class="modal-overlay" id="dmModal" onclick="if(event.target===this)closeModal('dmModal')">
-  <div class="modal-card">
+  <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="dmModalTitle" tabindex="-1">
     <div class="modal-header">
-      <span class="modal-title" data-i18n="dmModalTitle">💾 データのバックアップ・復元</span>
+      <span class="modal-title" id="dmModalTitle" data-i18n="dmModalTitle">💾 データのバックアップ・復元</span>
       <button class="modal-close" onclick="closeModal('dmModal')">✕</button>
     </div>
     <div class="hint" data-i18n="dmHint">作成した楽譜はすべてこの端末のブラウザだけに保存されています。機種変更やブラウザの変更に備えて、
@@ -770,7 +770,7 @@
 
 <!-- ▸ 確認モーダル（ブラウザ標準のconfirm()はダイアログブロックで表示できない場合があるため、画面内で表示する） -->
 <div class="modal-overlay" id="confirmModal" onclick="if(event.target===this)closeConfirm()">
-  <div class="modal-card">
+  <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="confirmModalTitle" tabindex="-1">
     <div class="modal-header">
       <span class="modal-title" id="confirmModalTitle" data-i18n="confirmModalTitle">確認</span>
       <button class="modal-close" onclick="closeConfirm()">✕</button>
@@ -783,9 +783,9 @@
 
 <!-- ▸ キーボード設定モーダル -->
 <div class="modal-overlay" id="keyBindModal" onclick="if(event.target===this)closeKeyBindModal()">
-  <div class="modal-card">
+  <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="keyBindModalTitle" tabindex="-1">
     <div class="modal-header">
-      <span class="modal-title" data-i18n="keyBindModalTitle">⌨️ キーボード設定</span>
+      <span class="modal-title" id="keyBindModalTitle" data-i18n="keyBindModalTitle">⌨️ キーボード設定</span>
       <button class="modal-close" onclick="closeKeyBindModal()">✕</button>
     </div>
     <div class="hint" data-i18n="keyBindHint">パソコンのキーボードで楽譜の作成・演奏ができます。「変更」を押してから、割り当てたいキーを押してください。すでに他のマスで使われているキーを選ぶと、入れ替わります。</div>
@@ -797,9 +797,9 @@
 <!-- ▸ 表示設定モーダル（ダークモード・キーボードショートカット。既存の「⌨️ キーボード設定」＝音マスの
      キー割り当てとは別の、全ツール共通の機能） -->
 <div class="modal-overlay" id="settingsModal" onclick="if(event.target===this)closeModal('settingsModal')">
-  <div class="modal-card">
+  <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="settingsModalTitle" tabindex="-1">
     <div class="modal-header">
-      <span class="modal-title" data-i18n="settingsModalTitle">⚙️ 表示設定</span>
+      <span class="modal-title" id="settingsModalTitle" data-i18n="settingsModalTitle">⚙️ 表示設定</span>
       <button class="modal-close" onclick="closeModal('settingsModal')">✕</button>
     </div>
 
@@ -1045,6 +1045,7 @@ const I18N = {
     midiNoNotesFound: 'このMIDIファイルには演奏できる音（ノート）が見つかりませんでした。',
     midiDefaultSongName: 'MIDIから作成した楽譜',
     midiAutoAnalysisNote: '（MIDIからの自動変換のため、内容を編集画面でご確認・修正ください。半音や音域外の音は、Skyの音域に収まるよう最も近い音に置き換えられています）',
+    midiTempoAdjustedNote: '（⚠️ 元のテンポがこのサイトの再生速度の範囲（40〜999 BPM）を超えていたため、実際の再生速度を調整しています。テンポ感が原曲と異なる場合があります）',
     dmModalTitle: '💾 データのバックアップ・復元',
     dmHint: '作成した楽譜はすべてこの端末のブラウザだけに保存されています。機種変更やブラウザの変更に備えて、ときどきファイルとしてバックアップすることをおすすめします。',
     dmDownloadBtn: '⬇️ バックアップをダウンロード',
@@ -1255,6 +1256,7 @@ const I18N = {
     midiNoNotesFound: 'No playable notes were found in this MIDI file.',
     midiDefaultSongName: 'Song from MIDI',
     midiAutoAnalysisNote: " (Created by automatic conversion from MIDI — please review and correct the content in the editor. Semitones and notes outside Sky's range have been replaced with the closest playable note within its range.)",
+    midiTempoAdjustedNote: " (⚠️ The original tempo was outside this site's playable speed range (40–999 BPM), so the playback speed has been adjusted. It may not match the original song's feel.)",
     dmModalTitle: '💾 Backup & Restore Data',
     dmHint: "All the sheet music you've created is stored only in this device's browser. We recommend backing it up to a file occasionally in case you switch devices or browsers.",
     dmDownloadBtn: '⬇️ Download Backup',
@@ -1444,8 +1446,60 @@ function toggleSidebar() {
   document.getElementById('sidebar').classList.toggle('sidebar-open');
   document.getElementById('sidebarOverlay').classList.toggle('show');
 }
-function openModal(id) { document.getElementById(id).classList.add('open'); }
-function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+// ♿ モーダルのフォーカス管理（全モーダル共通の1実装。個別のopen/close関数は
+// すべて最終的にこのopenModal/closeModalを呼ぶため、ここだけで全モーダルに効く）。
+// - 開く時: モーダル内の最初のフォーカス可能要素（DOM順で常に✕閉じるボタンが先頭）へ
+//   フォーカスを移す。背景のページ要素はオーバーレイがマウス操作を塞いでいるが、
+//   キーボード操作にはこのガードがないと素通りしてしまう。
+// - 開いている間: Tab/Shift+Tabをモーダル内だけに閉じ込める（下のkeydownリスナー）。
+// - 閉じる時: 開く直前にフォーカスがあった要素（トリガー）に戻す。
+const modalTriggerEls = {};
+function getModalFocusableEls(container) {
+  const nodes = container.querySelectorAll(
+    'a[href], button:not([disabled]), textarea:not([disabled]), input:not([disabled]):not([type="hidden"]), select:not([disabled]), [tabindex]:not([tabindex="-1"])'
+  );
+  return Array.from(nodes).filter(el => el.offsetWidth > 0 || el.offsetHeight > 0 || el === document.activeElement);
+}
+function focusFirstInModal(id) {
+  const modalEl = document.getElementById(id);
+  const focusables = getModalFocusableEls(modalEl);
+  if (focusables.length) focusables[0].focus();
+  else modalEl.querySelector('.modal-card').focus();
+}
+function openModal(id) {
+  modalTriggerEls[id] = document.activeElement;
+  if (id === 'dmModal') dmRenderWipeArea(); // 閉じている間の言語切り替えにも追従させる
+  document.getElementById(id).classList.add('open');
+  focusFirstInModal(id);
+}
+function closeModal(id) {
+  document.getElementById(id).classList.remove('open');
+  const trigger = modalTriggerEls[id];
+  if (trigger && typeof trigger.focus === 'function' && document.contains(trigger)) trigger.focus();
+  delete modalTriggerEls[id];
+}
+// Tab/Shift+Tabを、開いているモーダルの中だけに閉じ込める（tai-score内では
+// 一度に開くmodal-overlayは常に1つのため、開いているものを直接探せばよい）。
+document.addEventListener('keydown', function (e) {
+  if (e.key !== 'Tab') return;
+  const openOverlay = document.querySelector('.modal-overlay.open');
+  if (!openOverlay) return;
+  const focusables = getModalFocusableEls(openOverlay);
+  if (focusables.length === 0) return;
+  const first = focusables[0];
+  const last = focusables[focusables.length - 1];
+  if (e.shiftKey) {
+    if (document.activeElement === first || !openOverlay.contains(document.activeElement)) {
+      e.preventDefault();
+      last.focus();
+    }
+  } else {
+    if (document.activeElement === last || !openOverlay.contains(document.activeElement)) {
+      e.preventDefault();
+      first.focus();
+    }
+  }
+});
 function showToast(msg) {
   const t = document.getElementById('toast');
   t.textContent = msg;
@@ -4027,15 +4081,24 @@ function midiToSong(midi, fileName) {
   const maxTick = noteOnEvents.reduce((m, ev) => Math.max(m, ev.tick), 0);
   const usPerQuarter = averageMidiTempo(tempoEvents, maxTick);
 
-  // 16分音符ぶんのグリッドへスナップする。曲がとても長い／密な場合は、マス数が
-  // 演奏に現実的な範囲に収まるよう、8分音符→4分音符→2分音符の順に粗くする。
+  // 16分音符ぶんのグリッドへスナップする。曲がとても長い／密な場合や、テンポが
+  // このサイトの再生速度の安全範囲（40〜999 BPM）を超えてしまう場合は、マス数・
+  // テンポともに現実的な範囲に収まるよう、8分音符→4分音符→2分音符の順に粗くする
+  // （グリッドを粗くするほど1マスあたりの実時間＝frameMsが伸び、逆算されるBPMは下がる）。
   const FRAME_CAP = 3000;
+  const BPM_MIN = 40, BPM_MAX = 999;
   const gridCandidates = [ticksPerQuarter / 4, ticksPerQuarter / 2, ticksPerQuarter, ticksPerQuarter * 2];
+  const rawBpmForGrid = (ticks) => {
+    const ms = (usPerQuarter / 1000) * (ticks / ticksPerQuarter);
+    return ms > 0 ? 60000 / ms : BPM_MAX;
+  };
   let gridTicks = Math.max(1, Math.round(gridCandidates[0]));
   let maxFrameIndex = Math.round(maxTick / gridTicks);
-  for (let i = 1; i < gridCandidates.length && maxFrameIndex > FRAME_CAP; i++) {
+  let rawBpm = rawBpmForGrid(gridTicks);
+  for (let i = 1; i < gridCandidates.length && (maxFrameIndex > FRAME_CAP || rawBpm > BPM_MAX); i++) {
     gridTicks = Math.max(1, Math.round(gridCandidates[i]));
     maxFrameIndex = Math.round(maxTick / gridTicks);
+    rawBpm = rawBpmForGrid(gridTicks);
   }
 
   const frameNotes = new Map(); // frameIndex -> Set(skyIndex)
@@ -4054,15 +4117,19 @@ function midiToSong(midi, fileName) {
   }
 
   // BPM＝このサイトにおける「1マスあたりの再生間隔」から逆算した値
-  // （60000 / フレーム1個分の実際のミリ秒数）
-  const frameMs = (usPerQuarter / 1000) * (gridTicks / ticksPerQuarter);
-  const bpm = Math.max(40, Math.min(999, Math.round(60000 / frameMs)));
+  // （60000 / フレーム1個分の実際のミリ秒数）。グリッドを最大限粗くしてもなお
+  // 安全範囲（40〜999）に収まらない場合のみクランプし、呼び出し元へその旨を伝える。
+  const tempoAdjusted = rawBpm > BPM_MAX || rawBpm < BPM_MIN;
+  const bpm = Math.max(BPM_MIN, Math.min(BPM_MAX, Math.round(rawBpm)));
 
   const name = (trackName && trackName.trim())
     || (fileName ? fileName.replace(/\.[^.]+$/, '').trim() : '')
     || t('midiDefaultSongName');
 
-  return { id: genId(), name: name || t('midiDefaultSongName'), bpm, pitch: 'C', instrument: 'Harp', frames, updatedAt: Date.now() };
+  return {
+    song: { id: genId(), name: name || t('midiDefaultSongName'), bpm, pitch: 'C', instrument: 'Harp', frames, updatedAt: Date.now() },
+    tempoAdjusted
+  };
 }
 
 function openMidiImportModal() {
@@ -4090,8 +4157,9 @@ async function onMidiFileSelected(event) {
   reader.onload = () => {
     try {
       const midi = parseMidiFile(reader.result);
-      const song = midiToSong(midi, file.name);
-      finishImport(song, statusEl, t('midiAutoAnalysisNote'), 'midiImportModal');
+      const { song, tempoAdjusted } = midiToSong(midi, file.name);
+      const note = t('midiAutoAnalysisNote') + (tempoAdjusted ? t('midiTempoAdjustedNote') : '');
+      finishImport(song, statusEl, note, 'midiImportModal');
     } catch (e) {
       statusEl.className = 'status-msg err';
       statusEl.textContent = t(e && e.midiUserMessage ? e.midiUserMessage : 'midiParseFailed');
