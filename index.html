@@ -162,13 +162,14 @@
       padding: 10px 16px; border-radius: var(--r-sm); white-space: nowrap;
     }
     .new-song-btn.secondary { background: var(--card); color: var(--text); border: 1px solid var(--sep); }
-    .lib-sort-row { display: flex; align-items: center; gap: 8px; margin-top: 10px; }
+    .lib-sort-row { display: flex; align-items: center; gap: 8px; margin-top: 10px; flex-wrap: wrap; }
     .lib-sort-row label { font-size: 12.5px; color: var(--text-2); font-weight: 600; white-space: nowrap; }
     .lib-sort-row select {
       flex: 1; background: var(--card); border: 1.5px solid var(--sep); border-radius: var(--r-sm);
       padding: 8px 10px; font-size: 13px; font-weight: 600; color: var(--text);
     }
     .lib-sort-row select:focus { outline: none; border-color: var(--pink); }
+    .lib-sort-row .mini-btn { flex-shrink: 0; }
     .song-list { display: flex; flex-direction: column; gap: 10px; margin-top: 14px; }
     .song-card { background: var(--card); border-radius: var(--r); padding: 14px; box-shadow: 0 1px 4px rgba(0,0,0,0.07); }
     .song-card-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
@@ -567,6 +568,7 @@
           <option value="bpm" data-i18n="sortBpm">🥁 BPM順</option>
           <option value="notes" data-i18n="sortNotes">🎵 音の数が多い順</option>
         </select>
+        <button type="button" class="mini-btn" id="clearLibraryFiltersBtn" data-i18n="clearLibraryFiltersBtn" onclick="clearLibraryFilters()">✖️ フィルターを全てクリア</button>
       </div>
       <div class="song-list" id="songList"><!-- JS --></div>
     </section>
@@ -994,6 +996,7 @@ const I18N = {
     sortName: '🔤 曲名順',
     sortBpm: '🥁 BPM順',
     sortNotes: '🎵 音の数が多い順',
+    clearLibraryFiltersBtn: '✖️ フィルターを全てクリア',
     noSearchResultsText: '検索条件に一致する楽譜が見つかりませんでした。',
     btnImport: '📥 読み込む',
     btnVideoImport: '🎥 動画から作成',
@@ -1217,6 +1220,7 @@ const I18N = {
     sortName: '🔤 By title',
     sortBpm: '🥁 By BPM',
     sortNotes: '🎵 By note count',
+    clearLibraryFiltersBtn: '✖️ Clear all filters',
     noSearchResultsText: 'No sheet music matched your search.',
     btnImport: '📥 Load',
     btnVideoImport: '🎥 Create from Video',
@@ -1618,6 +1622,14 @@ function sortSongs(songs, sortMode) {
 }
 function onLibrarySortChange(v) {
   librarySort = LIBRARY_SORT_MODES.includes(v) ? v : 'updated';
+  saveLibrarySort(librarySort);
+  renderLibrary();
+}
+// 検索欄と並び替え（この端末に保存されている設定を含む）をまとめて初期状態に戻す
+function clearLibraryFilters() {
+  const searchInput = document.getElementById('librarySearch');
+  if (searchInput) searchInput.value = '';
+  librarySort = 'updated';
   saveLibrarySort(librarySort);
   renderLibrary();
 }
