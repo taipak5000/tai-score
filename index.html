@@ -13,11 +13,15 @@
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@300;400;500;600;700&display=swap" rel="stylesheet">
   <script>
     // 🌓 描画前にテーマを確定させ、ダークモード時に一瞬でも明るい背景が
-    // 表示されてしまう「ちらつき」を防止する（下部の本体スクリプト読み込み前に同期実行）
+    // 表示されてしまう「ちらつき」を防止する（下部の本体スクリプト読み込み前に同期実行）。
+    // sky_app_theme は 'light' / 'dark' / 'system'（未設定含む）の3値。ここでの解決ロジックは
+    // 本体スクリプト側の getStoredTheme()/resolveEffectiveTheme() と常に一致させること
+    // （このスクリプトは他のスクリプト読み込みより先に単独で走る必要があるため、あえて重複させている）。
     (function () {
       try {
         var saved = localStorage.getItem('sky_app_theme');
-        var isDark = saved ? (saved === 'dark') : window.matchMedia('(prefers-color-scheme: dark)').matches;
+        var mode = (saved === 'light' || saved === 'dark') ? saved : 'system';
+        var isDark = mode === 'system' ? window.matchMedia('(prefers-color-scheme: dark)').matches : (mode === 'dark');
         document.documentElement.setAttribute('data-theme', isDark ? 'dark' : 'light');
       } catch (e) {
         document.documentElement.setAttribute('data-theme', 'light');
@@ -1179,10 +1183,11 @@ const I18N = {
     settingsDarkModeLabel: 'ダークモード',
     themeDark: '🌙 ダーク',
     themeLight: '☀️ ライト',
+    themeSystem: '🖥️ システム',
     settingsShortcutsSection: '⌨️ キーボードショートカット',
     settingsShortcutsEnableLabel: 'ショートカットを有効にする',
     settingsShortcutOpen: 'この設定を開く',
-    settingsShortcutTheme: 'ダークモード切替',
+    settingsShortcutTheme: 'ダークモード切替（ライト→ダーク→システム）',
     settingsShortcutEsc: '開いているウィンドウを閉じる',
     settingsLangSection: '🌐 言語',
     settingsCloseBtn: '閉じる',
@@ -1403,10 +1408,11 @@ const I18N = {
     settingsDarkModeLabel: 'Dark Mode',
     themeDark: '🌙 Dark',
     themeLight: '☀️ Light',
+    themeSystem: '🖥️ System',
     settingsShortcutsSection: '⌨️ Keyboard Shortcuts',
     settingsShortcutsEnableLabel: 'Enable keyboard shortcuts',
     settingsShortcutOpen: 'Open this settings panel',
-    settingsShortcutTheme: 'Toggle dark mode',
+    settingsShortcutTheme: 'Cycle theme (Light → Dark → System)',
     settingsShortcutEsc: 'Close the open window',
     settingsLangSection: '🌐 Language',
     settingsCloseBtn: 'Close',
@@ -2599,17 +2605,50 @@ function refreshAllKeyHints() {
    表示設定のため、sky_app_lang と同じ扱い）。
    ================================================================ */
 const THEME_KEY = 'sky_app_theme';
+// sky_app_theme に保存されている「論理モード」を取得する。'light'/'dark'/'system' の3値で、
+// 未設定または想定外の値は 'system'（OS追従）扱いにする（＝一度も選択したことがないユーザーの
+// 正しい既定値）。
+function getStoredTheme() {
+  try {
+    const v = localStorage.getItem(THEME_KEY);
+    return (v === 'light' || v === 'dark') ? v : 'system';
+  } catch (e) { return 'system'; }
+}
+// 論理モードから、実際に描画すべき見た目（'dark'/'light'）を解決する共有ヘルパー。
+// ここでの判定ロジックは、<head>先頭の同期スクリプト側にも（先読み実行が必要なため）
+// 同じ内容を重複させてある。ロジックを変えるときは両方を揃えること。
+function resolveEffectiveTheme(mode) {
+  if (mode === 'light' || mode === 'dark') return mode;
+  return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+}
 function isDarkMode() { return document.documentElement.getAttribute('data-theme') === 'dark'; }
 function applyThemeToDOM(isDark) {
   document.documentElement.setAttribute('data-theme', isDark ? 'dark' : 'light');
   const btn = document.getElementById('themeToggleBtn');
-  if (btn) btn.textContent = t(isDark ? 'themeDark' : 'themeLight');
+  if (btn) {
+    const mode = getStoredTheme();
+    const key = mode === 'system' ? 'themeSystem' : (mode === 'dark' ? 'themeDark' : 'themeLight');
+    btn.textContent = t(key);
+  }
 }
+// ダークモードボタン（設定モーダル）・「D」キーショートカット共通。
+// ライト → ダーク → システム追従 → ライト …の3状態を順に切り替える。
 function toggleTheme() {
-  const next = !isDarkMode();
-  applyThemeToDOM(next);
-  try { localStorage.setItem(THEME_KEY, next ? 'dark' : 'light'); } catch (e) { /* プライベートブラウジング等でlocalStorageが使えない場合も表示は継続する */ }
+  const current = getStoredTheme();
+  const next = current === 'light' ? 'dark' : (current === 'dark' ? 'system' : 'light');
+  try { localStorage.setItem(THEME_KEY, next); } catch (e) { /* プライベートブラウジング等でlocalStorageが使えない場合も表示は継続する */ }
+  applyThemeToDOM(resolveEffectiveTheme(next) === 'dark');
 }
+// OS側のテーマ（例: 日没での自動切替）がタブを開いたまま変化した場合、保存モードが
+// 'system'（＝OS追従中）のときだけ、開いているタブの見た目をリロード無しで追従させる。
+window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', function (e) {
+  if (getStoredTheme() === 'system') applyThemeToDOM(e.matches);
+});
+// 別タブ・同一オリジンの他ツールで sky_app_theme が変更された場合に、このタブにも
+// リロード無しで反映する（taipak5000.github.io 系ツール共通のグローバルキーのため）。
+window.addEventListener('storage', function (e) {
+  if (e.key === THEME_KEY) applyThemeToDOM(resolveEffectiveTheme(getStoredTheme()) === 'dark');
+});
 
 const SHORTCUTS_KEY = 'sky_shortcuts_enabled';
 function skyShortcutsEnabled() {
