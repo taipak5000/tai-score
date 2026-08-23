@@ -189,6 +189,16 @@
     .mini-btn:disabled { opacity: 0.4; cursor: default; }
     .empty-state { text-align: center; padding: 40px 16px; color: var(--text-2); font-size: 13px; }
 
+    /* ── 称号 ─────────────────────────── */
+    .titles-card-head { font-size: 14px; font-weight: 700; margin-bottom: 8px; }
+    .titles-chip-row { display: flex; flex-wrap: wrap; gap: 8px; }
+    .title-chip {
+      background: var(--pink-bg); color: var(--pink-d); font-size: 12.5px; font-weight: 600;
+      padding: 7px 12px; border-radius: 999px; display: flex; align-items: center; gap: 5px; cursor: default;
+    }
+    .title-chip-icon { font-size: 15px; }
+    .titles-empty-text { font-size: 12.5px; color: var(--text-2); }
+
     /* ── エディタ ─────────────────────────── */
     .editor-top-row { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 10px; }
     .editor-top-row input[type=text] {
@@ -545,6 +555,11 @@
         インポート・エクスポートにも対応しているほか、Sky Studio形式の楽譜ファイルの読み込みにも対応しているので、
         すでに公開されている楽譜もそのまま読み込めます。
         データはこの端末のブラウザだけに保存され、外部には送信されません。</p>
+    </div>
+
+    <div class="card titles-card">
+      <div class="titles-card-head" data-i18n="titlesSectionTitle">🏆 称号</div>
+      <div class="titles-chip-row" id="titlesChipRow"><!-- JS --></div>
     </div>
 
     <div class="view-tabs">
@@ -994,6 +1009,21 @@ const I18N = {
     tabLibrary: '📚 ライブラリ',
     tabEditor: '✏️ 作成・演奏',
     tabFreePlay: '🎹 フリー演奏',
+    titlesSectionTitle: '🏆 称号',
+    titlesEmptyText: 'まだ称号はありません。曲を作ってみましょう！',
+    titleUnlockedToast: '称号「{name}」を獲得しました！',
+    titleFirstSongName: 'はじめの一歩',
+    titleFirstSongDesc: 'はじめての1曲をライブラリに加えた',
+    titleApprenticeName: '作曲家見習い',
+    titleApprenticeDesc: '曲を5曲、ライブラリに加えた',
+    titleCraftsmanName: '楽譜職人',
+    titleCraftsmanDesc: '曲を20曲、ライブラリに加えた',
+    titleLegendName: '伝説の作曲家',
+    titleLegendDesc: '曲を50曲、ライブラリに加えた',
+    titlePassionateName: '情熱の演奏者',
+    titlePassionateDesc: '1曲に100音を超える演奏を詰め込んだ',
+    titleVirtuosoName: '超絶技巧',
+    titleVirtuosoDesc: '1曲に300音を超える演奏を詰め込んだ',
     librarySearchPlaceholder: '🔍 曲名で検索…',
     librarySortLabel: '並び替え:',
     sortUpdated: '🕒 更新が新しい順',
@@ -1219,6 +1249,21 @@ const I18N = {
     tabLibrary: '📚 Library',
     tabEditor: '✏️ Create & Play',
     tabFreePlay: '🎹 Free Play',
+    titlesSectionTitle: '🏆 Titles',
+    titlesEmptyText: 'No titles yet. Try creating a song!',
+    titleUnlockedToast: 'Unlocked the title "{name}"!',
+    titleFirstSongName: 'First Step',
+    titleFirstSongDesc: 'Added your first song to the library',
+    titleApprenticeName: 'Apprentice Composer',
+    titleApprenticeDesc: 'Added 5 songs to the library',
+    titleCraftsmanName: 'Sheet Music Craftsman',
+    titleCraftsmanDesc: 'Added 20 songs to the library',
+    titleLegendName: 'Legendary Composer',
+    titleLegendDesc: 'Added 50 songs to the library',
+    titlePassionateName: 'Passionate Performer',
+    titlePassionateDesc: 'Packed over 100 notes into a single song',
+    titleVirtuosoName: 'Virtuoso',
+    titleVirtuosoDesc: 'Packed over 300 notes into a single song',
     librarySearchPlaceholder: '🔍 Search by title…',
     librarySortLabel: 'Sort:',
     sortUpdated: '🕒 Recently updated',
@@ -1473,6 +1518,7 @@ function refreshDynamicUI() {
     renderBigGrid();
   }
   if (document.getElementById('viewLibrary').classList.contains('active')) renderLibrary();
+  renderTitles();
   if (document.getElementById('keyBindModal').classList.contains('open')) renderKeyBindModal();
   if (document.getElementById('dmModal').classList.contains('open')) dmRenderWipeArea();
   if (document.getElementById('perfOverlay').classList.contains('open')) {
@@ -1606,6 +1652,75 @@ function saveSongs(songs) { localStorage.setItem(SONGS_KEY, JSON.stringify(songs
 function genId() { return Date.now().toString(36) + Math.random().toString(36).slice(2, 8); }
 function songNoteCount(s) { return s.frames.reduce((sum, f) => sum + f.length, 0); }
 
+/* ================================================================
+   称号（実績）
+   一度獲得した称号は、あとで曲を削除したりノートを減らしたりしても
+   絶対に失われない。そのため判定は「今の曲数」ではなく、削除では減らない
+   累計値（songsCreatedTotal＝作成・複製・読み込みで曲が加わった延べ回数、
+   maxNoteCount＝これまでに存在した1曲あたりの最大ノート数）で行う。
+   ================================================================ */
+const TITLES_KEY = 'taiScoreTitles_v1';
+const TITLES = [
+  { id: 'firstSong',   icon: '🎼', nameKey: 'titleFirstSongName',   descKey: 'titleFirstSongDesc',   check: d => d.songsCreatedTotal >= 1 },
+  { id: 'apprentice',  icon: '🎶', nameKey: 'titleApprenticeName',  descKey: 'titleApprenticeDesc',  check: d => d.songsCreatedTotal >= 5 },
+  { id: 'craftsman',   icon: '🎹', nameKey: 'titleCraftsmanName',   descKey: 'titleCraftsmanDesc',   check: d => d.songsCreatedTotal >= 20 },
+  { id: 'legend',      icon: '🏅', nameKey: 'titleLegendName',      descKey: 'titleLegendDesc',      check: d => d.songsCreatedTotal >= 50 },
+  { id: 'passionate',  icon: '🔥', nameKey: 'titlePassionateName',  descKey: 'titlePassionateDesc',  check: d => d.maxNoteCount >= 100 },
+  { id: 'virtuoso',    icon: '⚡', nameKey: 'titleVirtuosoName',    descKey: 'titleVirtuosoDesc',    check: d => d.maxNoteCount >= 300 },
+];
+function loadTitlesData() {
+  try {
+    const d = JSON.parse(localStorage.getItem(TITLES_KEY));
+    if (d && typeof d === 'object') return { earned: d.earned || [], songsCreatedTotal: d.songsCreatedTotal || 0, maxNoteCount: d.maxNoteCount || 0 };
+  } catch (_) { /* 無視 */ }
+  return { earned: [], songsCreatedTotal: 0, maxNoteCount: 0 };
+}
+function saveTitlesData(d) { localStorage.setItem(TITLES_KEY, JSON.stringify(d)); }
+
+// 新規に条件を満たした称号があれば付与し、獲得トーストと表示を更新する
+function checkTitles(d) {
+  d = d || loadTitlesData();
+  const earnedIds = new Set(d.earned.map(e => e.id));
+  const newlyEarned = TITLES.filter(ti => !earnedIds.has(ti.id) && ti.check(d));
+  if (newlyEarned.length) {
+    newlyEarned.forEach(ti => d.earned.push({ id: ti.id, earnedAt: new Date().toISOString() }));
+    saveTitlesData(d);
+    newlyEarned.forEach(ti => showToast(t('titleUnlockedToast', { name: t(ti.nameKey) })));
+  }
+  renderTitles();
+}
+// 曲がライブラリに加わった（新規作成・複製・インポート・共有リンク読込）たびに呼ぶ。
+// この延べ回数は曲を削除しても減らないので、称号の判定基準として安全に使える
+function recordSongCreated() {
+  const d = loadTitlesData();
+  d.songsCreatedTotal += 1;
+  saveTitlesData(d);
+  checkTitles(d);
+}
+// 1曲あたりのノート数の「最高記録」を更新する。ノートを減らしても記録は下がらない
+function recordNoteCount(count) {
+  const d = loadTitlesData();
+  if (count > d.maxNoteCount) {
+    d.maxNoteCount = count;
+    saveTitlesData(d);
+  }
+  checkTitles(d);
+}
+function renderTitles() {
+  const row = document.getElementById('titlesChipRow');
+  if (!row) return;
+  const d = loadTitlesData();
+  const earnedIds = new Set(d.earned.map(e => e.id));
+  const earnedTitles = TITLES.filter(ti => earnedIds.has(ti.id));
+  if (earnedTitles.length === 0) {
+    row.innerHTML = `<span class="titles-empty-text">${escapeHtml(t('titlesEmptyText'))}</span>`;
+    return;
+  }
+  row.innerHTML = earnedTitles.map(ti =>
+    `<span class="title-chip" title="${escapeHtml(t(ti.descKey))}"><span class="title-chip-icon">${ti.icon}</span>${escapeHtml(t(ti.nameKey))}</span>`
+  ).join('');
+}
+
 // ライブラリの並び順（この端末で記憶する。曲名検索の絞り込みとは独立）
 const LIBRARY_SORT_KEY = 'taiScoreLibrarySort_v1';
 const LIBRARY_SORT_MODES = ['updated', 'name', 'bpm', 'notes'];
@@ -1658,6 +1773,7 @@ function createNewSong() {
   const songs = loadSongs();
   songs.unshift(currentSong);
   saveSongs(songs);
+  recordSongCreated();
   openEditor(currentSong.id);
 }
 
@@ -1678,6 +1794,7 @@ function persistCurrentSong() {
   const idx = songs.findIndex(s => s.id === currentSong.id);
   if (idx >= 0) songs[idx] = currentSong; else songs.unshift(currentSong);
   saveSongs(songs);
+  recordNoteCount(songNoteCount(currentSong));
 }
 
 // ♿ 削除・複製のあとにフォーカスを戻す先を選ぶ。closeModal()は開いた時のトリガー要素
@@ -1755,6 +1872,8 @@ function duplicateSong(id) {
   clone.updatedAt = Date.now();
   songs.unshift(clone);
   saveSongs(songs);
+  recordSongCreated();
+  recordNoteCount(songNoteCount(clone));
   renderLibrary();
   showToast(t('duplicatedToast'));
   if (!focusSongCardButton(clone.id, '.mini-btn.primary')) focusLibraryFallback();
@@ -3147,6 +3266,8 @@ function finishImport(song, statusEl, extraNote, modalId) {
   const songs = loadSongs();
   songs.unshift(song);
   saveSongs(songs);
+  recordSongCreated();
+  recordNoteCount(songNoteCount(song));
   statusEl.className = 'status-msg ok';
   statusEl.textContent = t('importedSongStatus', { name: song.name, note: extraNote || '' });
   if (modalId === 'importModal') {
@@ -4534,6 +4655,8 @@ async function loadSongFromUrlHash() {
       const songs = loadSongs();
       songs.unshift(song);
       saveSongs(songs);
+      recordSongCreated();
+      recordNoteCount(songNoteCount(song));
       openEditor(song.id);
       showToast(t('sharedSongLoadedToast', { name: song.name }));
     }
@@ -4613,6 +4736,7 @@ applyThemeToDOM(isDarkMode());
 populatePitchSelect();
 dmRenderWipeArea();
 renderLibrary();
+renderTitles();
 loadSongFromUrlHash();
 </script>
 
