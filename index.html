@@ -1638,12 +1638,30 @@ document.addEventListener('keydown', function (e) {
     }
   }
 });
+// トースト表示は1個のグローバル要素を使い回している。以前は呼ぶたびに即座に文言を
+// 上書きしていたため、同じ操作の中で複数回連続して呼ばれる（例:
+// 称号を複数同時に獲得した時にcheckTitles()が1件ずつ呼ぶ、複製・共有曲読込の
+// 完了通知が称号獲得通知の直後に呼ばれる、等）と、後のトーストが前のトーストを
+// 画面に表示される前に上書きしてしまい、最初のメッセージが一切見えないまま
+// 消えてしまっていた。そのため1件ずつキューに積んで順番に表示する
+const toastQueue = [];
+let toastShowing = false;
 function showToast(msg) {
+  toastQueue.push(msg);
+  if (!toastShowing) advanceToastQueue();
+}
+function advanceToastQueue() {
+  const msg = toastQueue.shift();
+  if (msg === undefined) { toastShowing = false; return; }
+  toastShowing = true;
   const t = document.getElementById('toast');
   t.textContent = msg;
   t.classList.add('show');
   clearTimeout(showToast._timer);
-  showToast._timer = setTimeout(() => t.classList.remove('show'), 1800);
+  showToast._timer = setTimeout(() => {
+    t.classList.remove('show');
+    setTimeout(advanceToastQueue, 260); // .toastのtransition(0.25s)のフェードアウトを待ってから次を出す
+  }, 1800);
 }
 function escapeHtml(str) {
   return String(str).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
