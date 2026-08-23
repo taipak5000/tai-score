@@ -190,14 +190,17 @@
     .empty-state { text-align: center; padding: 40px 16px; color: var(--text-2); font-size: 13px; }
 
     /* ── 称号 ─────────────────────────── */
-    .titles-card-head { font-size: 14px; font-weight: 700; margin-bottom: 8px; }
+    .titles-card-head-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
+    .titles-card-head { font-size: 14px; font-weight: 700; }
+    .titles-count { font-size: 12px; font-weight: 700; color: var(--text-2); }
     .titles-chip-row { display: flex; flex-wrap: wrap; gap: 8px; }
     .title-chip {
       background: var(--pink-bg); color: var(--pink-d); font-size: 12.5px; font-weight: 600;
       padding: 7px 12px; border-radius: 999px; display: flex; align-items: center; gap: 5px; cursor: default;
     }
     .title-chip-icon { font-size: 15px; }
-    .titles-empty-text { font-size: 12.5px; color: var(--text-2); }
+    /* 未獲得：ピンクの獲得済みチップに対して、text-3でグレーアウトし「まだ手が届いていない」印象にする */
+    .title-chip.locked { background: var(--bg); color: var(--text-3); font-weight: 600; }
 
     /* ── エディタ ─────────────────────────── */
     .editor-top-row { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 10px; }
@@ -558,7 +561,10 @@
     </div>
 
     <div class="card titles-card">
-      <div class="titles-card-head" data-i18n="titlesSectionTitle">🏆 称号</div>
+      <div class="titles-card-head-row">
+        <span class="titles-card-head" data-i18n="titlesSectionTitle">🏆 称号</span>
+        <span class="titles-count" id="titlesCount">0 / 0</span>
+      </div>
       <div class="titles-chip-row" id="titlesChipRow"><!-- JS --></div>
     </div>
 
@@ -1010,8 +1016,10 @@ const I18N = {
     tabEditor: '✏️ 作成・演奏',
     tabFreePlay: '🎹 フリー演奏',
     titlesSectionTitle: '🏆 称号',
-    titlesEmptyText: 'まだ称号はありません。曲を作ってみましょう！',
+    titlesCountTemplate: '{earned} / {total} 個解除',
     titleUnlockedToast: '称号「{name}」を獲得しました！',
+    titleLockedName: '？？？',
+    titleLockedHint: '称号は条件を満たすと明らかになります',
     titleFirstSongName: 'はじめの一歩',
     titleFirstSongDesc: 'はじめての1曲をライブラリに加えた',
     titleApprenticeName: '作曲家見習い',
@@ -1250,8 +1258,10 @@ const I18N = {
     tabEditor: '✏️ Create & Play',
     tabFreePlay: '🎹 Free Play',
     titlesSectionTitle: '🏆 Titles',
-    titlesEmptyText: 'No titles yet. Try creating a song!',
+    titlesCountTemplate: '{earned} / {total} unlocked',
     titleUnlockedToast: 'Unlocked the title "{name}"!',
+    titleLockedName: '???',
+    titleLockedHint: 'Unlocks when you meet its condition',
     titleFirstSongName: 'First Step',
     titleFirstSongDesc: 'Added your first song to the library',
     titleApprenticeName: 'Apprentice Composer',
@@ -1708,17 +1718,18 @@ function recordNoteCount(count) {
 }
 function renderTitles() {
   const row = document.getElementById('titlesChipRow');
+  const countEl = document.getElementById('titlesCount');
   if (!row) return;
   const d = loadTitlesData();
   const earnedIds = new Set(d.earned.map(e => e.id));
-  const earnedTitles = TITLES.filter(ti => earnedIds.has(ti.id));
-  if (earnedTitles.length === 0) {
-    row.innerHTML = `<span class="titles-empty-text">${escapeHtml(t('titlesEmptyText'))}</span>`;
-    return;
-  }
-  row.innerHTML = earnedTitles.map(ti =>
-    `<span class="title-chip" title="${escapeHtml(t(ti.descKey))}"><span class="title-chip-icon">${ti.icon}</span>${escapeHtml(t(ti.nameKey))}</span>`
-  ).join('');
+  if (countEl) countEl.textContent = t('titlesCountTemplate', { earned: earnedIds.size, total: TITLES.length });
+  row.innerHTML = TITLES.map(ti => {
+    if (!earnedIds.has(ti.id)) {
+      // 未解除：名前・条件とも伏せ、🔒表示のみ。ホバーしても中身が漏れないよう汎用文言に固定する
+      return `<span class="title-chip locked" title="${escapeHtml(t('titleLockedHint'))}"><span class="title-chip-icon">🔒</span>${escapeHtml(t('titleLockedName'))}</span>`;
+    }
+    return `<span class="title-chip" title="${escapeHtml(t(ti.descKey))}"><span class="title-chip-icon">${ti.icon}</span>${escapeHtml(t(ti.nameKey))}</span>`;
+  }).join('');
 }
 
 // ライブラリの並び順（この端末で記憶する。曲名検索の絞り込みとは独立）
