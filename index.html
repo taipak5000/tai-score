@@ -255,6 +255,9 @@
     .practice-range-row .range-sep { color: var(--text-2); font-size: 13px; }
     .practice-range-row .range-unit { font-size: 12px; color: var(--text-2); }
 
+    .frame-clipboard-row { display: flex; align-items: center; gap: 8px; margin-bottom: 14px; flex-wrap: wrap; }
+    .frame-clipboard-hint { font-size: 12px; color: var(--text-2); }
+
     .frame-strip { display: flex; flex-wrap: wrap; gap: 8px; padding: 4px 0 12px; }
     .frame-box {
       background: var(--card); border: 2px solid var(--sep); border-radius: 10px; padding: 6px;
@@ -277,6 +280,11 @@
       display: none; align-items: center; justify-content: center; line-height: 1;
     }
     .frame-box:hover .frame-del-btn { display: flex; }
+    .frame-bpm-badge {
+      position: absolute; bottom: -8px; left: 50%; transform: translateX(-50%);
+      background: var(--pink-btn); color: #fff; font-size: 8.5px; font-weight: 700;
+      border-radius: 8px; padding: 1px 5px; line-height: 1.3; white-space: nowrap; pointer-events: none;
+    }
     .add-frame-btn {
       width: 82px; flex-shrink: 0; border: 2px dashed var(--sep); border-radius: 10px;
       display: flex; align-items: center; justify-content: center; color: var(--text-2); font-size: 26px;
@@ -287,6 +295,16 @@
       margin-bottom: 14px;
     }
     .current-frame-label { font-size: 12.5px; color: var(--text-2); font-weight: 600; margin-bottom: 10px; }
+    .frame-bpm-row { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; flex-wrap: wrap; }
+    .frame-bpm-toggle {
+      display: flex; align-items: center; gap: 8px; font-size: 12.5px;
+      font-weight: 600; color: var(--text-2); cursor: pointer;
+    }
+    .frame-bpm-toggle input[type=checkbox] { accent-color: var(--pink); width: 16px; height: 16px; flex-shrink: 0; }
+    .frame-bpm-row input[type=number] {
+      width: 70px; background: var(--bg); border: 1.5px solid var(--sep); border-radius: var(--r-sm);
+      padding: 6px 8px; font-size: 13px; color: var(--text);
+    }
     .big-grid {
       display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; max-width: 320px; margin: 0 auto;
     }
@@ -630,6 +648,15 @@
           <span class="range-sep">〜</span>
           <input type="number" id="practiceRangeEnd" min="1" value="1" onchange="onPracticeRangeChange()">
           <span class="range-unit" data-i18n="rangeUnit">マス目</span>
+          <button type="button" class="mini-btn" onclick="copyFrameRange()" data-i18n="copyFrameRangeBtn">📋 範囲をコピー</button>
+        </div>
+        <label class="metronome-row">
+          <input type="checkbox" id="loopRangeToggle" onchange="onLoopRangeToggleChange(event)">
+          <span data-i18n="loopRangeToggleLabel">🔁 この範囲をループ再生する（▶️再生ボタン）</span>
+        </label>
+        <div class="frame-clipboard-row">
+          <button type="button" class="mini-btn" id="pasteFrameRangeBtn" onclick="pasteFrameRange()" disabled data-i18n="pasteFrameRangeBtn">📥 選択中のマスの後に貼り付け</button>
+          <span class="frame-clipboard-hint" id="frameClipboardHint"></span>
         </div>
         <div class="transport">
           <button class="transport-btn primary" id="playBtn" data-i18n="playBtn" onclick="togglePlayback()">▶️ 再生</button>
@@ -649,6 +676,13 @@
             <button type="button" class="input-mode-tab" data-mode="piano" data-i18n="inputModePiano" onclick="setInputMode('piano')">🎹 ピアノ</button>
             <button type="button" class="input-mode-tab" data-mode="staff" data-i18n="inputModeStaff" onclick="setInputMode('staff')">🎼 五線譜</button>
           </div>
+        </div>
+        <div class="frame-bpm-row" id="frameBpmRow">
+          <label class="frame-bpm-toggle">
+            <input type="checkbox" id="frameBpmOverrideToggle" onchange="onFrameBpmOverrideToggle(event)">
+            <span data-i18n="frameBpmOverrideLabel">🥁 このマスからテンポを変える</span>
+          </label>
+          <input type="number" id="frameBpmOverrideValue" min="40" max="999" style="display:none;" onchange="onFrameBpmOverrideValueChange(this.value)">
         </div>
         <div class="big-grid" id="bigGrid"><!-- JS --></div>
         <div class="piano-keys-wrap" id="pianoKeysWrap" style="display:none;">
@@ -1056,6 +1090,15 @@ const I18N = {
     countInBeatLabel: '🥁 カウントイン… {n}',
     practiceRangeLabel: '練習・試験の範囲',
     rangeUnit: 'マス目',
+    loopRangeToggleLabel: '🔁 この範囲をループ再生する（▶️再生ボタン）',
+    copyFrameRangeBtn: '📋 範囲をコピー',
+    pasteFrameRangeBtn: '📥 選択中のマスの後に貼り付け',
+    frameClipboardEmptyHint: 'まだコピーした範囲がありません',
+    frameClipboardReadyHint: '{count}マス分をコピー中',
+    frameRangeCopiedToast: '{count}マス分をコピーしました',
+    frameRangePastedToast: '{count}マス分を貼り付けました',
+    frameBpmOverrideLabel: '🥁 このマスからテンポを変える',
+    frameBpmBadgeTitle: 'このマスからBPM {bpm} に変わります',
     playBtn: '▶️ 再生',
     stopBtn: '⏹️ 停止',
     practiceModeBtn: '🐢 練習モード',
@@ -1297,6 +1340,15 @@ const I18N = {
     countInBeatLabel: '🥁 Count-in… {n}',
     practiceRangeLabel: 'Practice / Test Range',
     rangeUnit: 'tiles',
+    loopRangeToggleLabel: '🔁 Loop this range (▶️ Play button)',
+    copyFrameRangeBtn: '📋 Copy Range',
+    pasteFrameRangeBtn: '📥 Paste After Selected Tile',
+    frameClipboardEmptyHint: 'Nothing copied yet',
+    frameClipboardReadyHint: '{count} tile(s) copied',
+    frameRangeCopiedToast: 'Copied {count} tile(s)',
+    frameRangePastedToast: 'Pasted {count} tile(s)',
+    frameBpmOverrideLabel: '🥁 Change tempo from this tile',
+    frameBpmBadgeTitle: 'Tempo changes to BPM {bpm} from this tile',
     playBtn: '▶️ Play',
     stopBtn: '⏹️ Stop',
     practiceModeBtn: '🐢 Practice Mode',
@@ -1524,6 +1576,7 @@ function refreshDynamicUI() {
     renderFrameStrip();
     renderBigGrid();
   }
+  renderFrameClipboardHint(); // コピー済み件数のヒント文言は言語切替でも更新する
   if (document.getElementById('viewLibrary').classList.contains('active')) renderLibrary();
   renderTitles();
   if (document.getElementById('keyBindModal').classList.contains('open')) renderKeyBindModal();
@@ -1679,7 +1732,14 @@ function escapeHtml(str) {
 
 /* ================================================================
    曲データの保存（localStorage）
-   1曲 = { id, name, bpm, pitch, instrument, frames: [[noteIndex,...], ...], updatedAt }
+   1曲 = { id, name, bpm, pitch, instrument, frames: [[noteIndex,...], ...],
+           bpmOverrides?: { [フレーム番号]: BPM }, updatedAt }
+   bpmOverridesは「そのマスからテンポが変わる」フレーム単位の任意指定（無指定のマスは
+   直前の変更（無ければ曲全体のbpm）をそのまま引き継ぐ）。frames配列そのものに持たせず
+   曲オブジェクト側の別プロパティにしているのは、frame自体はプレーンな配列（音番号の
+   リスト）なので、配列に直接プロパティを生やしてもJSON.stringify（保存・共有・Undo
+   すべてで使用）でそのプロパティが失われてしまうため。フレームの削除・挿入時は
+   shiftBpmOverridesForDelete()/shiftBpmOverridesForInsert()でインデックスを追従させる。
    ================================================================ */
 const SONGS_KEY = 'taiScoreSongs_v1';
 function loadSongs() {
@@ -2007,11 +2067,14 @@ function renderEditor() {
   document.getElementById('bpmNumber').value = currentSong.bpm;
   const metronomeToggle = document.getElementById('metronomeToggle');
   if (metronomeToggle) metronomeToggle.checked = metronomeEnabled();
+  const loopRangeToggle = document.getElementById('loopRangeToggle');
+  if (loopRangeToggle) loopRangeToggle.checked = loopRangeEnabled();
   if (selectedFrameIndex >= currentSong.frames.length) selectedFrameIndex = Math.max(0, currentSong.frames.length - 1);
   applyInputMode();
   renderFrameStrip();
   renderBigGrid();
   updatePracticeRangeBounds(true);
+  renderFrameClipboardHint();
 }
 
 // 練習・試験モードで使う範囲（マス目の番号、1始まり）の入力欄を、
@@ -2056,6 +2119,7 @@ function renderBigGrid() {
   }).join('');
   renderPianoKeys();
   renderStaffPicker();
+  renderFrameBpmRow();
 }
 
 /* ================================================================
@@ -2165,13 +2229,17 @@ function frameStaffSvg(frame) {
 function renderFrameStrip() {
   const strip = document.getElementById('frameStrip');
   const staffMode = getInputMode() === 'staff';
-  strip.innerHTML = currentSong.frames.map((frame, fi) => `
+  strip.innerHTML = currentSong.frames.map((frame, fi) => {
+    const bpmOv = frameBpmOverride(currentSong, fi);
+    return `
     <div class="frame-box${fi === selectedFrameIndex ? ' selected' : ''}${staffMode ? ' staff-mode' : ''}" id="frameBox_${fi}" onclick="selectFrame(${fi})">
       <span class="frame-index">${fi + 1}</span>
       <button class="frame-del-btn" onclick="event.stopPropagation(); deleteFrame(${fi})">✕</button>
       ${staffMode ? frameStaffSvg(frame) : NOTE_LABELS.map((_, ni) => `<div class="frame-dot${frame.includes(ni) ? ' on' : ''}"></div>`).join('')}
+      ${bpmOv !== null ? `<span class="frame-bpm-badge" title="${escapeHtml(t('frameBpmBadgeTitle', { bpm: bpmOv }))}">🥁${bpmOv}</span>` : ''}
     </div>
-  `).join('') + `<button class="add-frame-btn" onclick="addFrame()">＋</button>`;
+  `;
+  }).join('') + `<button class="add-frame-btn" onclick="addFrame()">＋</button>`;
 }
 
 function selectFrame(fi) {
@@ -2181,18 +2249,69 @@ function selectFrame(fi) {
 }
 
 /* ================================================================
+   フレーム単位のテンポ変化（bpmOverrides）
+   曲オブジェクトのbpmOverrides（{ [フレーム番号]: BPM }）を読み書きするヘルパー。
+   フレームの削除・挿入でインデックスがずれる分は、ここでまとめて追従させる
+   （テンポ変化を指定したマスがそのまま「同じ音のマス」を指し続けるように）。
+   ================================================================ */
+function frameBpmOverride(song, fi) {
+  if (!song || !song.bpmOverrides) return null;
+  const v = song.bpmOverrides[fi];
+  return (typeof v === 'number' && v > 0) ? v : null;
+}
+// idx番目のマスを再生する時点で実際に効いているBPMを、その場所から曲の先頭方向へ
+// 遡って直近のテンポ変化（無ければ曲全体のbpm）から求める
+function effectiveBpmAtFrame(song, idx) {
+  if (song && song.bpmOverrides) {
+    for (let j = idx; j >= 0; j--) {
+      const v = song.bpmOverrides[j];
+      if (typeof v === 'number' && v > 0) return v;
+    }
+  }
+  return song ? song.bpm : 150;
+}
+// fi番目のマスを削除する時、それより後ろのテンポ変化のインデックスを1つずつ詰める
+function shiftBpmOverridesForDelete(song, fi) {
+  if (!song.bpmOverrides) return;
+  const next = {};
+  Object.keys(song.bpmOverrides).forEach(k => {
+    const idx = parseInt(k, 10);
+    if (idx === fi) return; // このマスごと削除される
+    next[idx > fi ? idx - 1 : idx] = song.bpmOverrides[k];
+  });
+  song.bpmOverrides = next;
+}
+// at番目の位置にcount個のマスを挿入する時、それ以降のテンポ変化のインデックスを
+// 後ろへずらして空ける（挿入されたマス自体には既存のテンポ変化は付かない）
+function shiftBpmOverridesForInsert(song, at, count) {
+  if (!song.bpmOverrides || count <= 0) return;
+  const next = {};
+  Object.keys(song.bpmOverrides).forEach(k => {
+    const idx = parseInt(k, 10);
+    next[idx >= at ? idx + count : idx] = song.bpmOverrides[k];
+  });
+  song.bpmOverrides = next;
+}
+
+/* ================================================================
    音符・マスの編集のUndo
    曲全体の削除や最後の1マスの削除は既に確認モーダルで保護されているが、
    音のON/OFF切替や途中マスの削除は連打しやすい操作な上に即座に確定してしまい
    取り消せないため、直近の変更を戻せるようにする。
    （このエディタセッション中だけ保持する履歴。曲を切り替えると失われる＝
    renderEditor()内のclearEditHistory()を参照）
+   frames本体だけでなく、フレーム単位のテンポ変化（bpmOverrides）もフレーム番号に
+   紐づく編集内容の一部なので、同じ履歴エントリに含めて一緒に戻す。
    ================================================================ */
 const EDIT_HISTORY_LIMIT = 20;
 let editHistory = [];
 function pushEditHistory() {
   if (!currentSong) return;
-  editHistory.push({ frames: JSON.parse(JSON.stringify(currentSong.frames)), selectedFrameIndex });
+  editHistory.push({
+    frames: JSON.parse(JSON.stringify(currentSong.frames)),
+    bpmOverrides: JSON.parse(JSON.stringify(currentSong.bpmOverrides || {})),
+    selectedFrameIndex
+  });
   if (editHistory.length > EDIT_HISTORY_LIMIT) editHistory.shift();
   updateUndoButton();
 }
@@ -2208,6 +2327,7 @@ function undoEdit() {
   if (editHistory.length === 0 || !currentSong) return;
   const prev = editHistory.pop();
   currentSong.frames = prev.frames;
+  currentSong.bpmOverrides = prev.bpmOverrides;
   selectedFrameIndex = Math.min(prev.selectedFrameIndex, currentSong.frames.length - 1);
   persistCurrentSong();
   renderFrameStrip();
@@ -2241,11 +2361,119 @@ function deleteFrame(fi) {
   if (currentSong.frames.length <= 1) { showToast(t('lastFrameCannotDelete')); return; }
   pushEditHistory();
   currentSong.frames.splice(fi, 1);
+  shiftBpmOverridesForDelete(currentSong, fi);
   if (selectedFrameIndex >= currentSong.frames.length) selectedFrameIndex = currentSong.frames.length - 1;
   persistCurrentSong();
   renderFrameStrip();
   renderBigGrid();
   updatePracticeRangeBounds(false);
+}
+
+/* ================================================================
+   フレーム単位のBPM変更（テンポ変化）の設定UI
+   選択中のマス（selectedFrameIndex）に対して「ここからテンポを変える」を
+   ON/OFFし、ONの時だけBPM数値入力を表示する。
+   ================================================================ */
+function renderFrameBpmRow() {
+  if (!currentSong) return;
+  const toggle = document.getElementById('frameBpmOverrideToggle');
+  const valueInput = document.getElementById('frameBpmOverrideValue');
+  if (!toggle || !valueInput) return;
+  const existing = frameBpmOverride(currentSong, selectedFrameIndex);
+  toggle.checked = existing !== null;
+  valueInput.style.display = existing !== null ? '' : 'none';
+  valueInput.value = existing !== null ? existing : currentSong.bpm;
+}
+function onFrameBpmOverrideToggle(e) {
+  if (!currentSong) return;
+  pushEditHistory();
+  if (e.target.checked) {
+    if (!currentSong.bpmOverrides) currentSong.bpmOverrides = {};
+    currentSong.bpmOverrides[selectedFrameIndex] = currentSong.bpm;
+  } else if (currentSong.bpmOverrides) {
+    delete currentSong.bpmOverrides[selectedFrameIndex];
+  }
+  persistCurrentSong();
+  renderFrameBpmRow();
+  renderFrameStrip();
+}
+function onFrameBpmOverrideValueChange(val) {
+  if (!currentSong) return;
+  const bpm = Math.max(40, Math.min(999, parseInt(val, 10) || currentSong.bpm));
+  pushEditHistory();
+  if (!currentSong.bpmOverrides) currentSong.bpmOverrides = {};
+  currentSong.bpmOverrides[selectedFrameIndex] = bpm;
+  persistCurrentSong();
+  renderFrameBpmRow();
+  renderFrameStrip();
+}
+
+/* ================================================================
+   フレーム範囲のコピー＆ペースト
+   「コピーする範囲」は、練習・試験モードで使っている範囲入力欄
+   （practiceRangeStart／practiceRangeEnd）をそのまま流用する。
+   貼り付け先は「選択中のマス（selectedFrameIndex）の直後」に固定し、位置は
+   フレームストリップで対象のマスをクリックして選ぶ（既存のselectFrame()と同じ導線）。
+   クリップボードはこの端末に1件だけ保存し、曲を切り替えても（＝別の曲を開いても）
+   保持されるので、ある曲のサビを別の曲や同じ曲の別の位置に貼り付けられる。
+   貼り付けは既存のUndo（editHistory）で戻せる。
+   ================================================================ */
+const FRAME_CLIPBOARD_KEY = 'taiScoreFrameClipboard_v1';
+function loadFrameClipboard() {
+  try {
+    const c = JSON.parse(localStorage.getItem(FRAME_CLIPBOARD_KEY));
+    if (c && Array.isArray(c.frames) && c.frames.length > 0) return c;
+  } catch (e) { /* 無視 */ }
+  return null;
+}
+function saveFrameClipboard(clip) {
+  try { localStorage.setItem(FRAME_CLIPBOARD_KEY, JSON.stringify(clip)); } catch (e) { /* 無視 */ }
+}
+let frameClipboard = loadFrameClipboard(); // { frames: [[noteIndex,...],...], bpmOverrides: {"0":140,...} } | null
+
+function copyFrameRange() {
+  if (!currentSong) return;
+  const range = getPracticeRange(); // 0始まり。練習・試験の範囲と同じ入力欄を「コピー範囲」として使う
+  const frames = currentSong.frames.slice(range.start, range.end + 1).map(f => f.slice());
+  const bpmOverrides = {};
+  if (currentSong.bpmOverrides) {
+    for (let i = range.start; i <= range.end; i++) {
+      const v = currentSong.bpmOverrides[i];
+      if (typeof v === 'number' && v > 0) bpmOverrides[i - range.start] = v;
+    }
+  }
+  frameClipboard = { frames, bpmOverrides };
+  saveFrameClipboard(frameClipboard);
+  renderFrameClipboardHint();
+  showToast(t('frameRangeCopiedToast', { count: frames.length }));
+}
+
+function pasteFrameRange() {
+  if (!currentSong || !frameClipboard || frameClipboard.frames.length === 0) return;
+  pushEditHistory();
+  const at = selectedFrameIndex + 1; // 選択中のマスの直後に挿入する
+  const copied = frameClipboard.frames.map(f => f.slice());
+  currentSong.frames.splice(at, 0, ...copied);
+  shiftBpmOverridesForInsert(currentSong, at, copied.length);
+  Object.keys(frameClipboard.bpmOverrides || {}).forEach(k => {
+    if (!currentSong.bpmOverrides) currentSong.bpmOverrides = {};
+    currentSong.bpmOverrides[at + parseInt(k, 10)] = frameClipboard.bpmOverrides[k];
+  });
+  selectedFrameIndex = at + copied.length - 1; // 貼り付けた最後のマスを選択状態にする
+  persistCurrentSong();
+  renderFrameStrip();
+  renderBigGrid();
+  updatePracticeRangeBounds(false);
+  showToast(t('frameRangePastedToast', { count: copied.length }));
+}
+
+// 貼り付けボタンの有効/無効と、コピー済み件数のヒント文言を今の状態に合わせる
+function renderFrameClipboardHint() {
+  const btn = document.getElementById('pasteFrameRangeBtn');
+  const hint = document.getElementById('frameClipboardHint');
+  const count = frameClipboard ? frameClipboard.frames.length : 0;
+  if (btn) btn.disabled = count === 0;
+  if (hint) hint.textContent = count > 0 ? t('frameClipboardReadyHint', { count }) : t('frameClipboardEmptyHint');
 }
 
 function onSongMetaChange() {
@@ -2470,9 +2698,22 @@ function runCountIn(bpm, onBeat, onDone) {
 
 /* ================================================================
    再生・練習モード
+   ループ再生（loopRangeEnabled）がONの時は、練習・試験の範囲入力欄
+   （getPracticeRange()）で指定した範囲だけを繰り返し再生し続ける
+   （範囲の最後まで来たら停止せず、範囲の先頭に戻ってまた再生する）。
+   フレーム単位のテンポ変化（currentSong.bpmOverrides）にも対応しており、
+   そのマスに到達した時点でeffectiveBpmを更新し、次のマスまでの間隔に反映する。
    ================================================================ */
 let playbackTimer = null;
 let isPlaying = false;
+const LOOP_RANGE_KEY = 'taiScoreLoopRangeEnabled_v1';
+function loopRangeEnabled() {
+  try { return localStorage.getItem(LOOP_RANGE_KEY) === '1'; } catch (e) { return false; }
+}
+function setLoopRangeEnabled(on) {
+  try { localStorage.setItem(LOOP_RANGE_KEY, on ? '1' : '0'); } catch (e) { /* 無視 */ }
+}
+function onLoopRangeToggleChange(e) { setLoopRangeEnabled(e.target.checked); }
 
 function togglePlayback() {
   if (isPlaying) { stopPlayback(); return; }
@@ -2493,15 +2734,25 @@ function startPlaybackLoop() {
   document.getElementById('playBtn').classList.add('active');
   document.getElementById('playBtn').textContent = t('playingLabel');
   document.getElementById('stopBtn').style.display = 'flex';
-  let i = selectedFrameIndex;
-  const intervalMs = 60000 / currentSong.bpm;
+  const looping = loopRangeEnabled();
+  const range = looping ? getPracticeRange() : null;
+  // ループ再生ON時は、選択中のマスが範囲の外にある場合だけ範囲の先頭から始める
+  // （範囲内なら、そこから始めて範囲の終わりで先頭に戻る）
+  let i = (looping && (selectedFrameIndex < range.start || selectedFrameIndex > range.end)) ? range.start : selectedFrameIndex;
+  let bpm = effectiveBpmAtFrame(currentSong, i);
   const step = () => {
-    if (i >= currentSong.frames.length) { stopPlayback(); return; }
+    if (looping ? i > range.end : i >= currentSong.frames.length) {
+      if (!looping) { stopPlayback(); return; }
+      i = range.start;
+      bpm = effectiveBpmAtFrame(currentSong, i);
+    }
+    const override = frameBpmOverride(currentSong, i);
+    if (override !== null) bpm = override;
     highlightPlayingFrame(i);
     playFrame(currentSong.frames[i]);
     if (metronomeEnabled()) playMetronomeClick(false);
     i++;
-    playbackTimer = setTimeout(step, intervalMs);
+    playbackTimer = setTimeout(step, 60000 / bpm);
   };
   step();
 }
