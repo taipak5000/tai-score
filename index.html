@@ -140,7 +140,7 @@
     .card a { color: var(--pink-d); text-decoration: underline; text-underline-offset: 2px; }
     .hint { font-size: 12px; color: var(--text-2); line-height: 1.7; }
 
-    /* ── ヒーローバナー（称号達成率・作成統計。姉妹サイトの収集率バナーと同じ構成） ── */
+    /* ── ヒーローバナー（作成・練習の統計。称号はおまけ機能のため主役にしない） ── */
     .banner {
       background: linear-gradient(135deg, #B0184D 0%, var(--pink) 55%, #FF8FB3 100%);
       border-radius: var(--r);
@@ -165,18 +165,12 @@
       border-radius: 50%; pointer-events:none;
     }
     .banner-inner { position: relative; z-index:1; display: flex; align-items: center; gap: 18px; }
-    .gauge-wrap { flex-shrink: 0; position: relative; width: 96px; height: 96px; }
-    .gauge-svg { width: 96px; height: 96px; transform: rotate(-90deg); }
-    .g-track { fill: none; stroke: rgba(255,255,255,0.28); stroke-width: 8; }
-    .g-fill {
-      fill: none; stroke: #fff; stroke-width: 8; stroke-linecap: round;
-      /* r=38: C ≈ 238.76 */
-      stroke-dasharray: 238.76; stroke-dashoffset: 238.76;
-      transition: stroke-dashoffset 1.4s cubic-bezier(0.22,1,0.36,1);
+    .banner-icon-wrap {
+      flex-shrink: 0; width: 96px; height: 96px; border-radius: 50%;
+      background: rgba(255,255,255,0.16); border: 2px solid rgba(255,255,255,0.28);
+      display: flex; align-items: center; justify-content: center;
     }
-    .gauge-center { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; }
-    .gauge-pct { font-size: 21px; font-weight: 700; letter-spacing: -0.5px; line-height:1; color:#fff; }
-    .gauge-lbl { font-size: 8px; opacity: 0.78; margin-top: 3px; letter-spacing: 0.8px; }
+    .banner-icon { font-size: 44px; line-height: 1; }
     .banner-text { flex:1; min-width:0; }
     .banner-title { font-size: 13px; opacity: 0.85; margin-bottom: 12px; letter-spacing: 0.2px; }
     .banner-nums { display: flex; gap: 24px; }
@@ -607,26 +601,17 @@
   <div>
     <div class="banner">
       <div class="banner-inner">
-        <div class="gauge-wrap">
-          <svg class="gauge-svg" viewBox="0 0 96 96">
-            <circle class="g-track" cx="48" cy="48" r="38"/>
-            <circle class="g-fill" cx="48" cy="48" r="38" id="heroGaugeFill"/>
-          </svg>
-          <div class="gauge-center">
-            <div class="gauge-pct" id="heroGaugePct">--%</div>
-            <div class="gauge-lbl">TOTAL</div>
-          </div>
-        </div>
+        <div class="banner-icon-wrap"><span class="banner-icon">🎼</span></div>
         <div class="banner-text">
-          <div class="banner-title" data-i18n="heroBannerTitle">🏆 称号達成率</div>
+          <div class="banner-title" data-i18n="heroBannerTitle">🎵 制作記録</div>
           <div class="banner-nums">
             <div>
               <div class="bnum-val" id="heroSongsVal">--</div>
               <div class="bnum-lbl" data-i18n="heroSongsLabel">作成した曲(延べ)</div>
             </div>
             <div>
-              <div class="bnum-val" style="opacity:.72" id="heroNotesVal">--</div>
-              <div class="bnum-lbl" data-i18n="heroNotesLabel">最多ノート数</div>
+              <div class="bnum-val" style="opacity:.72" id="heroPracticeVal">--</div>
+              <div class="bnum-lbl" data-i18n="heroPracticeLabel">練習回数</div>
             </div>
           </div>
         </div>
@@ -1072,9 +1057,9 @@ const I18N = {
         インポート・エクスポートにも対応しているほか、Sky Studio形式の楽譜ファイルの読み込みにも対応しているので、
         すでに公開されている楽譜もそのまま読み込めます。
         データはこの端末のブラウザだけに保存され、外部には送信されません。`,
-    heroBannerTitle: '🏆 称号達成率',
+    heroBannerTitle: '🎵 制作記録',
     heroSongsLabel: '作成した曲(延べ)',
-    heroNotesLabel: '最多ノート数',
+    heroPracticeLabel: '練習回数',
     tabLibrary: '📚 ライブラリ',
     tabEditor: '✏️ 作成・演奏',
     tabFreePlay: '🎹 フリー演奏',
@@ -1314,9 +1299,9 @@ const I18N = {
         sheet music files, as well as loading Sky Studio-format files, so sheet music already published elsewhere
         can be loaded as-is.
         Your data is stored only in this device's browser and is never sent anywhere else.`,
-    heroBannerTitle: '🏆 Title Completion Rate',
+    heroBannerTitle: '🎵 Creation Record',
     heroSongsLabel: 'Songs Created',
-    heroNotesLabel: 'Most Notes (1 Song)',
+    heroPracticeLabel: 'Practice Sessions',
     tabLibrary: '📚 Library',
     tabEditor: '✏️ Create & Play',
     tabFreePlay: '🎹 Free Play',
@@ -1789,9 +1774,9 @@ const TITLES = [
 function loadTitlesData() {
   try {
     const d = JSON.parse(localStorage.getItem(TITLES_KEY));
-    if (d && typeof d === 'object') return { earned: d.earned || [], songsCreatedTotal: d.songsCreatedTotal || 0, maxNoteCount: d.maxNoteCount || 0 };
+    if (d && typeof d === 'object') return { earned: d.earned || [], songsCreatedTotal: d.songsCreatedTotal || 0, maxNoteCount: d.maxNoteCount || 0, practiceCountTotal: d.practiceCountTotal || 0 };
   } catch (_) { /* 無視 */ }
-  return { earned: [], songsCreatedTotal: 0, maxNoteCount: 0 };
+  return { earned: [], songsCreatedTotal: 0, maxNoteCount: 0, practiceCountTotal: 0 };
 }
 function saveTitlesData(d) { localStorage.setItem(TITLES_KEY, JSON.stringify(d)); }
 
@@ -1824,7 +1809,6 @@ function recordNoteCount(count) {
   }
   checkTitles(d);
 }
-const HERO_GAUGE_CIRC = 2 * Math.PI * 38; // r=38 ≈ 238.76
 function renderTitles() {
   const row = document.getElementById('titlesChipRow');
   const countEl = document.getElementById('titlesCount');
@@ -1840,22 +1824,11 @@ function renderTitles() {
     return `<span class="title-chip" title="${escapeHtml(t(ti.descKey))}"><span class="title-chip-icon">${ti.icon}</span>${escapeHtml(t(ti.nameKey))}</span>`;
   }).join('');
 
-  // ヒーローバナー（称号達成率のゲージ・作成統計の数値）を更新
-  const pct = TITLES.length > 0 ? Math.round((earnedIds.size / TITLES.length) * 100) : 0;
-  const gaugePctEl = document.getElementById('heroGaugePct');
+  // ヒーローバナー（作成した曲数・練習回数）を更新。称号はおまけ機能のためバナーには出さない
   const songsValEl = document.getElementById('heroSongsVal');
-  const notesValEl = document.getElementById('heroNotesVal');
-  if (gaugePctEl) gaugePctEl.textContent = pct + '%';
+  const practiceValEl = document.getElementById('heroPracticeVal');
   if (songsValEl) songsValEl.textContent = d.songsCreatedTotal;
-  if (notesValEl) notesValEl.textContent = d.maxNoteCount;
-  const fill = document.getElementById('heroGaugeFill');
-  if (fill) {
-    fill.style.strokeDasharray = HERO_GAUGE_CIRC;
-    fill.style.strokeDashoffset = HERO_GAUGE_CIRC;
-    requestAnimationFrame(() => {
-      fill.style.strokeDashoffset = HERO_GAUGE_CIRC * (1 - pct / 100);
-    });
-  }
+  if (practiceValEl) practiceValEl.textContent = d.practiceCountTotal;
 }
 
 // ライブラリの並び順（この端末で記憶する。曲名検索の絞り込みとは独立）
@@ -2951,6 +2924,10 @@ function recordPerfResult() {
     currentSong.lastPracticeResult = { at: Date.now() };
   }
   persistCurrentSong();
+  const d = loadTitlesData();
+  d.practiceCountTotal += 1;
+  saveTitlesData(d);
+  renderTitles();
 }
 // エディタ画面に「前回の練習・試験結果」を表示する
 function renderLastResult() {
