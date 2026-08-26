@@ -255,6 +255,8 @@
     .frame-clipboard-row { display: flex; align-items: center; gap: 8px; margin-bottom: 14px; flex-wrap: wrap; }
     .frame-clipboard-hint { font-size: 12px; color: var(--text-2); }
 
+    .last-result-row { display: flex; flex-direction: column; gap: 2px; margin-top: 4px; font-size: 12px; color: var(--text-2); }
+
     .frame-strip { display: flex; flex-wrap: wrap; gap: 8px; padding: 4px 0 12px; }
     .frame-box {
       background: var(--card); border: 2px solid var(--sep); border-radius: 10px; padding: 6px;
@@ -664,6 +666,7 @@
           <button class="transport-btn" data-i18n="shareBtn" onclick="openModal('shareModal')">🔗 共有・保存</button>
           <button class="transport-btn" data-i18n="keySettingsBtn" onclick="openKeyBindModal()">⌨️ キー設定</button>
         </div>
+        <div class="last-result-row" id="lastResultRow"><!-- JS --></div>
       </div>
 
       <div class="current-frame-card">
@@ -1104,6 +1107,9 @@ const I18N = {
     testModeBtn: '📝 試験モード',
     shareBtn: '🔗 共有・保存',
     keySettingsBtn: '⌨️ キー設定',
+    lastPracticeResultText: '🐢 前回の練習: {date}',
+    lastTestResultTextNoMistake: '📝 前回の試験: {date}（ミスなし）',
+    lastTestResultText: '📝 前回の試験: {date}（ミス{count}回）',
     currentFrameLabel: '選択中のマス（クリックで音をON/OFF）',
     inputModeGrid: '⚪ グリッド',
     inputModePiano: '🎹 ピアノ',
@@ -1137,7 +1143,7 @@ const I18N = {
     importFailedCode: 'コードの読み込みに失敗しました。コードが正しいかご確認ください。',
     importFailedFile: 'ファイルの読み込みに失敗しました。対応形式のファイルかご確認ください。',
     importedSongStatus: '「{name}」を読み込みました。{note}',
-    multiSongNote: '（{count}曲含まれていましたが、最初の1曲のみ読み込みました）',
+    multiSongNote: '（{count}曲まとめて読み込みました）',
     importedSongDefaultName: 'インポートした楽譜',
     videoImportModalTitle: '🎥 動画から楽譜を作成',
     videoImportHint: '演奏動画または演奏音声のファイルを選ぶと、自動で楽譜を作成します。ファイルはどこにもアップロードされず、すべてこの端末（ブラウザ）内だけで処理されます。自動解析のため完璧ではありません。作成後は編集画面で内容をご確認・修正してください。',
@@ -1355,6 +1361,9 @@ const I18N = {
     testModeBtn: '📝 Test Mode',
     shareBtn: '🔗 Share & Save',
     keySettingsBtn: '⌨️ Key Settings',
+    lastPracticeResultText: '🐢 Last practice: {date}',
+    lastTestResultTextNoMistake: '📝 Last test: {date} (no mistakes)',
+    lastTestResultText: '📝 Last test: {date} ({count} mistake(s))',
     currentFrameLabel: 'Selected tile (click to toggle a note on/off)',
     inputModeGrid: '⚪ Grid',
     inputModePiano: '🎹 Piano',
@@ -1388,7 +1397,7 @@ const I18N = {
     importFailedCode: 'Failed to load the code. Please check that the code is correct.',
     importFailedFile: 'Failed to load the file. Please check that it is a supported format.',
     importedSongStatus: 'Loaded "{name}". {note}',
-    multiSongNote: ' (This contained {count} songs, but only the first one was loaded.)',
+    multiSongNote: ' (Loaded all {count} songs.)',
     importedSongDefaultName: 'Imported Song',
     videoImportModalTitle: '🎥 Create Sheet Music from Video',
     videoImportHint: "Select a performance video or audio file and sheet music will be created automatically. The file is never uploaded anywhere — everything is processed entirely on this device (in the browser). Automatic analysis isn't perfect. After creating it, please review and correct the content in the editor.",
@@ -1575,6 +1584,7 @@ function refreshDynamicUI() {
     document.getElementById('songPitchInput').value = currentSong.pitch;
     renderFrameStrip();
     renderBigGrid();
+    renderLastResult();
   }
   renderFrameClipboardHint(); // コピー済み件数のヒント文言は言語切替でも更新する
   if (document.getElementById('viewLibrary').classList.contains('active')) renderLibrary();
@@ -1733,13 +1743,21 @@ function escapeHtml(str) {
 /* ================================================================
    曲データの保存（localStorage）
    1曲 = { id, name, bpm, pitch, instrument, frames: [[noteIndex,...], ...],
-           bpmOverrides?: { [フレーム番号]: BPM }, updatedAt }
+           bpmOverrides?: { [フレーム番号]: BPM }, updatedAt,
+           practiceRangeStart?, practiceRangeEnd?: 練習・試験の範囲（1始まりのマス番号、
+             未指定なら曲全体）、loopRangeEnabled?: その範囲をループ再生するか、
+           lastPracticeResult?: { at }、lastTestResult?: { at, mistakes } }
    bpmOverridesは「そのマスからテンポが変わる」フレーム単位の任意指定（無指定のマスは
    直前の変更（無ければ曲全体のbpm）をそのまま引き継ぐ）。frames配列そのものに持たせず
    曲オブジェクト側の別プロパティにしているのは、frame自体はプレーンな配列（音番号の
    リスト）なので、配列に直接プロパティを生やしてもJSON.stringify（保存・共有・Undo
    すべてで使用）でそのプロパティが失われてしまうため。フレームの削除・挿入時は
    shiftBpmOverridesForDelete()/shiftBpmOverridesForInsert()でインデックスを追従させる。
+   practiceRangeStart/End・loopRangeEnabled・lastPracticeResult/lastTestResultは、曲を
+   切り替えても（＝別の曲を開いても）今の曲の設定・前回の結果として引き続き参照できるよう、
+   端末共通の設定ではなく曲オブジェクト自身に持たせている。これらはこの端末だけの
+   個人的な情報なので、共有コード・共有ファイル生成時はstripPersonalPracticeData()で
+   除外している。
    ================================================================ */
 const SONGS_KEY = 'taiScoreSongs_v1';
 function loadSongs() {
@@ -2075,11 +2093,13 @@ function renderEditor() {
   renderBigGrid();
   updatePracticeRangeBounds(true);
   renderFrameClipboardHint();
+  renderLastResult();
 }
 
 // 練習・試験モードで使う範囲（マス目の番号、1始まり）の入力欄を、
-// 楽譜の長さに合わせて更新する。resetToFullがtrueなら曲全体を対象にリセットし、
-// falseならユーザーが指定した範囲を曲の長さの範囲内でできるだけ維持する。
+// 楽譜の長さに合わせて更新する。resetToFullがtrueなら曲を切り替えた直後として、
+// その曲で前回保存した範囲（無ければ曲全体）を復元し、falseならユーザーが指定した
+// 範囲を曲の長さの範囲内でできるだけ維持する。
 function updatePracticeRangeBounds(resetToFull) {
   if (!currentSong) return;
   const total = currentSong.frames.length;
@@ -2087,7 +2107,20 @@ function updatePracticeRangeBounds(resetToFull) {
   const endInput = document.getElementById('practiceRangeEnd');
   startInput.max = total;
   endInput.max = total;
-  if (resetToFull || !startInput.value || !endInput.value) {
+  if (resetToFull) {
+    const savedStart = currentSong.practiceRangeStart;
+    const savedEnd = currentSong.practiceRangeEnd;
+    if (Number.isFinite(savedStart) && Number.isFinite(savedEnd)) {
+      const start = Math.max(1, Math.min(total, savedStart));
+      startInput.value = start;
+      endInput.value = Math.max(start, Math.min(total, savedEnd));
+    } else {
+      startInput.value = 1;
+      endInput.value = total;
+    }
+    return;
+  }
+  if (!startInput.value || !endInput.value) {
     startInput.value = 1;
     endInput.value = total;
     return;
@@ -2097,8 +2130,14 @@ function updatePracticeRangeBounds(resetToFull) {
   startInput.value = start;
   endInput.value = end;
 }
+// ユーザーが範囲入力欄を直接変更した時だけ、この曲の設定として保存する
+// （addFrame/deleteFrame等によるupdatePracticeRangeBounds(false)呼び出しでは保存しない）
 function onPracticeRangeChange() {
   updatePracticeRangeBounds(false);
+  if (!currentSong) return;
+  currentSong.practiceRangeStart = parseInt(document.getElementById('practiceRangeStart').value, 10);
+  currentSong.practiceRangeEnd = parseInt(document.getElementById('practiceRangeEnd').value, 10);
+  persistCurrentSong();
 }
 // 練習・試験モードで使う範囲を0始まりのフレーム番号で返す
 function getPracticeRange() {
@@ -2706,12 +2745,18 @@ function runCountIn(bpm, onBeat, onDone) {
    ================================================================ */
 let playbackTimer = null;
 let isPlaying = false;
+// ループON/OFFは曲ごとに記憶する（currentSong.loopRangeEnabled）。
+// 旧バージョン（端末共通の1設定だった頃）のキーは、まだこの曲用の設定を
+// 保存していない曲（loopRangeEnabledが未定義）の初期値としてだけ参照する。
 const LOOP_RANGE_KEY = 'taiScoreLoopRangeEnabled_v1';
 function loopRangeEnabled() {
+  if (currentSong && typeof currentSong.loopRangeEnabled === 'boolean') return currentSong.loopRangeEnabled;
   try { return localStorage.getItem(LOOP_RANGE_KEY) === '1'; } catch (e) { return false; }
 }
 function setLoopRangeEnabled(on) {
-  try { localStorage.setItem(LOOP_RANGE_KEY, on ? '1' : '0'); } catch (e) { /* 無視 */ }
+  if (!currentSong) return;
+  currentSong.loopRangeEnabled = on;
+  persistCurrentSong();
 }
 function onLoopRangeToggleChange(e) { setLoopRangeEnabled(e.target.checked); }
 
@@ -2869,6 +2914,37 @@ function closePerformance() {
   perfCountingIn = false;
   document.getElementById('perfOverlay').classList.remove('open');
   perfMode = null;
+  renderLastResult(); // 練習・試験モード終了で結果が更新されている場合、下の画面にも反映する
+}
+
+/* ================================================================
+   練習・試験結果の記憶
+   範囲の最後まで到達した（＝最後まで演奏し切った）時点の結果を曲ごとに
+   1件だけ（練習・試験それぞれ最新のもの）保存し、次にこの曲を開いた時に
+   参照できるようにする。範囲の途中で終了した場合は記録しない。
+   ================================================================ */
+function recordPerfResult() {
+  if (!currentSong) return;
+  if (perfMode === 'test') {
+    currentSong.lastTestResult = { at: Date.now(), mistakes: perfMistakeCount };
+  } else if (perfMode === 'practice') {
+    currentSong.lastPracticeResult = { at: Date.now() };
+  }
+  persistCurrentSong();
+}
+// エディタ画面に「前回の練習・試験結果」を表示する
+function renderLastResult() {
+  const el = document.getElementById('lastResultRow');
+  if (!el || !currentSong) return;
+  const d = ts => { const dt = new Date(ts); return `${dt.getFullYear()}/${dt.getMonth() + 1}/${dt.getDate()}`; };
+  const lines = [];
+  const pr = currentSong.lastPracticeResult;
+  const tr = currentSong.lastTestResult;
+  if (pr) lines.push(t('lastPracticeResultText', { date: d(pr.at) }));
+  if (tr) {
+    lines.push(t(tr.mistakes === 0 ? 'lastTestResultTextNoMistake' : 'lastTestResultText', { date: d(tr.at), count: tr.mistakes }));
+  }
+  el.innerHTML = lines.map(line => `<div>${escapeHtml(line)}</div>`).join('');
 }
 
 // pointerdown（押した瞬間）で反応させることで、和音の同時押しに対応する。
@@ -2938,6 +3014,7 @@ function goToNextPerfFrame() {
       document.getElementById('perfFooter').textContent = t('performedToEnd');
     }
     document.getElementById('perfProgress').textContent = `${totalInRange} / ${totalInRange}`;
+    recordPerfResult();
     return;
   }
   const posInRange = perfFrameIndex - perfRangeStart + 1;
@@ -3202,13 +3279,26 @@ async function decodeShareCode(code) {
 /* ================================================================
    共有モーダル
    ================================================================ */
+// 共有コード・共有ファイルには、この端末だけの練習・試験に関する情報
+// （練習/試験の範囲・ループ設定・前回の練習/試験結果）を含めない。
+// SNS等に貼り付けて共有される想定のため、個人の演奏記録が意図せず
+// 相手に伝わってしまわないようにする
+function stripPersonalPracticeData(song) {
+  const copy = Object.assign({}, song);
+  delete copy.practiceRangeStart;
+  delete copy.practiceRangeEnd;
+  delete copy.loopRangeEnabled;
+  delete copy.lastPracticeResult;
+  delete copy.lastTestResult;
+  return copy;
+}
 let lastShareCode = null;
 async function generateShareCode() {
   const statusEl = document.getElementById('shareStatus');
   const outputEl = document.getElementById('shareOutputArea');
   statusEl.textContent = '';
   try {
-    lastShareCode = await encodeShareCode({ kind: 'tai-score-song', v: 1, song: currentSong });
+    lastShareCode = await encodeShareCode({ kind: 'tai-score-song', v: 1, song: stripPersonalPracticeData(currentSong) });
     outputEl.innerHTML = `
       <textarea class="code-box" id="shareCodeOutput" readonly onclick="this.select()">${escapeHtml(lastShareCode)}</textarea>
       <button type="button" class="action-btn secondary" onclick="copyShareCode()">${escapeHtml(t('copyShareCodeBtn'))}</button>`;
@@ -3339,7 +3429,7 @@ function sanitizeFilename(str) {
   return String(str).replace(/[\\/:*?"<>|]/g, '_').trim() || 'song';
 }
 function downloadNativeFile() {
-  downloadBlob(JSON.stringify({ kind: 'tai-score-song', v: 1, song: currentSong }, null, 1),
+  downloadBlob(JSON.stringify({ kind: 'tai-score-song', v: 1, song: stripPersonalPracticeData(currentSong) }, null, 1),
     `${sanitizeFilename(currentSong.name || 'song')}.taiscore.json`, 'application/json');
   showToast(t('downloadedToast'));
 }
@@ -3479,25 +3569,28 @@ function decodeFileBuffer(buffer) {
   return new TextDecoder('utf-8').decode(bytes);
 }
 
-// 読み込んだデータ（配列で複数曲が包まれている場合を含む）から、実際に取り込む1曲分を選ぶ
-function pickImportableSong(parsed) {
-  let extraNote = '';
-  if (Array.isArray(parsed)) {
-    if (parsed.length === 0) throw new Error('empty array');
-    if (parsed.length > 1) extraNote = t('multiSongNote', { count: parsed.length });
-    parsed = parsed[0];
-  }
-  let song;
-  if (parsed && parsed.kind === 'tai-score-song' && parsed.song) {
-    song = parsed.song; song.id = genId(); song.updatedAt = Date.now();
-  } else if (isOldSkyStudioFormat(parsed)) {
-    song = oldSkyStudioFormatToSong(parsed);
-  } else if (isSpecyFormat(parsed)) {
-    song = specyFormatToSong(parsed);
-  } else {
-    throw new Error('unknown format');
-  }
-  return { song, extraNote };
+// 読み込んだデータ（配列で複数曲が包まれている場合を含む）から、取り込める曲を全て取り出す。
+// 配列中の一部が未対応形式でも、その曲だけ読み飛ばして残りは取り込む
+// （全滅した場合のみ、従来通り「unknown format」としてエラーにする）。
+function pickImportableSongs(parsed) {
+  const list = Array.isArray(parsed) ? parsed : [parsed];
+  if (list.length === 0) throw new Error('empty array');
+  const songs = [];
+  list.forEach(item => {
+    try {
+      if (item && item.kind === 'tai-score-song' && item.song) {
+        const song = item.song; song.id = genId(); song.updatedAt = Date.now();
+        songs.push(song);
+      } else if (isOldSkyStudioFormat(item)) {
+        songs.push(oldSkyStudioFormatToSong(item));
+      } else if (isSpecyFormat(item)) {
+        songs.push(specyFormatToSong(item));
+      }
+    } catch (e) { /* この1曲だけ読み込めない場合はスキップし、残りの曲は取り込む */ }
+  });
+  if (songs.length === 0) throw new Error('unknown format');
+  const extraNote = songs.length > 1 ? t('multiSongNote', { count: songs.length }) : '';
+  return { songs, extraNote };
 }
 
 /* ================================================================
@@ -3519,8 +3612,8 @@ async function importFromCode() {
       // 共有コードとして読めない場合、Sky Studio/Sky Music Nightly形式のJSONを直接貼り付けたものとして再試行する
       payload = JSON.parse(code);
     }
-    const { song, extraNote } = pickImportableSong(payload);
-    finishImport(song, statusEl, extraNote);
+    const { songs, extraNote } = pickImportableSongs(payload);
+    finishImport(songs, statusEl, extraNote);
   } catch (e) {
     statusEl.className = 'status-msg err';
     statusEl.textContent = t('importFailedCode');
@@ -3534,14 +3627,14 @@ function importFromFile(event) {
   reader.onload = () => {
     try {
       const text = decodeFileBuffer(reader.result);
-      let song, extraNote = '';
+      let songs, extraNote = '';
       if (isAbcTextSheet(text)) {
-        song = textSheetToSong(text);
+        songs = [textSheetToSong(text)];
       } else {
         const parsed = JSON.parse(text);
-        ({ song, extraNote } = pickImportableSong(parsed));
+        ({ songs, extraNote } = pickImportableSongs(parsed));
       }
-      finishImport(song, statusEl, extraNote);
+      finishImport(songs, statusEl, extraNote);
     } catch (e) {
       statusEl.className = 'status-msg err';
       statusEl.textContent = t('importFailedFile');
@@ -3550,23 +3643,24 @@ function importFromFile(event) {
   reader.readAsArrayBuffer(file);
   event.target.value = '';
 }
-function finishImport(song, statusEl, extraNote, modalId) {
+// songOrSongs：1曲分のオブジェクト、または複数曲の配列（複数曲入りファイルの全曲インポート時）
+function finishImport(songOrSongs, statusEl, extraNote, modalId) {
   modalId = modalId || 'importModal';
-  if (!song.frames || song.frames.length === 0) song.frames = [[]];
+  const newSongs = Array.isArray(songOrSongs) ? songOrSongs : [songOrSongs];
+  newSongs.forEach(song => { if (!song.frames || song.frames.length === 0) song.frames = [[]]; });
   const songs = loadSongs();
-  songs.unshift(song);
+  songs.unshift(...newSongs); // ファイル内の並び順を保ったまま、まとめてライブラリの先頭に加える
   saveSongs(songs);
-  recordSongCreated();
-  recordNoteCount(songNoteCount(song));
+  newSongs.forEach(song => { recordSongCreated(); recordNoteCount(songNoteCount(song)); });
   statusEl.className = 'status-msg ok';
-  statusEl.textContent = t('importedSongStatus', { name: song.name, note: extraNote || '' });
+  statusEl.textContent = t('importedSongStatus', { name: newSongs[0].name, note: extraNote || '' });
   if (modalId === 'importModal') {
     const codeInput = document.getElementById('importCodeInput');
     if (codeInput) codeInput.value = '';
   }
   setTimeout(() => {
     closeModal(modalId);
-    openEditor(song.id);
+    openEditor(newSongs[0].id);
     // ♿ closeModal()は開いた時のトリガー（ライブラリ側の「読み込む」等のボタン）に
     // フォーカスを戻すが、直後のopenEditor()がライブラリ表示自体を隠してしまうため、
     // そのトリガーへは戻れない。代わりに実際に表示されるエディタ側の最初の
