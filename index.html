@@ -579,6 +579,22 @@
     [data-theme="dark"] .site-dock { background: var(--card); }
     .site-dock .site-dock-icon { font-size: 20px; line-height: 1; }
     .site-dock .site-dock-label { font-size: 10px; font-weight: 700; color: var(--text-2); }
+
+    /* ── 再生中フローティング停止ボタン ──────────────────────
+       通常の停止ボタン(#stopBtn)は再生ボタンのすぐ隣にあるだけなので、演奏中に
+       グリッドを見ようとして画面を下にスクロールすると一緒に画面外へ流れてしまい、
+       止めたい時にすぐ止められない。再生中だけ画面に固定表示される丸ボタンを
+       別途用意し、スクロール位置に関係なくいつでもワンタップで止められるようにする。 */
+    .floating-stop-btn {
+      display: none; position: fixed; right: 16px;
+      bottom: calc(76px + env(safe-area-inset-bottom) + 16px);
+      z-index: 95; width: 56px; height: 56px; border-radius: 50%;
+      background: var(--red); color: #fff; font-size: 24px;
+      align-items: center; justify-content: center;
+      box-shadow: 0 4px 14px rgba(0,0,0,0.28);
+    }
+    .floating-stop-btn.show { display: flex; }
+    .floating-stop-btn:active { transform: scale(0.94); }
   </style>
 </head>
 <body>
@@ -995,6 +1011,8 @@
     　／　<button style="color:var(--pink-d); text-decoration:underline; font-size:12px;" data-i18n="footerBackupBtn" onclick="openModal('dmModal')">💾 バックアップ・復元</button>
   </span>
 </footer>
+
+<button type="button" class="floating-stop-btn" id="floatingStopBtn" onclick="stopPlayback()" data-i18n-title="stopBtn" title="⏹️ 停止" aria-label="⏹️ 停止">⏹️</button>
 
 <nav class="site-dock" aria-label="クイックメニュー">
   <button type="button" onclick="switchView('library')">
@@ -2020,7 +2038,19 @@ function switchView(view) {
   document.getElementById('viewEditor').classList.toggle('active', view === 'editor');
   document.getElementById('tabLibraryBtn').classList.toggle('active', view === 'library');
   document.getElementById('tabEditorBtn').classList.toggle('active', view === 'editor');
-  if (view === 'library') { stopPlayback(); renderLibrary(); }
+  if (view === 'library') { stopPlayback(); renderLibrary(); return; }
+  if (view === 'editor' && !currentSong) {
+    // タブ／下部ドックの「作成・演奏」を、曲を選ばずに直接押した場合（初回訪問時など）の対策。
+    // 曲を選ばずにここへ来るとcurrentSongがnullのままで、エディタの中身が描画されず
+    // 空のまま表示されてしまっていた。最後に更新した曲があればそれを開き、
+    // まだ1曲も無ければ新規曲を作って開く（どちらもopenEditor/createNewSong経由で
+    // このswitchView自体を呼び直すため、ここではrenderEditor()を呼ばずreturnする）。
+    const songs = loadSongs();
+    if (songs.length > 0) openEditor(sortSongs(songs, 'updated')[0].id);
+    else createNewSong();
+    return;
+  }
+  if (view === 'editor') renderEditor();
 }
 
 /* ================================================================
@@ -2784,6 +2814,7 @@ function togglePlayback() {
     document.getElementById('playBtn').classList.add('active');
     document.getElementById('playBtn').textContent = t('countInLabel');
     document.getElementById('stopBtn').style.display = 'flex';
+    document.getElementById('floatingStopBtn').classList.add('show');
     runCountIn(currentSong.bpm, null, startPlaybackLoop);
     return;
   }
@@ -2795,6 +2826,7 @@ function startPlaybackLoop() {
   document.getElementById('playBtn').classList.add('active');
   document.getElementById('playBtn').textContent = t('playingLabel');
   document.getElementById('stopBtn').style.display = 'flex';
+  document.getElementById('floatingStopBtn').classList.add('show');
   const looping = loopRangeEnabled();
   const range = looping ? getPracticeRange() : null;
   // ループ再生ON時は、選択中のマスが範囲の外にある場合だけ範囲の先頭から始める
@@ -2826,6 +2858,7 @@ function stopPlayback() {
   document.getElementById('playBtn').classList.remove('active');
   document.getElementById('playBtn').textContent = t('playBtn');
   document.getElementById('stopBtn').style.display = 'none';
+  document.getElementById('floatingStopBtn').classList.remove('show');
   clearPlayingHighlight();
 }
 
