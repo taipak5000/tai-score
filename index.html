@@ -2331,6 +2331,9 @@ function selectFrame(fi) {
   selectedFrameIndex = fi;
   renderFrameStrip();
   renderBigGrid();
+  // クリック（や矢印キー）でマスへ移動した時、そのマスに入っている音を鳴らして
+  // 内容を確認しやすくする。空のマスならforEachが何もしないので無音のまま。
+  if (currentSong && currentSong.frames[fi]) playFrame(currentSong.frames[fi]);
 }
 
 /* ================================================================
@@ -3271,6 +3274,14 @@ function handleGlobalKeydown(e) {
     // どの音マスにも割り当てられていないキー。画面を問わず、?/d を全ツール共通
     // ショートカットとして受け付ける（音マスに割り当て済みのキーはこの分岐に
     // 入って来ないため、演奏・編集・キー割り当てと衝突することはない）。
+    // ←→ キーは、エディタ画面を開いていて音マスに割り当てられていない時だけ、
+    // 前後のマスへの移動に使う（同じ理由でノートやショートカットと衝突しない）。
+    if ((e.key === 'ArrowLeft' || e.key === 'ArrowRight') && currentSong && document.getElementById('viewEditor').classList.contains('active')) {
+      e.preventDefault();
+      const next = selectedFrameIndex + (e.key === 'ArrowLeft' ? -1 : 1);
+      if (next >= 0 && next < currentSong.frames.length) selectFrame(next);
+      return;
+    }
     if (skyShortcutsEnabled()) {
       if (e.key === '?') { e.preventDefault(); settingsOpen(); return; }
       if (e.key === 'd' || e.key === 'D') { e.preventDefault(); toggleTheme(); return; }
