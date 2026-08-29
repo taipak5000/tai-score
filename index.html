@@ -1013,9 +1013,9 @@
   </span>
 </footer>
 
-<button type="button" class="floating-stop-btn" id="floatingStopBtn" onclick="stopPlayback()" data-i18n-title="stopBtn" title="⏹️ 停止" aria-label="⏹️ 停止">⏹️</button>
+<button type="button" class="floating-stop-btn" id="floatingStopBtn" onclick="stopPlayback()" data-i18n-title="stopBtn" title="⏹️ 停止" aria-label="⏹️ 停止" data-i18n-aria-label="stopBtn">⏹️</button>
 
-<nav class="site-dock" aria-label="クイックメニュー">
+<nav class="site-dock" aria-label="クイックメニュー" data-i18n-aria-label="dockAriaLabel">
   <button type="button" onclick="switchView('library')">
     <span class="site-dock-icon">📚</span>
     <span class="site-dock-label" data-i18n="dockLibrary">ライブラリ</span>
@@ -1091,6 +1091,7 @@ const I18N = {
     toolScore: '🎵 楽譜づくり',
     toolTransfer: '🔄 データ引継ぎ',
     toolInfo: '⚙️ 設定・更新情報',
+    dockAriaLabel: 'クイックメニュー',
     toolProfile: '👤 作者プロフィール',
     introText: `Skyの5×3マス（ハープ等）の楽器で演奏できる楽譜を、自由に作成・保存・共有・練習できるツールです。
         <a href="https://sky-music.specy.app/" target="_blank" rel="noopener noreferrer">Sky Music Nightly</a>形式の楽譜ファイルの
@@ -1335,6 +1336,7 @@ const I18N = {
     toolScore: '🎵 Sheet Music Maker',
     toolTransfer: '🔄 Data Transfer',
     toolInfo: '⚙️ Settings & Updates',
+    dockAriaLabel: 'Quick menu',
     toolProfile: '👤 Creator Profile',
     introText: `A free tool for creating, saving, sharing, and practicing sheet music playable on Sky's 5×3-key
         instruments (Harp, etc). It also supports importing and exporting
@@ -1590,6 +1592,9 @@ function applyI18n() {
   });
   document.querySelectorAll('[data-i18n-title]').forEach(el => {
     el.title = t(el.getAttribute('data-i18n-title'));
+  });
+  document.querySelectorAll('[data-i18n-aria-label]').forEach(el => {
+    el.setAttribute('aria-label', t(el.getAttribute('data-i18n-aria-label')));
   });
   const langBtn = document.getElementById('langToggleBtn');
   if (langBtn) langBtn.textContent = LANG === 'ja' ? 'EN' : '日本語';
