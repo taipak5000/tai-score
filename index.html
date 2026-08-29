@@ -212,6 +212,17 @@
     }
     .lib-sort-row select:focus { outline: none; border-color: var(--pink); }
     .lib-sort-row .mini-btn { flex-shrink: 0; }
+    /* 音声/楽譜画像/MIDIからの作成は精度が低いテスト機能のため、既定で折りたたんでおく */
+    .test-feature-details { margin-top: 10px; }
+    .test-feature-summary {
+      cursor: pointer; font-size: 12.5px; font-weight: 700; color: var(--text-2);
+      padding: 8px 12px; background: var(--card); border: 1px solid var(--sep); border-radius: var(--r-sm);
+      list-style: none; display: flex; align-items: center; gap: 6px; user-select: none;
+    }
+    .test-feature-summary::-webkit-details-marker { display: none; }
+    .test-feature-summary::before { content: '▶'; font-size: 9px; color: var(--text-3); transition: transform 0.15s; }
+    .test-feature-details[open] .test-feature-summary::before { transform: rotate(90deg); }
+    .test-feature-body { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 8px; }
     .song-list { display: flex; flex-direction: column; gap: 10px; margin-top: 14px; }
     .song-card { background: var(--card); border-radius: var(--r); padding: 14px; box-shadow: 0 1px 4px rgba(0,0,0,0.07); }
     .song-card-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
@@ -645,12 +656,17 @@
       <div class="lib-toolbar">
         <input type="search" class="lib-search" id="librarySearch" data-i18n-placeholder="librarySearchPlaceholder" placeholder="🔍 曲名で検索…" oninput="renderLibrary()">
         <button class="new-song-btn secondary" data-i18n="btnImport" onclick="openModal('importModal')">📥 読み込む</button>
-        <button class="new-song-btn secondary" data-i18n="btnAudioImport" onclick="openAudioImportModal()">🎵 音声から作成</button>
-        <button class="new-song-btn secondary" data-i18n="btnImageImport" onclick="openImageImportModal()">🖼️ 楽譜画像から作成</button>
-        <button class="new-song-btn secondary" data-i18n="btnMidiImport" onclick="openMidiImportModal()">🎹 MIDIから作成</button>
         <button class="new-song-btn secondary" data-i18n="btnExportAllText" onclick="exportLibraryAsTextSheets()">📤 全曲をテキスト譜面で書き出す</button>
         <button class="new-song-btn" data-i18n="btnNewSong" onclick="createNewSong()">＋ 新規作成</button>
       </div>
+      <details class="test-feature-details">
+        <summary class="test-feature-summary" data-i18n="testFeaturesLabel">🧪 テスト機能（精度が低い場合があります）</summary>
+        <div class="test-feature-body">
+          <button class="new-song-btn secondary" data-i18n="btnAudioImport" onclick="openAudioImportModal()">🎵 音声から作成</button>
+          <button class="new-song-btn secondary" data-i18n="btnImageImport" onclick="openImageImportModal()">🖼️ 楽譜画像から作成</button>
+          <button class="new-song-btn secondary" data-i18n="btnMidiImport" onclick="openMidiImportModal()">🎹 MIDIから作成</button>
+        </div>
+      </details>
       <div class="lib-sort-row">
         <label data-i18n="librarySortLabel">並び替え:</label>
         <select id="librarySortSelect" onchange="onLibrarySortChange(this.value)">
@@ -1089,6 +1105,7 @@ const I18N = {
     clearLibraryFiltersBtn: '✖️ フィルターを全てクリア',
     noSearchResultsText: '検索条件に一致する楽譜が見つかりませんでした。',
     btnImport: '📥 読み込む',
+    testFeaturesLabel: '🧪 テスト機能（精度が低い場合があります）',
     btnAudioImport: '🎵 音声から作成',
     btnImageImport: '🖼️ 楽譜画像から作成',
     btnExportAllText: '📤 全曲をテキスト譜面で書き出す',
@@ -1331,6 +1348,7 @@ const I18N = {
     clearLibraryFiltersBtn: '✖️ Clear all filters',
     noSearchResultsText: 'No sheet music matched your search.',
     btnImport: '📥 Load',
+    testFeaturesLabel: '🧪 Test Features (accuracy may be low)',
     btnAudioImport: '🎵 Create from Audio',
     btnImageImport: '🖼️ Create from Sheet Image',
     btnExportAllText: '📤 Export All as Text Sheets',
