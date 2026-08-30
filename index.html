@@ -333,6 +333,12 @@
       display: none; align-items: center; justify-content: center; line-height: 1;
     }
     .frame-box:hover .frame-del-btn { display: flex; }
+    .frame-insert-btn {
+      position: absolute; bottom: -8px; left: -6px; background: var(--pink-btn); color: #fff;
+      font-size: 11px; font-weight: 700; border-radius: 50%; width: 16px; height: 16px;
+      display: none; align-items: center; justify-content: center; line-height: 1;
+    }
+    .frame-box:hover .frame-insert-btn { display: flex; }
     .frame-bpm-badge {
       position: absolute; bottom: -8px; left: 50%; transform: translateX(-50%);
       background: var(--pink-btn); color: #fff; font-size: 8.5px; font-weight: 700;
@@ -1155,6 +1161,8 @@ const I18N = {
     frameClipboardReadyHint: '{count}マス分をコピー中',
     frameRangeCopiedToast: '{count}マス分をコピーしました',
     frameRangePastedToast: '{count}マス分を貼り付けました',
+    insertFrameAfterTitle: 'このマスの後に新しいマスを挿入',
+    frameInsertedToast: '新しいマスを挿入しました',
     frameBpmOverrideLabel: '🥁 このマスからテンポを変える',
     frameBpmBadgeTitle: 'このマスからBPM {bpm} に変わります',
     playBtn: '▶️ 再生',
@@ -1401,6 +1409,8 @@ const I18N = {
     frameClipboardReadyHint: '{count} tile(s) copied',
     frameRangeCopiedToast: 'Copied {count} tile(s)',
     frameRangePastedToast: 'Pasted {count} tile(s)',
+    insertFrameAfterTitle: 'Insert a new tile after this one',
+    frameInsertedToast: 'Inserted a new tile',
     frameBpmOverrideLabel: '🥁 Change tempo from this tile',
     frameBpmBadgeTitle: 'Tempo changes to BPM {bpm} from this tile',
     playBtn: '▶️ Play',
@@ -2328,6 +2338,7 @@ function renderFrameStrip() {
     <div class="frame-box${fi === selectedFrameIndex ? ' selected' : ''}${staffMode ? ' staff-mode' : ''}" id="frameBox_${fi}" onclick="selectFrame(${fi})">
       <span class="frame-index">${fi + 1}</span>
       <button class="frame-del-btn" onclick="event.stopPropagation(); deleteFrame(${fi})">✕</button>
+      <button class="frame-insert-btn" onclick="event.stopPropagation(); insertBlankFrameAfter(${fi})" title="${escapeHtml(t('insertFrameAfterTitle'))}" aria-label="${escapeHtml(t('insertFrameAfterTitle'))}">＋</button>
       ${staffMode ? frameStaffSvg(frame) : NOTE_LABELS.map((_, ni) => `<div class="frame-dot${frame.includes(ni) ? ' on' : ''}"></div>`).join('')}
       ${bpmOv !== null ? `<span class="frame-bpm-badge" title="${escapeHtml(t('frameBpmBadgeTitle', { bpm: bpmOv }))}">🥁${bpmOv}</span>` : ''}
     </div>
@@ -2463,6 +2474,24 @@ function deleteFrame(fi) {
   renderFrameStrip();
   renderBigGrid();
   updatePracticeRangeBounds(false);
+}
+
+// fi番目のマスの直後に、空の新しいマスを1つ差し込む。作曲の途中で「ここにもう1マス
+// 欲しい」となった時のための機能で、末尾に追加するaddFrame()と違い曲の任意の位置に
+// 挿入できる。挿入位置より後ろのテンポ変化はshiftBpmOverridesForInsert()で
+// ずらす（pasteFrameRange()が範囲貼り付けで使っているのと同じヘルパー）。
+function insertBlankFrameAfter(fi) {
+  if (!currentSong) return;
+  pushEditHistory();
+  const at = fi + 1;
+  currentSong.frames.splice(at, 0, []);
+  shiftBpmOverridesForInsert(currentSong, at, 1);
+  selectedFrameIndex = at;
+  persistCurrentSong();
+  renderFrameStrip();
+  renderBigGrid();
+  updatePracticeRangeBounds(false);
+  showToast(t('frameInsertedToast'));
 }
 
 /* ================================================================
