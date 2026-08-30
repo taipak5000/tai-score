@@ -745,6 +745,10 @@
           <input type="checkbox" id="loopRangeToggle" onchange="onLoopRangeToggleChange(event)">
           <span data-i18n="loopRangeToggleLabel">🔁 この範囲をループ再生する（▶️再生ボタン）</span>
         </label>
+        <label class="metronome-row">
+          <input type="checkbox" id="noScrollToggle" onchange="onNoScrollToggleChange(event)">
+          <span data-i18n="noScrollToggleLabel">📌 再生中は画面をスクロールさせず、マスの光り方が見えるようにする</span>
+        </label>
         <div class="frame-clipboard-row">
           <button type="button" class="mini-btn" id="pasteFrameRangeBtn" onclick="pasteFrameRange()" disabled data-i18n="pasteFrameRangeBtn">📥 選択中のマスの後に貼り付け</button>
           <span class="frame-clipboard-hint" id="frameClipboardHint"></span>
@@ -1150,6 +1154,7 @@ const I18N = {
     tapTempoBtn: '🥁 タップでBPM測定',
     tapTempoHint: 'リズムに合わせて連続でタップしてください',
     metronomeToggleLabel: '🥁 メトロノーム／カウントインを鳴らす（再生・練習・試験モード）',
+    noScrollToggleLabel: '📌 再生中は画面をスクロールさせず、マスの光り方が見えるようにする',
     countInLabel: '🥁 カウントイン…',
     countInBeatLabel: '🥁 カウントイン… {n}',
     practiceRangeLabel: '練習・試験の範囲',
@@ -1398,6 +1403,7 @@ const I18N = {
     tapTempoBtn: '🥁 Tap for BPM',
     tapTempoHint: 'Tap repeatedly in rhythm',
     metronomeToggleLabel: '🥁 Play metronome / count-in (Play, Practice & Test modes)',
+    noScrollToggleLabel: '📌 Keep the screen from scrolling during playback (see the tiles light up in place)',
     countInLabel: '🥁 Count-in…',
     countInBeatLabel: '🥁 Count-in… {n}',
     practiceRangeLabel: 'Practice / Test Range',
@@ -2151,6 +2157,8 @@ function renderEditor() {
   if (metronomeToggle) metronomeToggle.checked = metronomeEnabled();
   const loopRangeToggle = document.getElementById('loopRangeToggle');
   if (loopRangeToggle) loopRangeToggle.checked = loopRangeEnabled();
+  const noScrollToggle = document.getElementById('noScrollToggle');
+  if (noScrollToggle) noScrollToggle.checked = noScrollDuringPlaybackEnabled();
   if (selectedFrameIndex >= currentSong.frames.length) selectedFrameIndex = Math.max(0, currentSong.frames.length - 1);
   applyInputMode();
   renderFrameStrip();
@@ -2779,6 +2787,20 @@ function setMetronomeEnabled(on) {
 }
 function onMetronomeToggleChange(e) { setMetronomeEnabled(e.target.checked); }
 
+// 再生中、演奏中のマスをフレームストリップの位置までscrollIntoView()で
+// 追従させているが、大きな譜面グリッド（現在光っているマスが見える方）を
+// 目で追いたい場合はこの自動スクロールが邪魔になる。ONの間はhighlightPlayingFrame()の
+// scrollIntoView()呼び出しだけを止め、ハイライト自体（.playingクラス）は今まで通り
+// 動かす（大きな譜面グリッド側のハイライトはrenderBigGrid()が別途担当）。
+const NO_SCROLL_KEY = 'taiScoreNoScrollDuringPlayback_v1';
+function noScrollDuringPlaybackEnabled() {
+  try { return localStorage.getItem(NO_SCROLL_KEY) === '1'; } catch (e) { return false; }
+}
+function setNoScrollDuringPlaybackEnabled(on) {
+  try { localStorage.setItem(NO_SCROLL_KEY, on ? '1' : '0'); } catch (e) { /* 無視 */ }
+}
+function onNoScrollToggleChange(e) { setNoScrollDuringPlaybackEnabled(e.target.checked); }
+
 function playMetronomeClick(accent) {
   try {
     const ctx = ensureAudioCtx();
@@ -2905,7 +2927,10 @@ function stopPlayback() {
 function highlightPlayingFrame(i) {
   clearPlayingHighlight();
   const el = document.getElementById('frameBox_' + i);
-  if (el) { el.classList.add('playing'); el.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' }); }
+  if (el) {
+    el.classList.add('playing');
+    if (!noScrollDuringPlaybackEnabled()) el.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
+  }
   selectedFrameIndex = i;
   renderBigGrid();
   document.querySelectorAll('.frame-box').forEach(b => b.classList.remove('selected'));
