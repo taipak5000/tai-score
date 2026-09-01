@@ -464,16 +464,22 @@
     .frame-strip.view-column .add-frame-btn { width: 38px; min-height: 0; font-size: 16px; align-self: stretch; }
 
     .current-frame-card {
-      /* 🖥️ 広いデスクトップ画面では.compose-overlayの幅いっぱいに伸びて
-         中身(ノート入力)との間の余白が過剰に見えるため、幅の上限を付けて
-         中央寄せにする。ピアノ入力(15鍵)が横スクロール無しで収まる目安として
-         680pxにしている（狭い画面では従来通り画面幅いっぱいまで縮む）。
-         width:100%を明示しているのは、これが.compose-overlay(flex縦並び)の
+      /* 🖥️ 広いデスクトップ画面では.compose-input-area(横並びのロー)の幅いっぱいに
+         伸びて中身(ノート入力)との間の余白が過剰に見えるため、幅の上限を付ける。
+         ピアノ入力(15鍵)が横スクロール無しで収まる目安として680pxにしている
+         （狭い画面では従来通り画面幅いっぱいまで縮む）。
+         width:100%を明示しているのは、これが.compose-input-area(横並びflex)の
          直接の子(flexアイテム)のため―margin:autoだけだと「はみ出す子要素
          (.piano-keysのmin-width:max-content)に合わせて自分も広がる」挙動に
-         なり、狭い画面で右にはみ出してしまうのを防ぐため。 */
+         なり、狭い画面で右にはみ出してしまうのを防ぐため。
+         中央寄せ自体はここでmargin:autoにせず、親.compose-input-areaの
+         justify-content:centerだけに任せている。もしここにもmargin:0 auto を
+         付けると、CSS Flexboxの仕様上「auto marginは他の兄弟要素(左右のレール)
+         より先に余った横幅を全部吸収する」ため、レールがカードのすぐ隣ではなく
+         画面の両端に張り付いてしまう（左右のレールとカードの間隔が画面幅に比例して
+         広がってしまう不具合になる）。 */
       background: var(--card); border-radius: var(--r); padding: 16px; box-shadow: 0 1px 4px rgba(0,0,0,0.07);
-      width: 100%; max-width: 680px; margin: 0 auto 14px;
+      width: 100%; max-width: 680px;
     }
     .current-frame-label { font-size: 12.5px; color: var(--text-2); font-weight: 600; margin-bottom: 10px; }
     .frame-bpm-row { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; flex-wrap: wrap; }
@@ -719,8 +725,27 @@
       .frame-strip.view-tile, .frame-strip.view-column { max-height: min(28vh, 190px); }
     }
     .compose-input-area {
-      flex: 1; min-height: 0; overflow-y: auto; display: flex; flex-direction: column; justify-content: center;
+      flex: 1; min-height: 0; overflow-y: auto;
+      display: flex; flex-direction: row; align-items: center; justify-content: center;
+      gap: 10px; margin-bottom: 14px;
     }
+    /* 🖥️ .current-frame-cardの左右に生まれる余白を使う、前後マス移動・元に戻す/
+       やり直す・範囲削除・コピペのショートカットレール。カードと横に並べて中央寄せ
+       するため、カード側の幅(max-width:680px)+レール2本(34px×2)+隙間が収まる
+       だけの余裕がある画面幅でだけ表示する（それより狭い画面では従来通り、
+       上部ツールバー・ツールパネル内のボタン・矢印キーだけで操作する）。 */
+    .compose-side-rail { display: none; flex-direction: column; gap: 8px; flex-shrink: 0; }
+    @media (min-width: 900px) {
+      .compose-side-rail { display: flex; }
+    }
+    .rail-btn {
+      width: 34px; height: 34px; border-radius: 50%; flex-shrink: 0;
+      background: var(--card); color: var(--text); font-size: 15px;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+      display: flex; align-items: center; justify-content: center;
+    }
+    .rail-btn:disabled { opacity: 0.35; }
+    .rail-btn.danger { color: var(--red-d); }
 
     /* ── 作曲ツールパネル（キー/楽器・練習範囲・共有・キー設定などをまとめる） ─── */
     #composeToolsModal { z-index: 1250; }
@@ -1149,37 +1174,54 @@
         <button type="button" class="timeline-view-tab" data-view="column" data-i18n="timelineViewColumn"
                 data-i18n-title="timelineViewColumnTitle" onclick="setTimelineView('column')">🎹 縦列</button>
       </div>
-      <button type="button" class="mini-btn" id="undoEditBtn" onclick="undoEdit()" disabled data-i18n="undoEditBtn">↩️ 元に戻す</button>
+      <button type="button" class="mini-btn undo-edit-btn" onclick="undoEdit()" disabled data-i18n="undoEditBtn">↩️ 元に戻す</button>
     </div>
   </div>
   <div class="frame-strip compose-timeline view-tile" id="frameStrip"><!-- JS --></div>
 
-  <div class="current-frame-card compose-input-area">
-    <div class="current-frame-head">
-      <div class="current-frame-label" data-i18n="currentFrameLabel">選択中のマス（クリックで音をON/OFF）</div>
-      <div class="current-frame-controls">
-        <div class="input-mode-tabs">
-          <button type="button" class="input-mode-tab" data-mode="grid" data-i18n="inputModeGrid" onclick="setInputMode('grid')">⚪ グリッド</button>
-          <button type="button" class="input-mode-tab" data-mode="piano" data-i18n="inputModePiano" onclick="setInputMode('piano')">🎹 ピアノ</button>
-          <button type="button" class="input-mode-tab" data-mode="staff" data-i18n="inputModeStaff" onclick="setInputMode('staff')">🎼 五線譜</button>
+  <div class="compose-input-row compose-input-area">
+    <!-- 🖥️ 広い画面で.current-frame-cardの左右に生まれる余白を活用するレール。
+         狭い画面では非表示になり(CSSのmin-widthメディアクエリ)、その場合でも
+         同じ機能のボタンが上部ツールバー・ツールパネル・矢印キーに揃っているため
+         操作が失われることはない。 -->
+    <div class="compose-side-rail rail-left">
+      <button type="button" class="rail-btn" onclick="selectPrevFrame()" data-i18n-title="railPrevFrameTitle" title="前のマスへ" aria-label="前のマスへ" data-i18n-aria-label="railPrevFrameTitle">⏮️</button>
+      <button type="button" class="rail-btn undo-edit-btn" onclick="undoEdit()" disabled data-i18n-title="undoEditBtnTitle" title="元に戻す" aria-label="元に戻す" data-i18n-aria-label="undoEditBtnTitle">↩️</button>
+      <button type="button" class="rail-btn danger" onclick="deleteFrameRange()" data-i18n-title="railDeleteRangeTitle" title="選択範囲を削除" aria-label="選択範囲を削除" data-i18n-aria-label="railDeleteRangeTitle">🗑️</button>
+    </div>
+    <div class="current-frame-card">
+      <div class="current-frame-head">
+        <div class="current-frame-label" data-i18n="currentFrameLabel">選択中のマス（クリックで音をON/OFF）</div>
+        <div class="current-frame-controls">
+          <div class="input-mode-tabs">
+            <button type="button" class="input-mode-tab" data-mode="grid" data-i18n="inputModeGrid" onclick="setInputMode('grid')">⚪ グリッド</button>
+            <button type="button" class="input-mode-tab" data-mode="piano" data-i18n="inputModePiano" onclick="setInputMode('piano')">🎹 ピアノ</button>
+            <button type="button" class="input-mode-tab" data-mode="staff" data-i18n="inputModeStaff" onclick="setInputMode('staff')">🎼 五線譜</button>
+          </div>
         </div>
       </div>
+      <div class="frame-bpm-row" id="frameBpmRow">
+        <label class="frame-bpm-toggle">
+          <input type="checkbox" id="frameBpmOverrideToggle" onchange="onFrameBpmOverrideToggle(event)">
+          <span data-i18n="frameBpmOverrideLabel">🥁 このマスからテンポを変える</span>
+        </label>
+        <input type="number" id="frameBpmOverrideValue" min="40" max="999" style="display:none;" onchange="onFrameBpmOverrideValueChange(this.value)">
+      </div>
+      <div class="big-grid" id="bigGrid"><!-- JS --></div>
+      <div class="piano-keys-wrap" id="pianoKeysWrap" style="display:none;">
+        <div class="piano-keys" id="pianoKeys"><!-- JS --></div>
+        <div class="piano-hint" data-i18n="pianoWhiteKeysHint">Skyの楽器は白鍵（ドレミファソラシ）のみに対応しています</div>
+      </div>
+      <div class="staff-wrap" id="staffWrap" style="display:none;">
+        <svg id="staffSvg" class="staff-svg" viewBox="0 0 170 162"><!-- JS --></svg>
+        <div class="piano-hint" data-i18n="staffClickHint">五線譜の位置をクリックして音をON/OFFできます</div>
+      </div>
     </div>
-    <div class="frame-bpm-row" id="frameBpmRow">
-      <label class="frame-bpm-toggle">
-        <input type="checkbox" id="frameBpmOverrideToggle" onchange="onFrameBpmOverrideToggle(event)">
-        <span data-i18n="frameBpmOverrideLabel">🥁 このマスからテンポを変える</span>
-      </label>
-      <input type="number" id="frameBpmOverrideValue" min="40" max="999" style="display:none;" onchange="onFrameBpmOverrideValueChange(this.value)">
-    </div>
-    <div class="big-grid" id="bigGrid"><!-- JS --></div>
-    <div class="piano-keys-wrap" id="pianoKeysWrap" style="display:none;">
-      <div class="piano-keys" id="pianoKeys"><!-- JS --></div>
-      <div class="piano-hint" data-i18n="pianoWhiteKeysHint">Skyの楽器は白鍵（ドレミファソラシ）のみに対応しています</div>
-    </div>
-    <div class="staff-wrap" id="staffWrap" style="display:none;">
-      <svg id="staffSvg" class="staff-svg" viewBox="0 0 170 162"><!-- JS --></svg>
-      <div class="piano-hint" data-i18n="staffClickHint">五線譜の位置をクリックして音をON/OFFできます</div>
+    <div class="compose-side-rail rail-right">
+      <button type="button" class="rail-btn" onclick="selectNextFrame()" data-i18n-title="railNextFrameTitle" title="次のマスへ" aria-label="次のマスへ" data-i18n-aria-label="railNextFrameTitle">⏭️</button>
+      <button type="button" class="rail-btn redo-edit-btn" onclick="redoEdit()" disabled data-i18n-title="redoEditBtnTitle" title="やり直す" aria-label="やり直す" data-i18n-aria-label="redoEditBtnTitle">↪️</button>
+      <button type="button" class="rail-btn" onclick="copyFrameRange()" data-i18n-title="railCopyRangeTitle" title="選択範囲をコピー" aria-label="選択範囲をコピー" data-i18n-aria-label="railCopyRangeTitle">📋</button>
+      <button type="button" class="rail-btn paste-frame-btn" onclick="pasteFrameRange()" disabled data-i18n-title="railPasteRangeTitle" title="選択中のマスの後に貼り付け" aria-label="選択中のマスの後に貼り付け" data-i18n-aria-label="railPasteRangeTitle">📥</button>
     </div>
   </div>
 
@@ -1242,7 +1284,7 @@
         <span data-i18n="noScrollToggleLabel">📌 再生中は画面をスクロールさせず、マスの光り方が見えるようにする</span>
       </label>
       <div class="frame-clipboard-row" style="margin-top:10px; margin-bottom:0;">
-        <button type="button" class="mini-btn" id="pasteFrameRangeBtn" onclick="pasteFrameRange()" disabled data-i18n="pasteFrameRangeBtn">📥 選択中のマスの後に貼り付け</button>
+        <button type="button" class="mini-btn paste-frame-btn" onclick="pasteFrameRange()" disabled data-i18n="pasteFrameRangeBtn">📥 選択中のマスの後に貼り付け</button>
         <span class="frame-clipboard-hint" id="frameClipboardHint"></span>
       </div>
     </div>
@@ -1411,6 +1453,13 @@ const I18N = {
     frameClipboardReadyHint: '{count}マス分をコピー中',
     frameRangeCopiedToast: '{count}マス分をコピーしました',
     frameRangePastedToast: '{count}マス分を貼り付けました',
+    cannotDeleteAllFrames: '譜面をすべて削除することはできません',
+    frameRangeDeletedToast: '{count}マス分を削除しました',
+    railPrevFrameTitle: '前のマスへ',
+    railNextFrameTitle: '次のマスへ',
+    railDeleteRangeTitle: '選択範囲を削除',
+    railCopyRangeTitle: '選択範囲をコピー',
+    railPasteRangeTitle: '選択中のマスの後に貼り付け',
     insertFrameAfterTitle: 'このマスの後に新しいマスを挿入',
     frameInsertedToast: '新しいマスを挿入しました',
     frameBpmOverrideLabel: '🥁 このマスからテンポを変える',
@@ -1542,7 +1591,10 @@ const I18N = {
     pitchOptionLabel: '調: {p}',
     lastFrameCannotDelete: '最後の1マスは削除できません',
     undoEditBtn: '↩️ 元に戻す',
+    undoEditBtnTitle: '元に戻す',
     undoneToast: '元に戻しました',
+    redoEditBtnTitle: 'やり直す',
+    redoneToast: 'やり直しました',
     tapAgainHint: 'もう一度タップ…',
     tapMeasuredHint: '{count}回タップ・BPM {bpm}（測定中…もう少しタップして精度アップ）',
     playingLabel: '⏸️ 再生中…',
@@ -1668,6 +1720,13 @@ const I18N = {
     frameClipboardReadyHint: '{count} tile(s) copied',
     frameRangeCopiedToast: 'Copied {count} tile(s)',
     frameRangePastedToast: 'Pasted {count} tile(s)',
+    cannotDeleteAllFrames: "Can't delete the entire sheet",
+    frameRangeDeletedToast: 'Deleted {count} tile(s)',
+    railPrevFrameTitle: 'Previous tile',
+    railNextFrameTitle: 'Next tile',
+    railDeleteRangeTitle: 'Delete selected range',
+    railCopyRangeTitle: 'Copy selected range',
+    railPasteRangeTitle: 'Paste after selected tile',
     insertFrameAfterTitle: 'Insert a new tile after this one',
     frameInsertedToast: 'Inserted a new tile',
     frameBpmOverrideLabel: '🥁 Change tempo from this tile',
@@ -1799,7 +1858,10 @@ const I18N = {
     pitchOptionLabel: 'Key: {p}',
     lastFrameCannotDelete: "Can't delete the last remaining tile",
     undoEditBtn: '↩️ Undo',
+    undoEditBtnTitle: 'Undo',
     undoneToast: 'Undone',
+    redoEditBtnTitle: 'Redo',
+    redoneToast: 'Redone',
     tapAgainHint: 'Tap again…',
     tapMeasuredHint: '{count} taps · BPM {bpm} (measuring… keep tapping for better accuracy)',
     playingLabel: '⏸️ Playing…',
@@ -2725,6 +2787,15 @@ function selectFrame(fi) {
   // 内容を確認しやすくする。空のマスならforEachが何もしないので無音のまま。
   if (currentSong && currentSong.frames[fi]) playFrame(currentSong.frames[fi]);
 }
+// ◀▶ボタン・矢印キー共通の「前/次のマスへ」移動。曲の端では何もしない。
+function selectPrevFrame() {
+  if (!currentSong || selectedFrameIndex <= 0) return;
+  selectFrame(selectedFrameIndex - 1);
+}
+function selectNextFrame() {
+  if (!currentSong || selectedFrameIndex >= currentSong.frames.length - 1) return;
+  selectFrame(selectedFrameIndex + 1);
+}
 
 /* ================================================================
    フレーム単位のテンポ変化（bpmOverrides）
@@ -2783,26 +2854,42 @@ function shiftBpmOverridesForInsert(song, at, count) {
    ================================================================ */
 const EDIT_HISTORY_LIMIT = 20;
 let editHistory = [];
-function pushEditHistory() {
-  if (!currentSong) return;
-  editHistory.push({
+let redoHistory = []; // undoEdit()で戻した内容を積む「やり直し」用の別スタック
+function snapshotCurrentSong() {
+  return {
     frames: JSON.parse(JSON.stringify(currentSong.frames)),
     bpmOverrides: JSON.parse(JSON.stringify(currentSong.bpmOverrides || {})),
     selectedFrameIndex
-  });
+  };
+}
+function pushEditHistory() {
+  if (!currentSong) return;
+  editHistory.push(snapshotCurrentSong());
   if (editHistory.length > EDIT_HISTORY_LIMIT) editHistory.shift();
+  // 新しい編集をした時点で、それより前の「やり直し」は筋が通らなくなるため破棄する
+  // （一般的なUndo/Redoの挙動：戻した後に新しい操作をするとRedo履歴は消える）
+  redoHistory = [];
   updateUndoButton();
+  updateRedoButton();
 }
 function clearEditHistory() {
   editHistory = [];
+  redoHistory = [];
   updateUndoButton();
+  updateRedoButton();
 }
+// 元に戻す/やり直すボタンは、上部ツールバーと左右の余白レールの両方に
+// 同じ機能のボタンを置くため、idではなくクラスで全件まとめて有効/無効を切り替える。
 function updateUndoButton() {
-  const btn = document.getElementById('undoEditBtn');
-  if (btn) btn.disabled = editHistory.length === 0;
+  document.querySelectorAll('.undo-edit-btn').forEach(btn => { btn.disabled = editHistory.length === 0; });
+}
+function updateRedoButton() {
+  document.querySelectorAll('.redo-edit-btn').forEach(btn => { btn.disabled = redoHistory.length === 0; });
 }
 function undoEdit() {
   if (editHistory.length === 0 || !currentSong) return;
+  redoHistory.push(snapshotCurrentSong());
+  if (redoHistory.length > EDIT_HISTORY_LIMIT) redoHistory.shift();
   const prev = editHistory.pop();
   currentSong.frames = prev.frames;
   currentSong.bpmOverrides = prev.bpmOverrides;
@@ -2812,7 +2899,24 @@ function undoEdit() {
   renderBigGrid();
   updatePracticeRangeBounds(false);
   updateUndoButton();
+  updateRedoButton();
   showToast(t('undoneToast'));
+}
+function redoEdit() {
+  if (redoHistory.length === 0 || !currentSong) return;
+  editHistory.push(snapshotCurrentSong());
+  if (editHistory.length > EDIT_HISTORY_LIMIT) editHistory.shift();
+  const next = redoHistory.pop();
+  currentSong.frames = next.frames;
+  currentSong.bpmOverrides = next.bpmOverrides;
+  selectedFrameIndex = Math.min(next.selectedFrameIndex, currentSong.frames.length - 1);
+  persistCurrentSong();
+  renderFrameStrip();
+  renderBigGrid();
+  updatePracticeRangeBounds(false);
+  updateUndoButton();
+  updateRedoButton();
+  showToast(t('redoneToast'));
 }
 
 function toggleNote(noteIndex) {
@@ -2827,6 +2931,11 @@ function toggleNote(noteIndex) {
 }
 
 function addFrame() {
+  // 他のframes変更系関数（deleteFrame/insertBlankFrameAfter/pasteFrameRange等）と
+  // 同様にpushEditHistory()を呼ぶ。ここを呼ばずにframesだけ変更すると、
+  // 「元に戻す→このマスを追加→やり直す」で古いredoHistoryのスナップショットに
+  // 上書きされ、追加したマスが消えてしまう不具合になるため必須。
+  pushEditHistory();
   currentSong.frames.push([]);
   selectedFrameIndex = currentSong.frames.length - 1;
   persistCurrentSong();
@@ -2845,6 +2954,28 @@ function deleteFrame(fi) {
   renderFrameStrip();
   renderBigGrid();
   updatePracticeRangeBounds(false);
+}
+// 練習・試験の範囲と同じ入力欄(getPracticeRange)を「削除する範囲」として使う
+// （copyFrameRange()が同じ入力欄を「コピー範囲」として使っているのと同じ考え方）。
+// 1マスずつdeleteFrame()相当の処理を繰り返すことで、shiftBpmOverridesForDelete()の
+// 「1つ削除するたびにそれ以降のテンポ変化インデックスを詰める」処理をそのまま
+// 再利用できる（範囲専用の詰め直しロジックを別途書く必要が無い）。
+function deleteFrameRange() {
+  if (!currentSong) return;
+  const range = getPracticeRange();
+  const count = range.end - range.start + 1;
+  if (count >= currentSong.frames.length) { showToast(t('cannotDeleteAllFrames')); return; }
+  pushEditHistory();
+  for (let i = 0; i < count; i++) {
+    currentSong.frames.splice(range.start, 1);
+    shiftBpmOverridesForDelete(currentSong, range.start);
+  }
+  if (selectedFrameIndex >= currentSong.frames.length) selectedFrameIndex = currentSong.frames.length - 1;
+  persistCurrentSong();
+  renderFrameStrip();
+  renderBigGrid();
+  updatePracticeRangeBounds(false);
+  showToast(t('frameRangeDeletedToast', { count }));
 }
 
 // fi番目のマスの直後に、空の新しいマスを1つ差し込む。作曲の途中で「ここにもう1マス
@@ -2965,10 +3096,10 @@ function pasteFrameRange() {
 
 // 貼り付けボタンの有効/無効と、コピー済み件数のヒント文言を今の状態に合わせる
 function renderFrameClipboardHint() {
-  const btn = document.getElementById('pasteFrameRangeBtn');
+  // ツールパネル内のボタンと左右の余白レールのボタン、両方の有効/無効を揃える
   const hint = document.getElementById('frameClipboardHint');
   const count = frameClipboard ? frameClipboard.frames.length : 0;
-  if (btn) btn.disabled = count === 0;
+  document.querySelectorAll('.paste-frame-btn').forEach(btn => { btn.disabled = count === 0; });
   if (hint) hint.textContent = count > 0 ? t('frameClipboardReadyHint', { count }) : t('frameClipboardEmptyHint');
 }
 
@@ -3703,8 +3834,7 @@ function handleGlobalKeydown(e) {
     // 前後のマスへの移動に使う（同じ理由でノートやショートカットと衝突しない）。
     if ((e.key === 'ArrowLeft' || e.key === 'ArrowRight') && currentSong && document.getElementById('viewEditor').classList.contains('active')) {
       e.preventDefault();
-      const next = selectedFrameIndex + (e.key === 'ArrowLeft' ? -1 : 1);
-      if (next >= 0 && next < currentSong.frames.length) selectFrame(next);
+      if (e.key === 'ArrowLeft') selectPrevFrame(); else selectNextFrame();
       return;
     }
     if (skyShortcutsEnabled()) {
