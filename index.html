@@ -464,8 +464,16 @@
     .frame-strip.view-column .add-frame-btn { width: 38px; min-height: 0; font-size: 16px; align-self: stretch; }
 
     .current-frame-card {
+      /* 🖥️ 広いデスクトップ画面では.compose-overlayの幅いっぱいに伸びて
+         中身(ノート入力)との間の余白が過剰に見えるため、幅の上限を付けて
+         中央寄せにする。ピアノ入力(15鍵)が横スクロール無しで収まる目安として
+         680pxにしている（狭い画面では従来通り画面幅いっぱいまで縮む）。
+         width:100%を明示しているのは、これが.compose-overlay(flex縦並び)の
+         直接の子(flexアイテム)のため―margin:autoだけだと「はみ出す子要素
+         (.piano-keysのmin-width:max-content)に合わせて自分も広がる」挙動に
+         なり、狭い画面で右にはみ出してしまうのを防ぐため。 */
       background: var(--card); border-radius: var(--r); padding: 16px; box-shadow: 0 1px 4px rgba(0,0,0,0.07);
-      margin-bottom: 14px;
+      width: 100%; max-width: 680px; margin: 0 auto 14px;
     }
     .current-frame-label { font-size: 12.5px; color: var(--text-2); font-weight: 600; margin-bottom: 10px; }
     .frame-bpm-row { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; flex-wrap: wrap; }
@@ -515,7 +523,10 @@
     .timeline-view-tab { font-size: 11px; padding: 5px 9px; }
 
     .piano-keys-wrap { overflow-x: auto; padding-bottom: 2px; }
-    .piano-keys { display: flex; gap: 3px; min-width: max-content; padding: 4px 2px 2px; }
+    /* margin:0 auto で「入りきる幅なら中央寄せ、はみ出す幅なら左端から
+       横スクロール」という安全な挙動になる(親にjustify-content:centerを使うと、
+       はみ出したときに左側がスクロールで届かなくなるブラウザがあるため避ける)。 */
+    .piano-keys { display: flex; gap: 3px; min-width: max-content; margin: 0 auto; padding: 4px 2px 2px; }
     .piano-key {
       position: relative;
       width: 38px; height: 130px; background: var(--card); border: 1.5px solid var(--sep); border-radius: 0 0 8px 8px;
