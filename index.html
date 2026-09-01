@@ -398,28 +398,31 @@
     }
     /* ── 譜面（frame-strip）の縦列表示 ─────────────────────────── */
     .frame-strip.view-column {
+      /* 🔍 タイル表示と見比べたときに表示範囲が狭く感じないよう、高さの上限は
+         タイル表示(.frame-strip.view-tile)と同じmin(38vh, 320px)に揃えている。
+         縦列は折り返さない1段だけの帯なので、COL_CELL_H(JS)を大きくして
+         実際にその高さを使い切るようにしている（余白だけ広がらないように）。 */
       flex-wrap: nowrap; align-items: flex-start;
       gap: 4px; padding: 18px 6px 20px;
-      max-height: 190px; overflow-x: auto; overflow-y: hidden;
+      max-height: min(38vh, 320px); overflow-x: auto; overflow-y: hidden;
     }
-    @media (max-height: 620px) { .frame-strip.view-column { max-height: 144px; } }
     /* 🎹 音名の目盛り（左端に常時表示、横スクロールしても位置固定）。
        frameColumnSvg()と全く同じ行の高さ・原点(padding-top=3px)を使うことで、
        各行のラベルが列の中の音の高さと一致するようにしている。 */
     .column-pitch-gutter {
       position: sticky; left: 0; z-index: 2; flex-shrink: 0;
-      width: 24px; padding: 3px 0; background: var(--bg);
+      width: 28px; padding: 3px 0; background: var(--bg);
       border-right: 1.5px solid var(--timeline-tile-border);
     }
     .column-gutter-row {
       display: flex; align-items: center; justify-content: center;
-      font-size: 8px; font-weight: 700; color: var(--text-2); line-height: 1;
+      font-size: 10.5px; font-weight: 700; color: var(--text-2); line-height: 1;
     }
     .frame-box.column-mode {
-      /* 幅は content-box で COL_W(24px)ぴったりになるよう、.frame-box基本ルールの
-         border(1.5px×2)+padding(3px×2)を足した32pxにしている(box-sizing:border-box)。
+      /* 幅は content-box で COL_W(30px)ぴったりになるよう、.frame-box基本ルールの
+         border(1.5px×2)+padding(3px×2)を足した38pxにしている(box-sizing:border-box)。
          ここを変える場合はJSのCOL_Wとの整合を保つこと。 */
-      display: block; width: 32px; padding: 3px; border-radius: 6px;
+      display: block; width: 38px; padding: 3px; border-radius: 6px;
       --col-bg-fill: var(--timeline-tile-bg-2); --col-note-on-fill: var(--note-on);
       --col-sep-stroke: var(--sep); --col-off-fill: var(--note-off);
     }
@@ -458,7 +461,7 @@
     }
     .frame-box.column-mode.selected::before { top: -5px; border-top: 5px solid var(--pink-btn); }
     .frame-box.column-mode.selected::after { bottom: -5px; border-bottom: 5px solid var(--pink-btn); }
-    .frame-strip.view-column .add-frame-btn { width: 32px; min-height: 0; font-size: 16px; align-self: stretch; }
+    .frame-strip.view-column .add-frame-btn { width: 38px; min-height: 0; font-size: 16px; align-self: stretch; }
 
     .current-frame-card {
       background: var(--card); border-radius: var(--r); padding: 16px; box-shadow: 0 1px 4px rgba(0,0,0,0.07);
@@ -702,8 +705,7 @@
        ―唯一flex:1;min-height:0を持つ入力エリア―がゼロまで潰れるのを防ぐ）。 */
     .compose-timeline { flex: 0 1 auto; min-height: 56px; }
     @media (max-height: 620px) {
-      .frame-strip.view-tile { max-height: min(28vh, 190px); }
-      .frame-strip.view-column { max-height: 132px; }
+      .frame-strip.view-tile, .frame-strip.view-column { max-height: min(28vh, 190px); }
     }
     .compose-input-area {
       flex: 1; min-height: 0; overflow-y: auto; display: flex; flex-direction: column; justify-content: center;
@@ -2630,10 +2632,11 @@ function frameStaffSvg(frame) {
 // 1本の横棒を積んだ帯として表示する。円/ひし形の交互表示は5列グリッドの
 // 走査目印のためここでは使わず、代わりにオクターブの区切り線で位置の目安を示す。
 // COL_CELL_H/COL_WはframeColumnGutterHtml()・CSSの.column-pitch-gutter/
-// .frame-box.column-mode(幅32px=COL_W24px+padding3px*2+border1.5px*2)と
+// .frame-box.column-mode(幅38px=COL_W30px+padding3px*2+border1.5px*2)と
 // 行の高さを揃えるための共通定数。ここを変えたらCSS側の幅・padding-topも
-// 合わせて変更すること。
-const COL_CELL_H = 7, COL_W = 24;
+// 合わせて変更すること。タイル表示と表示範囲(高さ)を揃えたため、1段しかない
+// 縦列でもその高さを使い切るよう、行の高さ(COL_CELL_H)を大きめにしている。
+const COL_CELL_H = 18, COL_W = 30;
 function frameColumnSvg(frame) {
   const rows = NOTE_LABELS.length; // 15
   const h = rows * COL_CELL_H + 6;
