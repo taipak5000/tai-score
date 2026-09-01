@@ -326,6 +326,11 @@
       aspect-ratio: 1; border-radius: 50%; background: var(--note-off); transition: background 0.06s;
     }
     .frame-dot.on { background: var(--note-on); }
+    /* 🔷 参考サイト(Sky Music Nightly/Sky Music)にならい、列位置(0始まりの列番号が
+       奇数)のマスだけひし形にする。走査の目印になる構造上の工夫で、音名や色とは
+       無関係(配色トークンは変更していない)。clip-pathで輪郭だけ変えるため、
+       背景色のon/off切り替えや中身の文字はそのまま流用できる。 */
+    .frame-dot.diamond-shape { border-radius: 0; clip-path: polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%); }
     .frame-index {
       position: absolute; top: -8px; left: -6px; background: var(--text-2); color: #fff;
       font-size: 9px; font-weight: 700; border-radius: 8px; padding: 1px 5px; line-height: 1.3;
@@ -379,6 +384,11 @@
     .big-note.on { background: var(--note-on); color: #fff; }
     .big-note:active { transform: scale(0.9); }
     .big-note.flash { transform: scale(1.15); }
+    /* 🔷 参考サイトにならい、列位置(奇数列)のマスだけひし形にする（配色は変更しない） */
+    .big-note.diamond-shape { border-radius: 0; clip-path: polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%); }
+    /* もう一方のレイヤーに音がある場合の控えめな参照表示（塗りつぶさず輪郭線のみ）。
+       新しい色相は増やさず、既存の--text-3（控えめなグレー系トークン）を使う。 */
+    .big-note.other-layer { box-shadow: inset 0 0 0 2px var(--text-3); }
 
     /* ── キー割り当てのヒント表示（キーボード操作用） ─────────────────── */
     .key-badge {
@@ -393,12 +403,22 @@
 
     .current-frame-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 10px; flex-wrap: wrap; }
     .current-frame-head .current-frame-label { margin-bottom: 0; }
+    .current-frame-controls { display: flex; align-items: center; gap: 8px; flex-shrink: 0; flex-wrap: wrap; }
     .input-mode-tabs { display: flex; gap: 4px; flex-shrink: 0; }
     .input-mode-tab {
       background: var(--bg); color: var(--text-2); font-size: 11.5px; font-weight: 700;
       padding: 6px 10px; border-radius: 999px; white-space: nowrap;
     }
     .input-mode-tab.active { background: var(--pink-btn); color: #fff; }
+    /* レイヤー切替ボタン：Sky実機で2音同時に鳴らせる「もう一方の音」を
+       切り替える。新しい色相は使わず、レイヤー1=塗りつぶし・レイヤー2=
+       薄い塗り+輪郭線という既存ピンク系トークンの濃淡だけで描き分ける。 */
+    .layer-toggle-btn {
+      background: var(--pink-btn); color: #fff; font-size: 11.5px; font-weight: 700;
+      padding: 6px 12px; border-radius: 999px; white-space: nowrap; border: 1.5px solid transparent;
+      display: inline-flex; align-items: center; gap: 4px;
+    }
+    .layer-toggle-btn.layer-2 { background: var(--pink-bg); color: var(--pink-d); border-color: var(--pink); }
 
     .piano-keys-wrap { overflow-x: auto; padding-bottom: 2px; }
     .piano-keys { display: flex; gap: 3px; min-width: max-content; padding: 4px 2px 2px; }
@@ -411,6 +431,7 @@
     }
     .piano-key.octave-start { margin-left: 8px; }
     .piano-key.on { background: var(--note-on); color: #fff; border-color: var(--note-on); }
+    .piano-key.other-layer { box-shadow: inset 0 0 0 2px var(--text-3); }
     .piano-key:active { transform: scaleY(0.96); }
     /* 黒鍵は見た目の参考用（押せなくても良い＝Skyの楽器は半音に対応していないため非インタラクティブ） */
     .piano-black-key {
@@ -1011,10 +1032,13 @@
   <div class="current-frame-card compose-input-area">
     <div class="current-frame-head">
       <div class="current-frame-label" data-i18n="currentFrameLabel">選択中のマス（クリックで音をON/OFF）</div>
-      <div class="input-mode-tabs">
-        <button type="button" class="input-mode-tab" data-mode="grid" data-i18n="inputModeGrid" onclick="setInputMode('grid')">⚪ グリッド</button>
-        <button type="button" class="input-mode-tab" data-mode="piano" data-i18n="inputModePiano" onclick="setInputMode('piano')">🎹 ピアノ</button>
-        <button type="button" class="input-mode-tab" data-mode="staff" data-i18n="inputModeStaff" onclick="setInputMode('staff')">🎼 五線譜</button>
+      <div class="current-frame-controls">
+        <button type="button" class="layer-toggle-btn" id="layerToggleBtn" onclick="toggleActiveLayer()" data-i18n-title="layerToggleBtnTitle" title="Skyのハープは2音を同時に鳴らせます。もう一方の音を配置するレイヤーに切り替えます" aria-label="レイヤー切替">🎵 <span id="layerToggleLabel" data-i18n="layer1Label">レイヤー1</span></button>
+        <div class="input-mode-tabs">
+          <button type="button" class="input-mode-tab" data-mode="grid" data-i18n="inputModeGrid" onclick="setInputMode('grid')">⚪ グリッド</button>
+          <button type="button" class="input-mode-tab" data-mode="piano" data-i18n="inputModePiano" onclick="setInputMode('piano')">🎹 ピアノ</button>
+          <button type="button" class="input-mode-tab" data-mode="staff" data-i18n="inputModeStaff" onclick="setInputMode('staff')">🎼 五線譜</button>
+        </div>
       </div>
     </div>
     <div class="frame-bpm-row" id="frameBpmRow">
@@ -1272,6 +1296,9 @@ const I18N = {
     inputModeGrid: '⚪ グリッド',
     inputModePiano: '🎹 ピアノ',
     inputModeStaff: '🎼 五線譜',
+    layer1Label: 'レイヤー1',
+    layer2Label: 'レイヤー2',
+    layerToggleBtnTitle: 'Skyのハープは2音を同時に鳴らせます。もう一方の音を配置するレイヤーに切り替えます',
     pianoWhiteKeysHint: 'Skyの楽器は白鍵（ドレミファソラシ）のみに対応しています',
     staffClickHint: '五線譜の位置をクリックして音をON/OFFできます',
     frameSectionLabel: '🎼 譜面（クリックでそのマスへ移動）',
@@ -1524,6 +1551,9 @@ const I18N = {
     inputModeGrid: '⚪ Grid',
     inputModePiano: '🎹 Piano',
     inputModeStaff: '🎼 Staff',
+    layer1Label: 'Layer 1',
+    layer2Label: 'Layer 2',
+    layerToggleBtnTitle: "Sky's harp can play 2 notes at once. Switch which layer new notes are placed on",
     pianoWhiteKeysHint: "Sky's instruments only support white keys (Do Re Mi Fa Sol La Ti)",
     staffClickHint: 'Click a position on the staff to toggle a note on/off',
     frameSectionLabel: '🎼 Sheet (click a tile to jump to it)',
@@ -2027,6 +2057,12 @@ function clearLibraryFilters() {
 
 let currentSong = null; // 編集中の曲（保存前はライブラリに存在しない場合もある）
 let selectedFrameIndex = 0;
+// 🎹 2レイヤー切替（旧Sky Music風）: frame配列の値は0〜14がレイヤー1、15〜29が
+// レイヤー2の同じ音（値-15が実際の音程）。activeLayerは0か1。frame自体は
+// 引き続きフラットな数値配列のまま(配列の配列に変えない)なので、既存の保存済み
+// 楽譜（0〜14の値しか持たない）はそのままレイヤー1のみ使用として自動的に
+// 後方互換になる（明示的なマイグレーション不要）。
+let activeLayer = 0;
 
 let creatingNewSong = false;
 function createNewSong() {
@@ -2252,6 +2288,8 @@ function populatePitchSelect() {
 function renderEditor() {
   if (!currentSong) return;
   clearEditHistory(); // 曲を切り替えるたびに、前の曲のUndo履歴を引き継がないようにする
+  activeLayer = 0; // 曲を開き直すたびにレイヤー1へ戻す
+  updateLayerToggleUI();
   document.getElementById('songNameInput').value = currentSong.name;
   document.getElementById('songPitchInput').value = currentSong.pitch;
   document.getElementById('songInstrumentInput').value = currentSong.instrument;
@@ -2325,12 +2363,32 @@ function getPracticeRange() {
   return { start: start - 1, end: end - 1 };
 }
 
+// Skyのハープは2音を同時に鳴らせるため、片方の音をレイヤー2として
+// 別途配置できるようにする（オフセット方式: 15〜29はレイヤー2の音）。
+function toggleActiveLayer() {
+  activeLayer = activeLayer === 0 ? 1 : 0;
+  updateLayerToggleUI();
+  renderBigGrid();
+  renderFrameStrip();
+}
+function updateLayerToggleUI() {
+  const btn = document.getElementById('layerToggleBtn');
+  const label = document.getElementById('layerToggleLabel');
+  if (!btn || !label) return;
+  btn.classList.toggle('layer-2', activeLayer === 1);
+  label.textContent = t(activeLayer === 0 ? 'layer1Label' : 'layer2Label');
+  label.setAttribute('data-i18n', activeLayer === 0 ? 'layer1Label' : 'layer2Label');
+}
 function renderBigGrid() {
   const grid = document.getElementById('bigGrid');
   const frame = currentSong.frames[selectedFrameIndex] || [];
   grid.innerHTML = NOTE_LABELS.map((_, i) => {
-    const on = frame.includes(i);
-    return `<div class="big-note${on ? ' on' : ''}" data-idx="${i}" onclick="toggleNote(${i})">${escapeHtml(noteLabel(i))}<span class="key-badge">${escapeHtml(keyDisplayLabel(keyBindings[i]))}</span></div>`;
+    const on = frame.includes(i + activeLayer * 15);
+    const otherLayerOn = frame.includes(i + (1 - activeLayer) * 15);
+    // 🔷 参考サイトにならい、列位置(0始まりの列番号 i%5 が奇数)のマスだけひし形にする
+    const diamond = (i % 5) % 2 === 1;
+    const cls = ['big-note', on && 'on', !on && otherLayerOn && 'other-layer', diamond && 'diamond-shape'].filter(Boolean).join(' ');
+    return `<div class="${cls}" data-idx="${i}" onclick="toggleNote(${i})">${escapeHtml(noteLabel(i))}<span class="key-badge">${escapeHtml(keyDisplayLabel(keyBindings[i]))}</span></div>`;
   }).join('');
   renderPianoKeys();
   renderStaffPicker();
@@ -2370,11 +2428,13 @@ function renderPianoKeys() {
   const wrap = document.getElementById('pianoKeys');
   const frame = currentSong.frames[selectedFrameIndex] || [];
   wrap.innerHTML = NOTE_LABELS.map((_, i) => {
-    const on = frame.includes(i);
+    const on = frame.includes(i + activeLayer * 15);
+    const otherLayerOn = frame.includes(i + (1 - activeLayer) * 15);
     const octaveStart = i === 7 || i === 14;
     const blackKey = hasBlackKeyAfter(i) ? `<div class="piano-black-key" title="${escapeHtml(t('blackKeyTitle'))}"></div>` : '';
     const keyBadge = `<span class="key-badge">${escapeHtml(keyDisplayLabel(keyBindings[i]))}</span>`;
-    return `<div class="piano-key${on ? ' on' : ''}${octaveStart ? ' octave-start' : ''}" data-idx="${i}" onclick="toggleNote(${i})">${blackKey}${keyBadge}${escapeHtml(noteLabel(i))}</div>`;
+    const cls = ['piano-key', on && 'on', !on && otherLayerOn && 'other-layer', octaveStart && 'octave-start'].filter(Boolean).join(' ');
+    return `<div class="${cls}" data-idx="${i}" onclick="toggleNote(${i})">${blackKey}${keyBadge}${escapeHtml(noteLabel(i))}</div>`;
   }).join('');
 }
 
@@ -2406,14 +2466,17 @@ function renderStaffPicker() {
   });
   NOTE_LABELS.forEach((_, i) => {
     const y = staffY(i);
-    const on = frame.includes(i);
+    const on = frame.includes(i + activeLayer * 15);
+    const otherLayerOn = frame.includes(i + (1 - activeLayer) * 15);
     if (STAFF_LEDGER_INDICES.includes(i)) {
       html += `<line x1="${STAFF_NOTE_X - 10}" y1="${y}" x2="${STAFF_NOTE_X + 10}" y2="${y}" stroke="var(--text-3)" stroke-width="1"/>`;
     }
+    // もう一方のレイヤーに音がある場合は、塗りつぶさず輪郭線だけ太くして控えめに示す
+    const strokeWidth = !on && otherLayerOn ? '2.4' : '1.4';
     html += `
       <g class="staff-note-slot" data-idx="${i}" onclick="toggleNote(${i})">
         <rect x="${STAFF_NOTE_X - 16}" y="${y - 8}" width="70" height="16" fill="transparent" pointer-events="all" style="cursor:pointer;"/>
-        <ellipse cx="${STAFF_NOTE_X}" cy="${y}" rx="6.4" ry="5" fill="${on ? 'var(--note-on)' : 'var(--card)'}" stroke="${on ? 'var(--note-on)' : 'var(--text-3)'}" stroke-width="1.4"/>
+        <ellipse cx="${STAFF_NOTE_X}" cy="${y}" rx="6.4" ry="5" fill="${on ? 'var(--note-on)' : 'var(--card)'}" stroke="${on ? 'var(--note-on)' : 'var(--text-3)'}" stroke-width="${strokeWidth}"/>
         <text x="${STAFF_NOTE_X + 14}" y="${y + 4}" font-size="11" font-weight="600" fill="var(--text-2)">${escapeHtml(noteLabel(i))}</text>
         <text x="${STAFF_NOTE_X + 36}" y="${y + 4}" font-size="9.5" font-weight="700" fill="var(--text-3)">${escapeHtml(keyDisplayLabel(keyBindings[i]))}</text>
       </g>`;
@@ -2421,20 +2484,23 @@ function renderStaffPicker() {
   svg.innerHTML = html;
 }
 
-// frame-strip（譜面全体）の1マス分を、五線譜上に和音として積んだ音符で描く簡易版
+// frame-strip（譜面全体）の1マス分を、五線譜上に和音として積んだ音符で描く簡易版。
+// サムネイルは小さいためレイヤーを描き分けず、いずれかのレイヤーに音があれば
+// 表示する（値を15で割った余り＝実際の音程に正規化してから重複を除く）。
 function frameStaffSvg(frame) {
   const baseY = 76, step = 4.4, noteX = 42, left = 8, right = 74;
+  const pitches = [...new Set(frame.map(n => n % 15))];
   let html = '';
   STAFF_LINE_INDICES.forEach(i => {
     const y = baseY - i * step;
     html += `<line x1="${left}" y1="${y}" x2="${right}" y2="${y}" stroke="var(--sep)" stroke-width="1"/>`;
   });
   STAFF_LEDGER_INDICES.forEach(i => {
-    if (!frame.includes(i)) return;
+    if (!pitches.includes(i)) return;
     const y = baseY - i * step;
     html += `<line x1="${noteX - 7}" y1="${y}" x2="${noteX + 7}" y2="${y}" stroke="var(--text-3)" stroke-width="1"/>`;
   });
-  frame.forEach(i => {
+  pitches.forEach(i => {
     const y = baseY - i * step;
     html += `<ellipse cx="${noteX}" cy="${y}" rx="3.6" ry="2.8" fill="var(--note-on)"/>`;
   });
@@ -2451,7 +2517,12 @@ function renderFrameStrip() {
       <span class="frame-index">${fi + 1}</span>
       <button class="frame-del-btn" onclick="event.stopPropagation(); deleteFrame(${fi})">✕</button>
       <button class="frame-insert-btn" onclick="event.stopPropagation(); insertBlankFrameAfter(${fi})" title="${escapeHtml(t('insertFrameAfterTitle'))}" aria-label="${escapeHtml(t('insertFrameAfterTitle'))}">＋</button>
-      ${staffMode ? frameStaffSvg(frame) : NOTE_LABELS.map((_, ni) => `<div class="frame-dot${frame.includes(ni) ? ' on' : ''}"></div>`).join('')}
+      ${staffMode ? frameStaffSvg(frame) : NOTE_LABELS.map((_, ni) => {
+        // サムネイルは小さいためレイヤーを描き分けず、いずれかのレイヤーに音があればonにする
+        const dotOn = frame.includes(ni) || frame.includes(ni + 15);
+        const dotDiamond = (ni % 5) % 2 === 1;
+        return `<div class="frame-dot${dotOn ? ' on' : ''}${dotDiamond ? ' diamond-shape' : ''}"></div>`;
+      }).join('')}
       ${bpmOv !== null ? `<span class="frame-bpm-badge" title="${escapeHtml(t('frameBpmBadgeTitle', { bpm: bpmOv }))}">🥁${bpmOv}</span>` : ''}
     </div>
   `;
@@ -2559,8 +2630,11 @@ function undoEdit() {
 function toggleNote(noteIndex) {
   pushEditHistory();
   const frame = currentSong.frames[selectedFrameIndex];
-  const pos = frame.indexOf(noteIndex);
-  if (pos >= 0) frame.splice(pos, 1); else frame.push(noteIndex);
+  // noteIndexは常に0〜14の物理キー番号。実際にframeへ読み書きする値は、
+  // 現在アクティブなレイヤー(activeLayer)に応じて+15したもの（レイヤー2の同じ音）。
+  const encoded = noteIndex + activeLayer * 15;
+  const pos = frame.indexOf(encoded);
+  if (pos >= 0) frame.splice(pos, 1); else frame.push(encoded);
   persistCurrentSong();
   renderBigGrid();
   renderFrameStrip();
@@ -2871,7 +2945,10 @@ function playBellVoice(ctx, now, freq) {
   });
 }
 
-function playFrame(frame) { frame.forEach(n => playNote(n)); }
+// frameの値は0〜29（15以上はレイヤー2の同じ音）だが、実際に鳴らす音程は
+// 常に0〜14なので、%15で正規化してからplayNote()に渡す（同じ音程が両レイヤーに
+// あっても実害なく2回鳴らされるだけで、和音としては正しく聞こえる）。
+function playFrame(frame) { frame.forEach(n => playNote(n % 15)); }
 
 /* ================================================================
    メトロノーム／カウントイン
@@ -3197,11 +3274,16 @@ function onPerfKeyPress(idx) {
   if (perfMode !== 'practice' && perfMode !== 'test') return;
   const frame = currentSong.frames[perfFrameIndex];
   if (!frame) return;
-  if (frame.includes(idx)) {
+  // frameの値は0〜29（15以上はレイヤー2の同じ音）だが、物理キーidxは常に0〜14なので、
+  // どちらかのレイヤーにその音があれば正解として扱う（%15で正規化して比較）。
+  if (frame.some(n => n % 15 === idx)) {
     if (!perfHitSet.has(idx)) {
       perfHitSet.add(idx);
       if (el) el.classList.add('hit');
-      if (frame.every(n => perfHitSet.has(n))) {
+      // このマスで押すべき音程の集合（レイヤーを問わず正規化・重複除去）が、
+      // すべて押せていればこのマスは完了。
+      const requiredPitches = new Set(frame.map(n => n % 15));
+      if ([...requiredPitches].every(n => perfHitSet.has(n))) {
         setTimeout(() => goToNextPerfFrame(), 220);
       }
     }
@@ -3252,7 +3334,9 @@ function goToNextPerfFrame() {
 function highlightPerfTargets() {
   clearPerfTargets();
   const frame = currentSong.frames[perfFrameIndex] || [];
-  frame.forEach(idx => {
+  // frameの値は0〜29(15以上はレイヤー2)だが、物理キーのdata-idxは常に0〜14。
+  const pitches = new Set(frame.map(n => n % 15));
+  pitches.forEach(idx => {
     const el = document.querySelector(`#perfGrid .perf-key[data-idx="${idx}"]`);
     if (el) el.classList.add('target');
   });
@@ -3564,7 +3648,9 @@ async function copyShareCode() {
 function songToTextSheet(song) {
   const body = song.frames.map(frame => {
     if (frame.length === 0) return '.';
-    return frame.slice().sort((a, b) => a - b).map(i => NOTE_ABC_CODES[i]).join('');
+    // レイヤー概念の無い記法なので、両レイヤーを1つの和音として書き出す(%15で正規化・重複除去)。
+    const pitches = [...new Set(frame.map(n => n % 15))];
+    return pitches.sort((a, b) => a - b).map(i => NOTE_ABC_CODES[i]).join('');
   });
   const lines = [];
   for (let i = 0; i < body.length; i += 8) lines.push(body.slice(i, i + 8).join(' '));
@@ -3684,7 +3770,7 @@ function songToSpecyFormat(song) {
     instruments: [{ name: song.instrument || 'Harp', notes: [], volume: 100, pitch: song.pitch, baseNotes: [] }],
     breakpoints: [],
     reverb: false,
-    columns: song.frames.map(frame => [0, frame.map(idx => [idx, '1'])])
+    columns: song.frames.map(frame => [0, [...new Set(frame.map(n => n % 15))].map(idx => [idx, '1'])])
   };
 }
 function specyFormatToSong(data) {
