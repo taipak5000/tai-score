@@ -311,16 +311,56 @@
 
     .last-result-row { display: flex; flex-direction: column; gap: 2px; margin-top: 4px; font-size: 12px; color: var(--text-2); }
 
-    /* 🎼 作曲モードのタイムライン：折り返して縦に伸びるサムネイル一覧ではなく、
-       reference(Sky Music Nightly)のピアノロール風タイムラインに近い、横一列に
-       スクロールする帯にする。frame-box自体の見た目・renderFrameStrip()のJSは変更不要。 */
-    .frame-strip { display: flex; flex-wrap: nowrap; overflow-x: auto; gap: 8px; padding: 4px 2px 12px; -webkit-overflow-scrolling: touch; }
+    /* 🎨 作曲モードのタイムライン専用トークン。参考サイト(sky-music.specy.app)の
+       ダークな青みがかったスレート調をダークモードだけで再現するために追加した
+       もので、.compose-overlayの中だけに閉じている。他のSkyツールと共有している
+       サイト全体の--bg/--card(sky_app_theme)は一切変更していない。 */
+    .compose-overlay {
+      --timeline-tile-bg:     #FFFFFF;               /* ライト: 従来の--cardと同値 */
+      --timeline-tile-bg-2:   #F4F4F8;               /* 縦列表示のレーン背景 */
+      --timeline-tile-border: rgba(60,60,67,0.14);
+      --timeline-lane-bg:     rgba(255,45,85,0.05);  /* 白＋淡いピンクの既定路線 */
+    }
+    [data-theme="dark"] .compose-overlay {
+      --timeline-tile-bg:     #2A3242;   /* 青みのある濃いスレート（参考画像の色調） */
+      --timeline-tile-bg-2:   #222938;
+      --timeline-tile-border: rgba(255,255,255,0.10);
+      --timeline-lane-bg:     #1A2030;
+    }
+    /* 🎼 作曲モードのタイムライン：「タイル表示」（折り返すマス一覧）と
+       「縦列表示」（ピアノロール風に横スクロールする細い列）の2種類を
+       切替できる（.view-tile / .view-column）。frame-box・frameBox_{fi}という
+       クラス/idは両方の表示で共通のまま(highlightPlayingFrame等が直接参照するため)。 */
+    .frame-strip {
+      display: flex; gap: 8px; -webkit-overflow-scrolling: touch;
+      background: var(--timeline-lane-bg); border-radius: var(--r-sm);
+    }
+    .frame-strip.view-tile {
+      flex-wrap: wrap; align-content: flex-start;
+      row-gap: 20px; column-gap: 10px;
+      /* frame-index/frame-bpm-badgeが枠の外(top:-8px/bottom:-8px)に出るため、
+         内部スクロール時に切れないよう上下に余白を確保する */
+      padding: 14px 10px 16px;
+      max-height: min(38vh, 320px);
+      overflow-y: auto; overflow-x: hidden;
+    }
     .frame-box {
-      background: var(--card); border: 2px solid var(--sep); border-radius: 10px; padding: 6px;
+      background: var(--timeline-tile-bg);
+      border: 1.5px solid var(--timeline-tile-border);
+      border-radius: 12px; padding: 7px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.06);
       display: grid; grid-template-columns: repeat(5, 1fr); gap: 3px; width: 82px; flex-shrink: 0;
       position: relative; cursor: pointer;
+      transition: background 0.1s, border-color 0.1s;
     }
-    .frame-box.selected { border-color: var(--pink); }
+    .frame-box:hover { z-index: 3; } /* ホバー時の✕/＋が隣のタイルに隠れないように */
+    /* 🔴 参考画像2にならい、選択中のマスは塗りつぶしで強調する(画像の赤ではなく
+       既存の--pink-btnを使う。新しい色相は増やしていない)。塗りつぶすとドットが
+       埋もれるので、選択中だけドットを白系に反転させる。 */
+    .frame-box.selected { background: var(--pink-btn); border-color: var(--pink-btn); }
+    .frame-box.selected .frame-dot    { background: rgba(255,255,255,0.30); }
+    .frame-box.selected .frame-dot.on { background: #fff; }
+    .frame-box.selected .frame-index  { background: #fff; color: var(--pink-btn); }
     .frame-box.playing { border-color: var(--green); box-shadow: 0 0 0 3px rgba(52,199,89,0.25); }
     .frame-dot {
       aspect-ratio: 1; border-radius: 50%; background: var(--note-off); transition: background 0.06s;
@@ -353,9 +393,33 @@
       border-radius: 8px; padding: 1px 5px; line-height: 1.3; white-space: nowrap; pointer-events: none;
     }
     .add-frame-btn {
-      width: 82px; flex-shrink: 0; border: 2px dashed var(--sep); border-radius: 10px;
+      width: 82px; min-height: 96px; flex-shrink: 0; border: 2px dashed var(--sep); border-radius: 12px;
       display: flex; align-items: center; justify-content: center; color: var(--text-2); font-size: 26px;
     }
+    /* ── 譜面（frame-strip）の縦列表示 ─────────────────────────── */
+    .frame-strip.view-column {
+      flex-wrap: nowrap; align-items: flex-start;
+      gap: 4px; padding: 14px 6px 18px;
+      max-height: 176px; overflow-x: auto; overflow-y: hidden;
+    }
+    .frame-box.column-mode { display: block; width: 26px; padding: 3px; border-radius: 6px; }
+    .frame-column-svg { width: 100%; height: auto; display: block; }
+    /* 縦列は細いので、番号は下に小さく出す（renderFrameStripが間引いて出力） */
+    .frame-box.column-mode .frame-index {
+      top: auto; bottom: -9px; left: 50%; transform: translateX(-50%);
+      font-size: 8px; padding: 0 3px; background: transparent; color: var(--text-2);
+    }
+    .frame-box.column-mode.selected .frame-index { color: var(--pink-d); font-weight: 800; }
+    .frame-box.column-mode .frame-del-btn,
+    .frame-box.column-mode .frame-insert-btn { width: 14px; height: 14px; font-size: 9px; }
+    .frame-box.column-mode .frame-insert-btn { bottom: auto; top: -8px; left: -5px; }
+    .frame-box.column-mode .frame-bpm-badge { top: -9px; bottom: auto; font-size: 7.5px; padding: 0 3px; }
+    /* 縦列は塗りつぶすと中身が読めないので、選択中は淡いピンクの帯で示す
+       （参考画像1の「現在の列をハイライトする」表現に相当）*/
+    .frame-box.column-mode.selected {
+      background: var(--pink-bg); border-color: var(--pink); box-shadow: 0 0 0 1.5px var(--pink) inset;
+    }
+    .frame-strip.view-column .add-frame-btn { width: 26px; min-height: 0; font-size: 16px; align-self: stretch; }
 
     .current-frame-card {
       background: var(--card); border-radius: var(--r); padding: 16px; box-shadow: 0 1px 4px rgba(0,0,0,0.07);
@@ -404,12 +468,13 @@
     .current-frame-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 10px; flex-wrap: wrap; }
     .current-frame-head .current-frame-label { margin-bottom: 0; }
     .current-frame-controls { display: flex; align-items: center; gap: 8px; flex-shrink: 0; flex-wrap: wrap; }
-    .input-mode-tabs { display: flex; gap: 4px; flex-shrink: 0; }
-    .input-mode-tab {
+    .input-mode-tabs, .timeline-view-tabs { display: flex; gap: 4px; flex-shrink: 0; }
+    .input-mode-tab, .timeline-view-tab {
       background: var(--bg); color: var(--text-2); font-size: 11.5px; font-weight: 700;
       padding: 6px 10px; border-radius: 999px; white-space: nowrap;
     }
-    .input-mode-tab.active { background: var(--pink-btn); color: #fff; }
+    .input-mode-tab.active, .timeline-view-tab.active { background: var(--pink-btn); color: #fff; }
+    .timeline-view-tab { font-size: 11px; padding: 5px 9px; }
     /* レイヤー切替ボタン：Sky実機で2音同時に鳴らせる「もう一方の音」を
        切り替える。新しい色相は使わず、レイヤー1=塗りつぶし・レイヤー2=
        薄い塗り+輪郭線という既存ピンク系トークンの濃淡だけで描き分ける。 */
@@ -593,9 +658,19 @@
     .compose-bpm-row { flex-shrink: 0; padding: 0 4px 10px; }
     .compose-timeline-head {
       flex-shrink: 0; display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 0 4px 6px;
+      flex-wrap: wrap;
     }
     .compose-timeline-label { font-size: 12.5px; color: var(--text-2); font-weight: 600; }
-    .compose-timeline { flex-shrink: 0; }
+    .compose-timeline-actions { display: flex; align-items: center; gap: 8px; flex-shrink: 0; flex-wrap: wrap; }
+    /* 🎼 タイル/縦列どちらのビューも自前でmax-height+overflowを持つ(A/B参照)ため、
+       ここは伸びすぎないようflex:0 1 autoにする。画面が低いときはこの欄自体も
+       縮み、中の.frame-strip側の内部スクロールに任せる（下の.compose-input-area
+       ―唯一flex:1;min-height:0を持つ入力エリア―がゼロまで潰れるのを防ぐ）。 */
+    .compose-timeline { flex: 0 1 auto; min-height: 56px; }
+    @media (max-height: 620px) {
+      .frame-strip.view-tile { max-height: min(28vh, 190px); }
+      .frame-strip.view-column { max-height: 132px; }
+    }
     .compose-input-area {
       flex: 1; min-height: 0; overflow-y: auto; display: flex; flex-direction: column; justify-content: center;
     }
@@ -1025,9 +1100,17 @@
 
   <div class="compose-timeline-head">
     <span class="compose-timeline-label" data-i18n="frameSectionLabel">🎼 譜面（クリックでそのマスへ移動）</span>
-    <button type="button" class="mini-btn" id="undoEditBtn" onclick="undoEdit()" disabled data-i18n="undoEditBtn">↩️ 元に戻す</button>
+    <div class="compose-timeline-actions">
+      <div class="timeline-view-tabs" role="group" data-i18n-aria-label="timelineViewGroupLabel" aria-label="譜面の表示方法">
+        <button type="button" class="timeline-view-tab" data-view="tile" data-i18n="timelineViewTile"
+                data-i18n-title="timelineViewTileTitle" onclick="setTimelineView('tile')">🔲 タイル</button>
+        <button type="button" class="timeline-view-tab" data-view="column" data-i18n="timelineViewColumn"
+                data-i18n-title="timelineViewColumnTitle" onclick="setTimelineView('column')">🎹 縦列</button>
+      </div>
+      <button type="button" class="mini-btn" id="undoEditBtn" onclick="undoEdit()" disabled data-i18n="undoEditBtn">↩️ 元に戻す</button>
+    </div>
   </div>
-  <div class="frame-strip compose-timeline" id="frameStrip"><!-- JS --></div>
+  <div class="frame-strip compose-timeline view-tile" id="frameStrip"><!-- JS --></div>
 
   <div class="current-frame-card compose-input-area">
     <div class="current-frame-head">
@@ -1299,6 +1382,11 @@ const I18N = {
     layer1Label: 'レイヤー1',
     layer2Label: 'レイヤー2',
     layerToggleBtnTitle: 'Skyのハープは2音を同時に鳴らせます。もう一方の音を配置するレイヤーに切り替えます',
+    timelineViewTile: '🔲 タイル',
+    timelineViewColumn: '🎹 縦列',
+    timelineViewTileTitle: '譜面をマス（タイル）を並べた形式で表示します',
+    timelineViewColumnTitle: '譜面を縦列（ピアノロール）形式で表示します。左＝レイヤー1／右＝レイヤー2',
+    timelineViewGroupLabel: '譜面の表示方法',
     pianoWhiteKeysHint: 'Skyの楽器は白鍵（ドレミファソラシ）のみに対応しています',
     staffClickHint: '五線譜の位置をクリックして音をON/OFFできます',
     frameSectionLabel: '🎼 譜面（クリックでそのマスへ移動）',
@@ -1554,6 +1642,11 @@ const I18N = {
     layer1Label: 'Layer 1',
     layer2Label: 'Layer 2',
     layerToggleBtnTitle: "Sky's harp can play 2 notes at once. Switch which layer new notes are placed on",
+    timelineViewTile: '🔲 Tiles',
+    timelineViewColumn: '🎹 Columns',
+    timelineViewTileTitle: 'Show the sheet as a grid of tiles',
+    timelineViewColumnTitle: 'Show the sheet as vertical columns (piano roll). Left = layer 1, right = layer 2',
+    timelineViewGroupLabel: 'Sheet display mode',
     pianoWhiteKeysHint: "Sky's instruments only support white keys (Do Re Mi Fa Sol La Ti)",
     staffClickHint: 'Click a position on the staff to toggle a note on/off',
     frameSectionLabel: '🎼 Sheet (click a tile to jump to it)',
@@ -2303,6 +2396,7 @@ function renderEditor() {
   if (noScrollToggle) noScrollToggle.checked = noScrollDuringPlaybackEnabled();
   if (selectedFrameIndex >= currentSong.frames.length) selectedFrameIndex = Math.max(0, currentSong.frames.length - 1);
   applyInputMode();
+  applyTimelineView();
   renderFrameStrip();
   renderBigGrid();
   updatePracticeRangeBounds(true);
@@ -2417,6 +2511,26 @@ function applyInputMode() {
   document.getElementById('staffWrap').style.display = mode === 'staff' ? 'block' : 'none';
   document.querySelectorAll('.input-mode-tab').forEach(btn => btn.classList.toggle('active', btn.dataset.mode === mode));
 }
+
+/* ================================================================
+   譜面(frame-strip)全体の表示方法：「タイル」(マスを並べた一覧)⇔
+   「縦列」(ピアノロール風に横スクロールする細い列)。上のinput-mode(選択中の
+   マスの編集方法)とは別の設定で、data-view属性・timeline-view-tabクラスを
+   使うため、applyInputMode()のクエリとは衝突しない。
+   ================================================================ */
+const TIMELINE_VIEW_KEY = 'taiScoreTimelineView_v1';
+function getTimelineView() {
+  return localStorage.getItem(TIMELINE_VIEW_KEY) === 'column' ? 'column' : 'tile';
+}
+function setTimelineView(view) {
+  localStorage.setItem(TIMELINE_VIEW_KEY, view);
+  applyTimelineView();
+  if (currentSong) renderFrameStrip();
+}
+function applyTimelineView() {
+  const view = getTimelineView();
+  document.querySelectorAll('.timeline-view-tab').forEach(btn => btn.classList.toggle('active', btn.dataset.view === view));
+}
 // 白鍵の音番号（オクターブ内0〜6 = ド レ ミ ファ ソ ラ シ）のうち、
 // 右側に黒鍵がある位置（ミ→ファ、シ→ドの間には黒鍵が無い）
 function hasBlackKeyAfter(i) {
@@ -2507,22 +2621,65 @@ function frameStaffSvg(frame) {
   return `<svg viewBox="0 0 82 84" class="frame-staff-svg">${html}</svg>`;
 }
 
+// 譜面の「縦列表示」の1マス分。縦=音程(上が高音)、列内を左右2レーンに分け、
+// 左=レイヤー1・右=レイヤー2とする。activeLayer側は塗りつぶし、もう一方は
+// 輪郭線のみ(renderBigGrid/renderStaffPickerのother-layer表現と同じ考え方で、
+// 新しい色相は使わない)。円/ひし形の交互表示は5列グリッドの走査目印のため
+// ここでは使わず、代わりにオクターブの区切り線で位置の目安を示す。
+const COL_CELL_H = 6, COL_LANE_W = 8, COL_LANE_GAP = 2;
+function frameColumnSvg(frame) {
+  const rows = NOTE_LABELS.length; // 15
+  const w = COL_LANE_W * 2 + COL_LANE_GAP;
+  const h = rows * COL_CELL_H + 6;
+  let html = `<rect x="0" y="0" width="${w}" height="${h}" rx="3" fill="var(--timeline-tile-bg-2)"/>`;
+  [7, 14].forEach(i => { // オクターブの境目に薄い区切り線（ピアノの.octave-startと同じ考え方）
+    const y = 3 + (rows - i) * COL_CELL_H;
+    html += `<line x1="0" y1="${y}" x2="${w}" y2="${y}" stroke="var(--sep)" stroke-width="0.8"/>`;
+  });
+  for (let i = 0; i < rows; i++) {
+    const y = 3 + (rows - 1 - i) * COL_CELL_H;
+    [0, 1].forEach(layer => {
+      const x = layer === 0 ? 0 : COL_LANE_W + COL_LANE_GAP;
+      const on = frame.includes(i + layer * 15);
+      if (!on) {
+        html += `<rect x="${x}" y="${y + 1}" width="${COL_LANE_W}" height="${COL_CELL_H - 2}" rx="1.5" fill="var(--note-off)" opacity="0.45"/>`;
+      } else if (layer === activeLayer) {
+        html += `<rect x="${x}" y="${y + 0.5}" width="${COL_LANE_W}" height="${COL_CELL_H - 1}" rx="1.5" fill="var(--note-on)"/>`;
+      } else {
+        html += `<rect x="${x + 0.8}" y="${y + 1.3}" width="${COL_LANE_W - 1.6}" height="${COL_CELL_H - 2.6}" rx="1.5" fill="none" stroke="var(--text-3)" stroke-width="1.4"/>`;
+      }
+    });
+  }
+  return `<svg viewBox="0 0 ${w} ${h}" class="frame-column-svg">${html}</svg>`;
+}
+
 function renderFrameStrip() {
   const strip = document.getElementById('frameStrip');
-  const staffMode = getInputMode() === 'staff';
+  const view = getTimelineView();
+  const columnMode = view === 'column';
+  const staffMode = !columnMode && getInputMode() === 'staff'; // 縦列表示では五線譜サムネは使わない
+  strip.className = 'frame-strip compose-timeline view-' + view;
   strip.innerHTML = currentSong.frames.map((frame, fi) => {
     const bpmOv = frameBpmOverride(currentSong, fi);
+    // 縦列は細いので、番号は間引いて表示する（選択中のマスと4つおきだけ出す小節番号のような見せ方）
+    const showIndex = !columnMode || fi === selectedFrameIndex || fi % 4 === 0;
+    const cls = ['frame-box',
+                 fi === selectedFrameIndex && 'selected',
+                 staffMode && 'staff-mode',
+                 columnMode && 'column-mode'].filter(Boolean).join(' ');
     return `
-    <div class="frame-box${fi === selectedFrameIndex ? ' selected' : ''}${staffMode ? ' staff-mode' : ''}" id="frameBox_${fi}" onclick="selectFrame(${fi})">
-      <span class="frame-index">${fi + 1}</span>
+    <div class="${cls}" id="frameBox_${fi}" onclick="selectFrame(${fi})">
+      ${showIndex ? `<span class="frame-index">${fi + 1}</span>` : ''}
       <button class="frame-del-btn" onclick="event.stopPropagation(); deleteFrame(${fi})">✕</button>
       <button class="frame-insert-btn" onclick="event.stopPropagation(); insertBlankFrameAfter(${fi})" title="${escapeHtml(t('insertFrameAfterTitle'))}" aria-label="${escapeHtml(t('insertFrameAfterTitle'))}">＋</button>
-      ${staffMode ? frameStaffSvg(frame) : NOTE_LABELS.map((_, ni) => {
-        // サムネイルは小さいためレイヤーを描き分けず、いずれかのレイヤーに音があればonにする
-        const dotOn = frame.includes(ni) || frame.includes(ni + 15);
-        const dotDiamond = (ni % 5) % 2 === 1;
-        return `<div class="frame-dot${dotOn ? ' on' : ''}${dotDiamond ? ' diamond-shape' : ''}"></div>`;
-      }).join('')}
+      ${columnMode ? frameColumnSvg(frame)
+        : staffMode ? frameStaffSvg(frame)
+        : NOTE_LABELS.map((_, ni) => {
+            // サムネイルは小さいためレイヤーを描き分けず、いずれかのレイヤーに音があればonにする
+            const dotOn = frame.includes(ni) || frame.includes(ni + 15);
+            const dotDiamond = (ni % 5) % 2 === 1;
+            return `<div class="frame-dot${dotOn ? ' on' : ''}${dotDiamond ? ' diamond-shape' : ''}"></div>`;
+          }).join('')}
       ${bpmOv !== null ? `<span class="frame-bpm-badge" title="${escapeHtml(t('frameBpmBadgeTitle', { bpm: bpmOv }))}">🥁${bpmOv}</span>` : ''}
     </div>
   `;
