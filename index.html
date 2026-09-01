@@ -399,27 +399,79 @@
     /* ── 譜面（frame-strip）の縦列表示 ─────────────────────────── */
     .frame-strip.view-column {
       flex-wrap: nowrap; align-items: flex-start;
-      gap: 4px; padding: 14px 6px 18px;
-      max-height: 176px; overflow-x: auto; overflow-y: hidden;
+      gap: 4px; padding: 18px 6px 20px;
+      max-height: 190px; overflow-x: auto; overflow-y: hidden;
     }
-    .frame-box.column-mode { display: block; width: 26px; padding: 3px; border-radius: 6px; }
+    @media (max-height: 620px) { .frame-strip.view-column { max-height: 144px; } }
+    /* 🎹 音名の目盛り（左端に常時表示、横スクロールしても位置固定）。
+       frameColumnSvg()と全く同じ行の高さ・原点(padding-top=3px)を使うことで、
+       各行のラベルが列の中の音の高さと一致するようにしている。 */
+    .column-pitch-gutter {
+      position: sticky; left: 0; z-index: 2; flex-shrink: 0;
+      width: 24px; padding: 3px 0; background: var(--bg);
+      border-right: 1.5px solid var(--timeline-tile-border);
+    }
+    .column-gutter-row {
+      display: flex; align-items: center; justify-content: center;
+      font-size: 8px; font-weight: 700; color: var(--text-2); line-height: 1;
+    }
+    .frame-box.column-mode {
+      /* 幅は content-box で COL_W(24px)ぴったりになるよう、.frame-box基本ルールの
+         border(1.5px×2)+padding(3px×2)を足した32pxにしている(box-sizing:border-box)。
+         ここを変える場合はJSのCOL_LANE_W/COL_LANE_GAPとの整合を保つこと。 */
+      display: block; width: 32px; padding: 3px; border-radius: 6px;
+      --col-bg-fill: var(--timeline-tile-bg-2); --col-note-on-fill: var(--note-on); --col-ghost-stroke: var(--text-3);
+      --col-sep-stroke: var(--sep); --col-off-fill: var(--note-off);
+    }
     .frame-column-svg { width: 100%; height: auto; display: block; }
     /* 縦列は細いので、番号は下に小さく出す（renderFrameStripが間引いて出力） */
     .frame-box.column-mode .frame-index {
       top: auto; bottom: -9px; left: 50%; transform: translateX(-50%);
       font-size: 8px; padding: 0 3px; background: transparent; color: var(--text-2);
     }
-    .frame-box.column-mode.selected .frame-index { color: var(--pink-d); font-weight: 800; }
     .frame-box.column-mode .frame-del-btn,
     .frame-box.column-mode .frame-insert-btn { width: 14px; height: 14px; font-size: 9px; }
     .frame-box.column-mode .frame-insert-btn { bottom: auto; top: -8px; left: -5px; }
     .frame-box.column-mode .frame-bpm-badge { top: -9px; bottom: auto; font-size: 7.5px; padding: 0 3px; }
-    /* 縦列は塗りつぶすと中身が読めないので、選択中は淡いピンクの帯で示す
-       （参考画像1の「現在の列をハイライトする」表現に相当）*/
+    /* 🔴 参考サイトの「現在の列を全高で塗りつぶし、上下に三角の目印を付ける」表現に
+       ならい、選択中の列をはっきり分かるようにする。タイル表示の選択中と同じ
+       --pink-btn（不透明な濃いピンク）で塗る―frameColumnSvg()の背景矩形は
+       .frame-box自体のbackgroundより手前に描かれて覆ってしまうため、
+       CSS変数(--col-bg-fill等)をSVG側のfill値として使うことで、DOM(枠線・三角)と
+       SVG(背景・ON音)の両方が同じ色に連動して切り替わるようにしている。
+       CSS変数にしているのは、再生中のハイライト移動がhighlightPlayingFrame()で
+       SVGを再生成せずclassListだけを書き換えるため、色の切替もJSの値ではなく
+       CSSの継承で追従させる必要があるから。 */
     .frame-box.column-mode.selected {
-      background: var(--pink-bg); border-color: var(--pink); box-shadow: 0 0 0 1.5px var(--pink) inset;
+      background: var(--pink-btn); border-color: var(--pink-btn); box-shadow: 0 0 0 1.5px var(--pink-btn) inset;
+      position: relative;
+      --col-bg-fill: var(--pink-btn); --col-note-on-fill: #fff; --col-ghost-stroke: rgba(255,255,255,0.6);
+      --col-sep-stroke: rgba(255,255,255,0.35); --col-off-fill: #fff;
     }
-    .frame-strip.view-column .add-frame-btn { width: 26px; min-height: 0; font-size: 16px; align-self: stretch; }
+    .frame-box.column-mode.selected .frame-index {
+      color: var(--pink-btn); background: #fff; font-weight: 800; border-radius: 6px;
+    }
+    .frame-box.column-mode.selected::before,
+    .frame-box.column-mode.selected::after {
+      content: ''; position: absolute; left: 50%; transform: translateX(-50%);
+      border-left: 4px solid transparent; border-right: 4px solid transparent;
+    }
+    .frame-box.column-mode.selected::before { top: -5px; border-top: 5px solid var(--pink-btn); }
+    .frame-box.column-mode.selected::after { bottom: -5px; border-bottom: 5px solid var(--pink-btn); }
+    .frame-strip.view-column .add-frame-btn { width: 32px; min-height: 0; font-size: 16px; align-self: stretch; }
+    /* 縦列表示の時だけ出す「左＝レイヤー1／右＝レイヤー2」の凡例。
+       表示/非表示はCSSではなくapplyTimelineView()側でJSから切り替える。 */
+    .column-layer-legend {
+      display: none; align-items: center; gap: 4px; font-size: 10.5px; font-weight: 700;
+      color: var(--text-2); white-space: nowrap;
+    }
+    .column-layer-legend.show { display: flex; }
+    .column-layer-legend .layer-chip {
+      display: inline-flex; align-items: center; justify-content: center;
+      width: 15px; height: 15px; border-radius: 4px; font-size: 8.5px; color: #fff;
+    }
+    .column-layer-legend .layer-chip.l1 { background: var(--pink-btn); }
+    .column-layer-legend .layer-chip.l2 { background: var(--pink-bg); color: var(--pink-d); border: 1px solid var(--pink); }
 
     .current-frame-card {
       background: var(--card); border-radius: var(--r); padding: 16px; box-shadow: 0 1px 4px rgba(0,0,0,0.07);
@@ -656,6 +708,15 @@
       display: flex; align-items: center; justify-content: center;
     }
     .compose-bpm-row { flex-shrink: 0; padding: 0 4px 10px; }
+    /* 🥁 参考サイトの「右下に小さくテンポを置く」レイアウトにならい、
+       BPMは画面上部の目立つ位置から.compose-input-areaの下・画面右下へ
+       移動し、コンパクトにする。#bpmSlider/#bpmNumberのid・onBpmChange()は
+       変更していないので、JS側は無改修。 */
+    .compose-bpm-footer { flex-shrink: 0; display: flex; justify-content: flex-end; padding: 6px 4px 0; }
+    .compose-bpm-row.compact { margin-bottom: 0; gap: 6px; }
+    .compose-bpm-row.compact label { font-size: 11px; }
+    .compose-bpm-row.compact input[type=range] { width: 64px; flex: none; }
+    .compose-bpm-row.compact input[type=number] { width: 50px; padding: 4px 6px; font-size: 12px; }
     .compose-timeline-head {
       flex-shrink: 0; display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 0 4px 6px;
       flex-wrap: wrap;
@@ -1091,11 +1152,6 @@
     </div>
   </div>
 
-  <div class="compose-bpm-row bpm-row">
-    <label>BPM</label>
-    <input type="range" id="bpmSlider" min="40" max="999" value="150" oninput="onBpmChange(this.value)">
-    <input type="number" id="bpmNumber" min="40" max="999" value="150" oninput="onBpmChange(this.value)">
-  </div>
   <div class="last-result-row" id="lastResultRow"><!-- JS --></div>
 
   <div class="compose-timeline-head">
@@ -1109,6 +1165,10 @@
       </div>
       <button type="button" class="mini-btn" id="undoEditBtn" onclick="undoEdit()" disabled data-i18n="undoEditBtn">↩️ 元に戻す</button>
     </div>
+  </div>
+  <div class="column-layer-legend" id="columnLayerLegend">
+    <span class="layer-chip l1">1</span><span data-i18n="layer1Label">レイヤー1</span>
+    <span class="layer-chip l2">2</span><span data-i18n="layer2Label">レイヤー2</span>
   </div>
   <div class="frame-strip compose-timeline view-tile" id="frameStrip"><!-- JS --></div>
 
@@ -1139,6 +1199,14 @@
     <div class="staff-wrap" id="staffWrap" style="display:none;">
       <svg id="staffSvg" class="staff-svg" viewBox="0 0 170 162"><!-- JS --></svg>
       <div class="piano-hint" data-i18n="staffClickHint">五線譜の位置をクリックして音をON/OFFできます</div>
+    </div>
+  </div>
+
+  <div class="compose-bpm-footer">
+    <div class="compose-bpm-row bpm-row compact">
+      <label>BPM</label>
+      <input type="range" id="bpmSlider" min="40" max="999" value="150" oninput="onBpmChange(this.value)">
+      <input type="number" id="bpmNumber" min="40" max="999" value="150" oninput="onBpmChange(this.value)">
     </div>
   </div>
 </div>
@@ -2530,6 +2598,8 @@ function setTimelineView(view) {
 function applyTimelineView() {
   const view = getTimelineView();
   document.querySelectorAll('.timeline-view-tab').forEach(btn => btn.classList.toggle('active', btn.dataset.view === view));
+  const legend = document.getElementById('columnLayerLegend');
+  if (legend) legend.classList.toggle('show', view === 'column');
 }
 // 白鍵の音番号（オクターブ内0〜6 = ド レ ミ ファ ソ ラ シ）のうち、
 // 右側に黒鍵がある位置（ミ→ファ、シ→ドの間には黒鍵が無い）
@@ -2626,15 +2696,18 @@ function frameStaffSvg(frame) {
 // 輪郭線のみ(renderBigGrid/renderStaffPickerのother-layer表現と同じ考え方で、
 // 新しい色相は使わない)。円/ひし形の交互表示は5列グリッドの走査目印のため
 // ここでは使わず、代わりにオクターブの区切り線で位置の目安を示す。
-const COL_CELL_H = 6, COL_LANE_W = 8, COL_LANE_GAP = 2;
+// COL_CELL_H/COL_LANE_W等はframeColumnGutterHtml()・CSSの.column-pitch-gutter/
+// .frame-box.column-mode(幅30px=COL_W24px+padding3px*2)と行の高さを揃えるための
+// 共通定数。ここを変えたらCSS側の幅・padding-topも合わせて変更すること。
+const COL_CELL_H = 7, COL_LANE_W = 11, COL_LANE_GAP = 2;
+const COL_W = COL_LANE_W * 2 + COL_LANE_GAP;
 function frameColumnSvg(frame) {
   const rows = NOTE_LABELS.length; // 15
-  const w = COL_LANE_W * 2 + COL_LANE_GAP;
   const h = rows * COL_CELL_H + 6;
-  let html = `<rect x="0" y="0" width="${w}" height="${h}" rx="3" fill="var(--timeline-tile-bg-2)"/>`;
+  let html = `<rect x="0" y="0" width="${COL_W}" height="${h}" rx="3" fill="var(--col-bg-fill)"/>`;
   [7, 14].forEach(i => { // オクターブの境目に薄い区切り線（ピアノの.octave-startと同じ考え方）
     const y = 3 + (rows - i) * COL_CELL_H;
-    html += `<line x1="0" y1="${y}" x2="${w}" y2="${y}" stroke="var(--sep)" stroke-width="0.8"/>`;
+    html += `<line x1="0" y1="${y}" x2="${COL_W}" y2="${y}" stroke="var(--col-sep-stroke)" stroke-width="0.8"/>`;
   });
   for (let i = 0; i < rows; i++) {
     const y = 3 + (rows - 1 - i) * COL_CELL_H;
@@ -2642,15 +2715,31 @@ function frameColumnSvg(frame) {
       const x = layer === 0 ? 0 : COL_LANE_W + COL_LANE_GAP;
       const on = frame.includes(i + layer * 15);
       if (!on) {
-        html += `<rect x="${x}" y="${y + 1}" width="${COL_LANE_W}" height="${COL_CELL_H - 2}" rx="1.5" fill="var(--note-off)" opacity="0.45"/>`;
+        html += `<rect x="${x}" y="${y + 1}" width="${COL_LANE_W}" height="${COL_CELL_H - 2}" rx="1.5" fill="var(--col-off-fill)" opacity="0.45"/>`;
       } else if (layer === activeLayer) {
-        html += `<rect x="${x}" y="${y + 0.5}" width="${COL_LANE_W}" height="${COL_CELL_H - 1}" rx="1.5" fill="var(--note-on)"/>`;
+        // 🔴 選択中/再生中の列は背景ごとピンクで塗るため(CSSの.selected/.playing)、
+        // ON音の色をCSS変数(--col-note-on-fill)経由にして、classList操作だけで
+        // 白反転にも追従できるようにする(highlightPlayingFrame()はSVGを再生成せず
+        // classListだけ書き換えるため、JS側で色を決め打ちするとズレてしまう)。
+        html += `<rect x="${x}" y="${y + 0.5}" width="${COL_LANE_W}" height="${COL_CELL_H - 1}" rx="1.5" fill="var(--col-note-on-fill)"/>`;
       } else {
-        html += `<rect x="${x + 0.8}" y="${y + 1.3}" width="${COL_LANE_W - 1.6}" height="${COL_CELL_H - 2.6}" rx="1.5" fill="none" stroke="var(--text-3)" stroke-width="1.4"/>`;
+        html += `<rect x="${x + 0.8}" y="${y + 1.3}" width="${COL_LANE_W - 1.6}" height="${COL_CELL_H - 2.6}" rx="1.5" fill="none" stroke="var(--col-ghost-stroke)" stroke-width="1.4"/>`;
       }
     });
   }
-  return `<svg viewBox="0 0 ${w} ${h}" class="frame-column-svg">${html}</svg>`;
+  return `<svg viewBox="0 0 ${COL_W} ${h}" class="frame-column-svg">${html}</svg>`;
+}
+// 縦列表示の左端に常時表示する音名の目盛り。frameColumnSvg()と全く同じ
+// 原点(padding-top=3px)・行の高さ(COL_CELL_H)を使って、各行のラベルが
+// 列の中の音の高さと一致するようにしている(位置ずれさせないため、曲や
+// フレームが変わっても再生成する必要はなく1曲につき1回描けば足りる)。
+function frameColumnGutterHtml() {
+  const rows = NOTE_LABELS.length;
+  let rowsHtml = '';
+  for (let i = rows - 1; i >= 0; i--) {
+    rowsHtml += `<div class="column-gutter-row" style="height:${COL_CELL_H}px;">${escapeHtml(noteLabel(i))}</div>`;
+  }
+  return `<div class="column-pitch-gutter">${rowsHtml}</div>`;
 }
 
 function renderFrameStrip() {
@@ -2659,12 +2748,13 @@ function renderFrameStrip() {
   const columnMode = view === 'column';
   const staffMode = !columnMode && getInputMode() === 'staff'; // 縦列表示では五線譜サムネは使わない
   strip.className = 'frame-strip compose-timeline view-' + view;
-  strip.innerHTML = currentSong.frames.map((frame, fi) => {
+  strip.innerHTML = (columnMode ? frameColumnGutterHtml() : '') + currentSong.frames.map((frame, fi) => {
     const bpmOv = frameBpmOverride(currentSong, fi);
+    const isSelected = fi === selectedFrameIndex;
     // 縦列は細いので、番号は間引いて表示する（選択中のマスと4つおきだけ出す小節番号のような見せ方）
-    const showIndex = !columnMode || fi === selectedFrameIndex || fi % 4 === 0;
+    const showIndex = !columnMode || isSelected || fi % 4 === 0;
     const cls = ['frame-box',
-                 fi === selectedFrameIndex && 'selected',
+                 isSelected && 'selected',
                  staffMode && 'staff-mode',
                  columnMode && 'column-mode'].filter(Boolean).join(' ');
     return `
