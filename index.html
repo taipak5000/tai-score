@@ -680,6 +680,12 @@
       padding: max(10px, env(safe-area-inset-top)) max(10px, env(safe-area-inset-right))
                max(10px, env(safe-area-inset-bottom)) max(10px, env(safe-area-inset-left));
       box-sizing: border-box;
+      /* 🛟 極端に低い画面(スマホの横向きや小さいウィンドウ)では、header・
+         タイムライン・BPM欄など縮まない要素の合計がオーバーレイの高さを超え、
+         flex:1;min-height:0の.compose-input-area(ノート入力欄)だけが0pxまで
+         潰れて丸ごと見えなくなることがある。保険として全体を縦スクロール
+         可能にしておき、万一潰れてもスクロールで内容へたどり着けるようにする。 */
+      overflow-y: auto;
     }
     .compose-overlay.open { display: flex; }
     .compose-header { display: flex; align-items: center; gap: 8px; flex-shrink: 0; padding: 4px 4px 10px; }
@@ -725,7 +731,12 @@
       .frame-strip.view-tile, .frame-strip.view-column { max-height: min(28vh, 190px); }
     }
     .compose-input-area {
-      flex: 1; min-height: 0; overflow-y: auto;
+      /* min-height:0のままだと、他の縮まない要素(header・タイムライン欄・BPM欄等)の
+         合計がオーバーレイの高さを超えた時、flexの仕様上この欄だけが真っ先に0pxまで
+         潰れて丸ごと見えなくなってしまう。最低限ノート入力の様子が分かる高さを
+         床として確保し、それでも収まらない極端に低い画面では
+         .compose-overlay側のoverflow-y:autoで全体をスクロールして補う。 */
+      flex: 1; min-height: 160px; overflow-y: auto;
       display: flex; flex-direction: row; align-items: center; justify-content: center;
       gap: 10px; margin-bottom: 14px;
     }
@@ -2949,6 +2960,10 @@ function deleteFrame(fi) {
   pushEditHistory();
   currentSong.frames.splice(fi, 1);
   shiftBpmOverridesForDelete(currentSong, fi);
+  // 削除したマスより後ろを選択していた場合は、そのマスがそのまま選び続けられるよう
+  // インデックスを1つ詰める（削除したマス自身を選択していた場合は、跡地に来る
+  // 次のマスがそのまま選択されればよいので、末尾クランプだけで足りる）。
+  if (fi < selectedFrameIndex) selectedFrameIndex--;
   if (selectedFrameIndex >= currentSong.frames.length) selectedFrameIndex = currentSong.frames.length - 1;
   persistCurrentSong();
   renderFrameStrip();
@@ -2970,6 +2985,10 @@ function deleteFrameRange() {
     currentSong.frames.splice(range.start, 1);
     shiftBpmOverridesForDelete(currentSong, range.start);
   }
+  // deleteFrame()と同じ考え方：削除範囲より後ろを選択していた場合はcount分詰め、
+  // 削除範囲の中を選択していた場合は跡地(range.start)がそのまま選択されるようにする。
+  if (selectedFrameIndex > range.end) selectedFrameIndex -= count;
+  else if (selectedFrameIndex >= range.start) selectedFrameIndex = range.start;
   if (selectedFrameIndex >= currentSong.frames.length) selectedFrameIndex = currentSong.frames.length - 1;
   persistCurrentSong();
   renderFrameStrip();
@@ -3971,7 +3990,7 @@ function parseAbcToken(token) {
   const indices = [];
   for (let i = 0; i < token.length; i += 2) {
     const idx = NOTE_ABC_CODES.indexOf(token.slice(i, i + 2).toUpperCase());
-    if (idx >= 0) indices.push(idx);
+    if (idx >= 0 && !indices.includes(idx)) indices.push(idx); // 同じ音が重複して書かれていても1つにまとめる
   }
   return indices;
 }
@@ -4086,7 +4105,9 @@ function specyFormatToSong(data) {
     instrument: (data.instruments && data.instruments[0] && data.instruments[0].name) || 'Harp',
     frames: columns.map(col => {
       const notes = Array.isArray(col) ? (col[1] || []) : [];
-      return notes.map(n => Array.isArray(n) ? n[0] : (n.index !== undefined ? n.index : n.key)).filter(n => typeof n === 'number' && n >= 0 && n < 15);
+      const indices = notes.map(n => Array.isArray(n) ? n[0] : (n.index !== undefined ? n.index : n.key)).filter(n => typeof n === 'number' && n >= 0 && n < 15);
+      // 複数レイヤーで同じ音が重なっている列は、1つの音として統合する(重複除去)
+      return [...new Set(indices)];
     }),
     updatedAt: Date.now()
   };
