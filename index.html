@@ -311,7 +311,10 @@
 
     .last-result-row { display: flex; flex-direction: column; gap: 2px; margin-top: 4px; font-size: 12px; color: var(--text-2); }
 
-    .frame-strip { display: flex; flex-wrap: wrap; gap: 8px; padding: 4px 0 12px; }
+    /* 🎼 作曲モードのタイムライン：折り返して縦に伸びるサムネイル一覧ではなく、
+       reference(Sky Music Nightly)のピアノロール風タイムラインに近い、横一列に
+       スクロールする帯にする。frame-box自体の見た目・renderFrameStrip()のJSは変更不要。 */
+    .frame-strip { display: flex; flex-wrap: nowrap; overflow-x: auto; gap: 8px; padding: 4px 2px 12px; -webkit-overflow-scrolling: touch; }
     .frame-box {
       background: var(--card); border: 2px solid var(--sep); border-radius: 10px; padding: 6px;
       display: grid; grid-template-columns: repeat(5, 1fr); gap: 3px; width: 82px; flex-shrink: 0;
@@ -531,8 +534,62 @@
     }
     .perf-footer { flex-shrink: 0; text-align: center; font-size: 12.5px; color: var(--text-2); padding: 10px 4px 2px; }
 
+    /* ── 作曲モード（全画面オーバーレイ） ─────────────────────
+       .perf-overlayと全く同じ考え方（position:fixed;inset:0で裏のページの
+       スクロール位置に関係なく画面いっぱいに表示）を流用し、「作成・演奏」を
+       「フリー演奏」と同じ専用モードの体験に揃える。中身（曲名・BPM・タイムライン・
+       ノート入力）は#viewEditorから移設したもので、id・onclickハンドラは変更していない。 */
+    .compose-overlay {
+      /* z-indexは.perf-overlay(1200)よりあえて低くしている: 作曲モードのツールパネルから
+         練習/試験モードを開くと.perf-overlayがこの上に重なって表示され、終了すると
+         作曲モードの画面がそのまま下から現れる（コンポーザーの上に演奏画面がかぶさる
+         自然な入れ子の見た目になる）。 */
+      display: none; flex-direction: column; position: fixed; inset: 0; z-index: 1150;
+      background: var(--bg);
+      padding: max(10px, env(safe-area-inset-top)) max(10px, env(safe-area-inset-right))
+               max(10px, env(safe-area-inset-bottom)) max(10px, env(safe-area-inset-left));
+      box-sizing: border-box;
+    }
+    .compose-overlay.open { display: flex; }
+    .compose-header { display: flex; align-items: center; gap: 8px; flex-shrink: 0; padding: 4px 4px 10px; }
+    .compose-close {
+      background: var(--card); color: var(--text); font-size: 16px; font-weight: 700;
+      width: 34px; height: 34px; border-radius: 50%; flex-shrink: 0;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.08); display: flex; align-items: center; justify-content: center;
+    }
+    .compose-title-input {
+      flex: 1; min-width: 0; background: transparent; border: 1.5px solid transparent; border-radius: var(--r-sm);
+      font-size: 15px; font-weight: 700; color: var(--text); padding: 8px 10px;
+    }
+    .compose-title-input:hover { background: var(--card); }
+    .compose-title-input:focus { outline: none; background: var(--card); border-color: var(--pink); }
+    .compose-header-actions { display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
+    .compose-tools-btn {
+      background: var(--card); color: var(--text); font-size: 16px; width: 34px; height: 34px;
+      border-radius: 50%; flex-shrink: 0; box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+      display: flex; align-items: center; justify-content: center;
+    }
+    .compose-bpm-row { flex-shrink: 0; padding: 0 4px 10px; }
+    .compose-timeline-head {
+      flex-shrink: 0; display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 0 4px 6px;
+    }
+    .compose-timeline-label { font-size: 12.5px; color: var(--text-2); font-weight: 600; }
+    .compose-timeline { flex-shrink: 0; }
+    .compose-input-area {
+      flex: 1; min-height: 0; overflow-y: auto; display: flex; flex-direction: column; justify-content: center;
+    }
+
+    /* ── 作曲ツールパネル（キー/楽器・練習範囲・共有・キー設定などをまとめる） ─── */
+    #composeToolsModal { z-index: 1250; }
+    .compose-tools-section { margin-bottom: 16px; }
+    .compose-tools-section:last-child { margin-bottom: 0; }
+    .compose-tools-section-label { font-size: 12px; font-weight: 700; color: var(--text-2); margin-bottom: 8px; }
+
     /* ── キーボード設定モーダル（演奏オーバーレイより手前に出す） ─────────── */
     #keyBindModal { z-index: 1250; }
+    /* 共有・保存モーダルも作曲モード（compose-overlay）より手前に出す必要があるため、
+       演奏オーバーレイ用モーダルと同じ考え方でz-indexを底上げする。 */
+    #shareModal { z-index: 1250; }
     /* 表示設定モーダルも、?ショートカットが演奏オーバーレイ（フリー演奏／練習／テスト）
        表示中にも効くようになったため、同様に演奏オーバーレイより手前に出す。 */
     #settingsModal { z-index: 1250; }
@@ -594,7 +651,10 @@
     .floating-stop-btn {
       display: none; position: fixed; right: 16px;
       bottom: calc(76px + env(safe-area-inset-bottom) + 16px);
-      z-index: 95; width: 56px; height: 56px; border-radius: 50%;
+      /* 作曲モード(.compose-overlay, z-index:1150)より手前に出す。
+         再生ボタン/停止ボタンは作曲モードのヘッダーに常時固定表示になったため
+         フローティングボタンの出番自体は減ったが、隠れて無反応に見えるのは避ける。 */
+      z-index: 1160; width: 56px; height: 56px; border-radius: 50%;
       background: var(--red); color: #fff; font-size: 24px;
       align-items: center; justify-content: center;
       box-shadow: 0 4px 14px rgba(0,0,0,0.28);
@@ -705,96 +765,9 @@
     </section>
 
     <!-- ▸ エディタ / プレイヤー -->
-    <section class="view-section" id="viewEditor">
-      <div class="card" style="margin-top:14px;">
-        <div class="editor-top-row">
-          <input type="text" id="songNameInput" data-i18n-placeholder="songNamePlaceholder" placeholder="曲名" oninput="onSongMetaChange()">
-          <select id="songPitchInput" onchange="onSongMetaChange()"></select>
-          <select id="songInstrumentInput" onchange="onSongMetaChange()">
-            <option value="Harp" data-i18n="instrumentHarp">🎼 楽器A</option>
-            <option value="Guitar" data-i18n="instrumentGuitar">🎸 楽器B</option>
-            <option value="Bass" data-i18n="instrumentBass">🎸 楽器C</option>
-            <option value="Flute" data-i18n="instrumentFlute">🪈 楽器D</option>
-            <option value="Bells" data-i18n="instrumentBells">🔔 楽器E</option>
-          </select>
-        </div>
-        <div class="bpm-row">
-          <label>BPM</label>
-          <input type="range" id="bpmSlider" min="40" max="999" value="150" oninput="onBpmChange(this.value)">
-          <input type="number" id="bpmNumber" min="40" max="999" value="150" oninput="onBpmChange(this.value)">
-        </div>
-        <div class="tap-tempo-row">
-          <button type="button" class="tap-tempo-btn" id="tapTempoBtn" data-i18n="tapTempoBtn" onclick="tapTempo()">🥁 タップでBPM測定</button>
-          <span class="tap-tempo-hint" id="tapTempoHint" data-i18n="tapTempoHint">リズムに合わせて連続でタップしてください</span>
-        </div>
-        <label class="metronome-row">
-          <input type="checkbox" id="metronomeToggle" onchange="onMetronomeToggleChange(event)">
-          <span data-i18n="metronomeToggleLabel">🥁 メトロノーム／カウントインを鳴らす（再生・練習・試験モード）</span>
-        </label>
-        <div class="practice-range-row">
-          <label data-i18n="practiceRangeLabel">練習・試験の範囲</label>
-          <input type="number" id="practiceRangeStart" min="1" value="1" onchange="onPracticeRangeChange()">
-          <span class="range-sep">〜</span>
-          <input type="number" id="practiceRangeEnd" min="1" value="1" onchange="onPracticeRangeChange()">
-          <span class="range-unit" data-i18n="rangeUnit">マス目</span>
-          <button type="button" class="mini-btn" onclick="copyFrameRange()" data-i18n="copyFrameRangeBtn">📋 範囲をコピー</button>
-        </div>
-        <label class="metronome-row">
-          <input type="checkbox" id="loopRangeToggle" onchange="onLoopRangeToggleChange(event)">
-          <span data-i18n="loopRangeToggleLabel">🔁 この範囲をループ再生する（▶️再生ボタン）</span>
-        </label>
-        <label class="metronome-row">
-          <input type="checkbox" id="noScrollToggle" onchange="onNoScrollToggleChange(event)">
-          <span data-i18n="noScrollToggleLabel">📌 再生中は画面をスクロールさせず、マスの光り方が見えるようにする</span>
-        </label>
-        <div class="frame-clipboard-row">
-          <button type="button" class="mini-btn" id="pasteFrameRangeBtn" onclick="pasteFrameRange()" disabled data-i18n="pasteFrameRangeBtn">📥 選択中のマスの後に貼り付け</button>
-          <span class="frame-clipboard-hint" id="frameClipboardHint"></span>
-        </div>
-        <div class="transport">
-          <button class="transport-btn primary" id="playBtn" data-i18n="playBtn" onclick="togglePlayback()">▶️ 再生</button>
-          <button class="transport-btn" id="stopBtn" data-i18n="stopBtn" onclick="stopPlayback()" style="display:none;">⏹️ 停止</button>
-          <button class="transport-btn" data-i18n="practiceModeBtn" onclick="openPractice()">🐢 練習モード</button>
-          <button class="transport-btn" data-i18n="testModeBtn" onclick="openTestMode()">📝 試験モード</button>
-          <button class="transport-btn" data-i18n="shareBtn" onclick="openModal('shareModal')">🔗 共有・保存</button>
-          <button class="transport-btn" data-i18n="keySettingsBtn" onclick="openKeyBindModal()">⌨️ キー設定</button>
-        </div>
-        <div class="last-result-row" id="lastResultRow"><!-- JS --></div>
-      </div>
-
-      <div class="current-frame-card">
-        <div class="current-frame-head">
-          <div class="current-frame-label" data-i18n="currentFrameLabel">選択中のマス（クリックで音をON/OFF）</div>
-          <div class="input-mode-tabs">
-            <button type="button" class="input-mode-tab" data-mode="grid" data-i18n="inputModeGrid" onclick="setInputMode('grid')">⚪ グリッド</button>
-            <button type="button" class="input-mode-tab" data-mode="piano" data-i18n="inputModePiano" onclick="setInputMode('piano')">🎹 ピアノ</button>
-            <button type="button" class="input-mode-tab" data-mode="staff" data-i18n="inputModeStaff" onclick="setInputMode('staff')">🎼 五線譜</button>
-          </div>
-        </div>
-        <div class="frame-bpm-row" id="frameBpmRow">
-          <label class="frame-bpm-toggle">
-            <input type="checkbox" id="frameBpmOverrideToggle" onchange="onFrameBpmOverrideToggle(event)">
-            <span data-i18n="frameBpmOverrideLabel">🥁 このマスからテンポを変える</span>
-          </label>
-          <input type="number" id="frameBpmOverrideValue" min="40" max="999" style="display:none;" onchange="onFrameBpmOverrideValueChange(this.value)">
-        </div>
-        <div class="big-grid" id="bigGrid"><!-- JS --></div>
-        <div class="piano-keys-wrap" id="pianoKeysWrap" style="display:none;">
-          <div class="piano-keys" id="pianoKeys"><!-- JS --></div>
-          <div class="piano-hint" data-i18n="pianoWhiteKeysHint">Skyの楽器は白鍵（ドレミファソラシ）のみに対応しています</div>
-        </div>
-        <div class="staff-wrap" id="staffWrap" style="display:none;">
-          <svg id="staffSvg" class="staff-svg" viewBox="0 0 170 162"><!-- JS --></svg>
-          <div class="piano-hint" data-i18n="staffClickHint">五線譜の位置をクリックして音をON/OFFできます</div>
-        </div>
-      </div>
-
-      <div class="sec-label" style="padding-top:4px; justify-content:space-between;">
-        <span data-i18n="frameSectionLabel">🎼 譜面（クリックでそのマスへ移動）</span>
-        <button type="button" class="mini-btn" id="undoEditBtn" onclick="undoEdit()" disabled data-i18n="undoEditBtn">↩️ 元に戻す</button>
-      </div>
-      <div class="frame-strip" id="frameStrip"><!-- JS --></div>
-    </section>
+    <!-- ✏️ 作成・演奏の中身は#composeOverlay（全画面オーバーレイ）に移設済み。
+         switchView('editor')からの表示切替対象として空のまま残す。 -->
+    <section class="view-section" id="viewEditor"></section>
   </div>
 </div>
 
@@ -1009,6 +982,124 @@
   <div class="perf-footer" id="perfFooter"></div>
 </div>
 
+<!-- ▸ 作曲モード（全画面オーバーレイ。.perf-overlayと同じ「常時DOM上に置き、
+     .openクラスで画面いっぱいに表示する」構造。中身は旧#viewEditorから移設したもの） -->
+<div class="compose-overlay" id="composeOverlay">
+  <div class="compose-header">
+    <button type="button" class="compose-close" onclick="switchView('library')" data-i18n-title="composeCloseTitle" title="閉じてライブラリへ戻る" aria-label="閉じてライブラリへ戻る" data-i18n-aria-label="composeCloseTitle">✕</button>
+    <input type="text" id="songNameInput" class="compose-title-input" data-i18n-placeholder="songNamePlaceholder" placeholder="曲名" oninput="onSongMetaChange()">
+    <div class="compose-header-actions">
+      <button class="transport-btn primary" id="playBtn" data-i18n="playBtn" onclick="togglePlayback()">▶️ 再生</button>
+      <button class="transport-btn" id="stopBtn" data-i18n="stopBtn" onclick="stopPlayback()" style="display:none;">⏹️ 停止</button>
+      <button type="button" class="compose-tools-btn" onclick="openModal('composeToolsModal')" data-i18n-title="composeToolsBtnTitle" title="ツール（キー/楽器・練習範囲・共有・キー設定など）" aria-label="ツール" data-i18n-aria-label="composeToolsBtnTitle">🔧</button>
+    </div>
+  </div>
+
+  <div class="compose-bpm-row bpm-row">
+    <label>BPM</label>
+    <input type="range" id="bpmSlider" min="40" max="999" value="150" oninput="onBpmChange(this.value)">
+    <input type="number" id="bpmNumber" min="40" max="999" value="150" oninput="onBpmChange(this.value)">
+  </div>
+  <div class="last-result-row" id="lastResultRow"><!-- JS --></div>
+
+  <div class="compose-timeline-head">
+    <span class="compose-timeline-label" data-i18n="frameSectionLabel">🎼 譜面（クリックでそのマスへ移動）</span>
+    <button type="button" class="mini-btn" id="undoEditBtn" onclick="undoEdit()" disabled data-i18n="undoEditBtn">↩️ 元に戻す</button>
+  </div>
+  <div class="frame-strip compose-timeline" id="frameStrip"><!-- JS --></div>
+
+  <div class="current-frame-card compose-input-area">
+    <div class="current-frame-head">
+      <div class="current-frame-label" data-i18n="currentFrameLabel">選択中のマス（クリックで音をON/OFF）</div>
+      <div class="input-mode-tabs">
+        <button type="button" class="input-mode-tab" data-mode="grid" data-i18n="inputModeGrid" onclick="setInputMode('grid')">⚪ グリッド</button>
+        <button type="button" class="input-mode-tab" data-mode="piano" data-i18n="inputModePiano" onclick="setInputMode('piano')">🎹 ピアノ</button>
+        <button type="button" class="input-mode-tab" data-mode="staff" data-i18n="inputModeStaff" onclick="setInputMode('staff')">🎼 五線譜</button>
+      </div>
+    </div>
+    <div class="frame-bpm-row" id="frameBpmRow">
+      <label class="frame-bpm-toggle">
+        <input type="checkbox" id="frameBpmOverrideToggle" onchange="onFrameBpmOverrideToggle(event)">
+        <span data-i18n="frameBpmOverrideLabel">🥁 このマスからテンポを変える</span>
+      </label>
+      <input type="number" id="frameBpmOverrideValue" min="40" max="999" style="display:none;" onchange="onFrameBpmOverrideValueChange(this.value)">
+    </div>
+    <div class="big-grid" id="bigGrid"><!-- JS --></div>
+    <div class="piano-keys-wrap" id="pianoKeysWrap" style="display:none;">
+      <div class="piano-keys" id="pianoKeys"><!-- JS --></div>
+      <div class="piano-hint" data-i18n="pianoWhiteKeysHint">Skyの楽器は白鍵（ドレミファソラシ）のみに対応しています</div>
+    </div>
+    <div class="staff-wrap" id="staffWrap" style="display:none;">
+      <svg id="staffSvg" class="staff-svg" viewBox="0 0 170 162"><!-- JS --></svg>
+      <div class="piano-hint" data-i18n="staffClickHint">五線譜の位置をクリックして音をON/OFFできます</div>
+    </div>
+  </div>
+</div>
+
+<!-- ▸ 作曲ツールパネル（キー/楽器・練習範囲・メトロノーム・練習/試験モード・共有・キー設定） -->
+<div class="modal-overlay" id="composeToolsModal" onclick="if(event.target===this)closeModal('composeToolsModal')">
+  <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="composeToolsModalTitle" tabindex="-1">
+    <div class="modal-header">
+      <span class="modal-title" id="composeToolsModalTitle" data-i18n="composeToolsModalTitle">🔧 ツール</span>
+      <button type="button" class="modal-close" onclick="closeModal('composeToolsModal')" aria-label="閉じる">✕</button>
+    </div>
+
+    <div class="compose-tools-section">
+      <div class="editor-top-row" style="margin-bottom:0;">
+        <select id="songPitchInput" onchange="onSongMetaChange()"></select>
+        <select id="songInstrumentInput" onchange="onSongMetaChange()">
+          <option value="Harp" data-i18n="instrumentHarp">🎼 楽器A</option>
+          <option value="Guitar" data-i18n="instrumentGuitar">🎸 楽器B</option>
+          <option value="Bass" data-i18n="instrumentBass">🎸 楽器C</option>
+          <option value="Flute" data-i18n="instrumentFlute">🪈 楽器D</option>
+          <option value="Bells" data-i18n="instrumentBells">🔔 楽器E</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="compose-tools-section">
+      <div class="tap-tempo-row" style="margin-bottom:10px;">
+        <button type="button" class="tap-tempo-btn" id="tapTempoBtn" data-i18n="tapTempoBtn" onclick="tapTempo()">🥁 タップでBPM測定</button>
+        <span class="tap-tempo-hint" id="tapTempoHint" data-i18n="tapTempoHint">リズムに合わせて連続でタップしてください</span>
+      </div>
+      <label class="metronome-row" style="margin-bottom:0;">
+        <input type="checkbox" id="metronomeToggle" onchange="onMetronomeToggleChange(event)">
+        <span data-i18n="metronomeToggleLabel">🥁 メトロノーム／カウントインを鳴らす（再生・練習・試験モード）</span>
+      </label>
+    </div>
+
+    <div class="compose-tools-section">
+      <p class="compose-tools-section-label" data-i18n="practiceRangeLabel">練習・試験の範囲</p>
+      <div class="practice-range-row">
+        <input type="number" id="practiceRangeStart" min="1" value="1" onchange="onPracticeRangeChange()">
+        <span class="range-sep">〜</span>
+        <input type="number" id="practiceRangeEnd" min="1" value="1" onchange="onPracticeRangeChange()">
+        <span class="range-unit" data-i18n="rangeUnit">マス目</span>
+        <button type="button" class="mini-btn" onclick="copyFrameRange()" data-i18n="copyFrameRangeBtn">📋 範囲をコピー</button>
+      </div>
+      <label class="metronome-row">
+        <input type="checkbox" id="loopRangeToggle" onchange="onLoopRangeToggleChange(event)">
+        <span data-i18n="loopRangeToggleLabel">🔁 この範囲をループ再生する（▶️再生ボタン）</span>
+      </label>
+      <label class="metronome-row" style="margin-bottom:0;">
+        <input type="checkbox" id="noScrollToggle" onchange="onNoScrollToggleChange(event)">
+        <span data-i18n="noScrollToggleLabel">📌 再生中は画面をスクロールさせず、マスの光り方が見えるようにする</span>
+      </label>
+      <div class="frame-clipboard-row" style="margin-top:10px; margin-bottom:0;">
+        <button type="button" class="mini-btn" id="pasteFrameRangeBtn" onclick="pasteFrameRange()" disabled data-i18n="pasteFrameRangeBtn">📥 選択中のマスの後に貼り付け</button>
+        <span class="frame-clipboard-hint" id="frameClipboardHint"></span>
+      </div>
+    </div>
+
+    <div class="compose-tools-section" style="display:flex; gap:8px; flex-wrap:wrap; margin-bottom:0;">
+      <button class="transport-btn" data-i18n="practiceModeBtn" onclick="closeModal('composeToolsModal'); openPractice()">🐢 練習モード</button>
+      <button class="transport-btn" data-i18n="testModeBtn" onclick="closeModal('composeToolsModal'); openTestMode()">📝 試験モード</button>
+      <button class="transport-btn" data-i18n="shareBtn" onclick="closeModal('composeToolsModal'); openModal('shareModal')">🔗 共有・保存</button>
+      <button class="transport-btn" data-i18n="keySettingsBtn" onclick="closeModal('composeToolsModal'); openKeyBindModal()">⌨️ キー設定</button>
+    </div>
+  </div>
+</div>
+
 <footer>
   <span data-i18n="footerDisclaimer">このサイトはSky 星を紡ぐ子どもたちの非公式ファンサイトです。thatgamecompanyは一切関与していません。</span><br>
   <span data-i18n="footerAudioDisclaimer">演奏音はすべてブラウザ内で合成しており、ゲームから抽出した音源は使用していません。</span><br>
@@ -1184,6 +1275,9 @@ const I18N = {
     pianoWhiteKeysHint: 'Skyの楽器は白鍵（ドレミファソラシ）のみに対応しています',
     staffClickHint: '五線譜の位置をクリックして音をON/OFFできます',
     frameSectionLabel: '🎼 譜面（クリックでそのマスへ移動）',
+    composeCloseTitle: '閉じてライブラリへ戻る',
+    composeToolsBtnTitle: 'ツール（キー/楽器・練習範囲・共有・キー設定など）',
+    composeToolsModalTitle: '🔧 ツール',
     blackKeyTitle: 'Skyの楽器は黒鍵（半音）に対応していません',
     shareModalTitle: '🔗 共有・保存',
     shareHint1: 'この楽譜専用のコードを作成し、別の端末やSNSで共有できます。ファイルとしても保存できます。',
@@ -1433,6 +1527,9 @@ const I18N = {
     pianoWhiteKeysHint: "Sky's instruments only support white keys (Do Re Mi Fa Sol La Ti)",
     staffClickHint: 'Click a position on the staff to toggle a note on/off',
     frameSectionLabel: '🎼 Sheet (click a tile to jump to it)',
+    composeCloseTitle: 'Close and return to library',
+    composeToolsBtnTitle: 'Tools (key/instrument, practice range, share, key settings, etc.)',
+    composeToolsModalTitle: '🔧 Tools',
     blackKeyTitle: "Sky's instruments don't support black keys (semitones)",
     shareModalTitle: '🔗 Share & Save',
     shareHint1: 'Create a code just for this song to share it with another device or on social media. You can also save it as a file.',
@@ -2055,12 +2152,21 @@ function duplicateSong(id) {
 /* ================================================================
    タブ切替
    ================================================================ */
+// 🖥️ 作曲モード（全画面オーバーレイ）の開閉。.perf-overlayのopenPerfOverlay()/
+// closePerformance()と同じ、.openクラスのトグルだけの薄いラッパー。
+function openComposeMode() {
+  document.getElementById('composeOverlay').classList.add('open');
+}
+function closeComposeMode() {
+  document.getElementById('composeOverlay').classList.remove('open');
+}
+
 function switchView(view) {
   document.getElementById('viewLibrary').classList.toggle('active', view === 'library');
   document.getElementById('viewEditor').classList.toggle('active', view === 'editor');
   document.getElementById('tabLibraryBtn').classList.toggle('active', view === 'library');
   document.getElementById('tabEditorBtn').classList.toggle('active', view === 'editor');
-  if (view === 'library') { stopPlayback(); renderLibrary(); return; }
+  if (view === 'library') { stopPlayback(); closeComposeMode(); renderLibrary(); return; }
   if (view === 'editor' && !currentSong) {
     // タブ／下部ドックの「作成・演奏」を、曲を選ばずに直接押した場合（初回訪問時など）の対策。
     // 曲を選ばずにここへ来るとcurrentSongがnullのままで、エディタの中身が描画されず
@@ -2072,7 +2178,7 @@ function switchView(view) {
     else createNewSong();
     return;
   }
-  if (view === 'editor') renderEditor();
+  if (view === 'editor') { renderEditor(); openComposeMode(); }
 }
 
 /* ================================================================
