@@ -2343,6 +2343,7 @@ function deleteSong(id) {
   showConfirm(t('deleteSongConfirm'), () => {
     const idx = getSortedFilteredSongs().findIndex(s => s.id === id);
     saveSongs(loadSongs().filter(s => s.id !== id));
+    if (currentSong && currentSong.id === id) currentSong = null;
     renderLibrary();
     showToast(t('deletedToast'));
     focusLibraryRowNear(idx);
@@ -2386,6 +2387,8 @@ function duplicateSong(id) {
   clone.id = genId();
   clone.name = song.name + t('duplicateSuffix');
   clone.updatedAt = Date.now();
+  delete clone.lastPracticeResult;
+  delete clone.lastTestResult;
   songs.unshift(clone);
   saveSongs(songs);
   recordSongCreated();
@@ -2412,7 +2415,7 @@ function switchView(view) {
   document.getElementById('viewEditor').classList.toggle('active', view === 'editor');
   document.getElementById('tabLibraryBtn').classList.toggle('active', view === 'library');
   document.getElementById('tabEditorBtn').classList.toggle('active', view === 'editor');
-  if (view === 'library') { stopPlayback(); closeComposeMode(); renderLibrary(); return; }
+  if (view === 'library') { stopPlayback(); closeComposeMode(); currentSong = null; renderLibrary(); return; }
   if (view === 'editor' && !currentSong) {
     // タブ／下部ドックの「作成・演奏」を、曲を選ばずに直接押した場合（初回訪問時など）の対策。
     // 曲を選ばずにここへ来るとcurrentSongがnullのままで、エディタの中身が描画されず
@@ -3559,7 +3562,7 @@ function recordPerfResult() {
   }
   persistCurrentSong();
   const d = loadTitlesData();
-  d.practiceCountTotal += 1;
+  if (perfMode === 'practice') d.practiceCountTotal += 1;
   saveTitlesData(d);
   renderTitles();
 }
@@ -5349,6 +5352,7 @@ function dmImportFileSelected(event) {
 function dmConfirmImport() {
   if (!dmPendingImportData) return;
   localStorage.setItem(SONGS_KEY, dmPendingImportData[SONGS_KEY]);
+  currentSong = null;
   document.getElementById('dmStatus').className = 'status-msg ok';
   document.getElementById('dmStatus').textContent = t('dmRestored');
   document.getElementById('dmImportArea').innerHTML = '';
@@ -5367,6 +5371,7 @@ function dmStartWipe() {
 }
 function dmConfirmWipe() {
   localStorage.removeItem(SONGS_KEY);
+  currentSong = null;
   dmRenderWipeArea();
   document.getElementById('dmStatus').className = 'status-msg ok';
   document.getElementById('dmStatus').textContent = t('dmWiped');
