@@ -1571,6 +1571,7 @@ const I18N = {
     dmRestoreBtn: '復元する（今のデータは上書きされます）',
     dmInvalidFile: 'このツールで作成したバックアップファイルではないようです。',
     dmRestored: '復元しました。',
+    dmRestoreFailed: '復元に失敗しました（保存容量の上限などが原因の可能性があります）。',
     dmWipeAllBtn: '全ての楽譜を削除',
     dmWipeConfirmText: '本当にすべての楽譜を削除しますか？この操作は取り消せません。',
     dmWipeConfirmBtn: '削除する',
@@ -1838,6 +1839,7 @@ const I18N = {
     dmRestoreBtn: 'Restore (this will overwrite your current data)',
     dmInvalidFile: "This doesn't look like a backup file created by this tool.",
     dmRestored: 'Restored.',
+    dmRestoreFailed: 'Restore failed (this may be due to a storage limit).',
     dmWipeAllBtn: 'Delete All Sheet Music',
     dmWipeConfirmText: 'Are you sure you want to delete all sheet music? This cannot be undone.',
     dmWipeConfirmBtn: 'Delete',
@@ -5351,10 +5353,21 @@ function dmImportFileSelected(event) {
 }
 function dmConfirmImport() {
   if (!dmPendingImportData) return;
-  localStorage.setItem(SONGS_KEY, dmPendingImportData[SONGS_KEY]);
+  let importOk = true;
+  try {
+    localStorage.setItem(SONGS_KEY, dmPendingImportData[SONGS_KEY]);
+  } catch (e) {
+    importOk = false;
+  }
   currentSong = null;
-  document.getElementById('dmStatus').className = 'status-msg ok';
-  document.getElementById('dmStatus').textContent = t('dmRestored');
+  const statusEl = document.getElementById('dmStatus');
+  if (importOk) {
+    statusEl.className = 'status-msg ok';
+    statusEl.textContent = t('dmRestored');
+  } else {
+    statusEl.className = 'status-msg err';
+    statusEl.textContent = t('dmRestoreFailed');
+  }
   document.getElementById('dmImportArea').innerHTML = '';
   dmPendingImportData = null;
   renderLibrary();
