@@ -96,13 +96,11 @@
     [data-theme="dark"] nav { background: rgba(0,0,0,0.88); }
     .nav-title { font-size: 17px; font-weight: 600; letter-spacing: -0.3px; }
     .nav-right { display: flex; align-items: center; gap: 8px; }
-    .sidebar-toggle-btn, .lang-toggle-btn, .settings-toggle-btn {
+    .lang-toggle-btn {
       background: var(--card); border: 1px solid var(--sep); border-radius: var(--r-sm);
       padding: 6px 12px; font-size: 13px; font-weight: 600; color: var(--text);
       display: flex; align-items: center; gap: 6px; white-space: nowrap;
     }
-    /* lang-toggle-btn / settings-toggle-btn intentionally excluded: unlike the hamburger, they stay visible at desktop width too */
-    @media (min-width: 850px) { .sidebar-toggle-btn { visibility: hidden; } }
 
     .sidebar-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.4); z-index: 499; }
     .sidebar-overlay.show { display: block; }
@@ -136,7 +134,6 @@
     /* 精度に不安がある新機能であることを示す小さな注記（例: 楽譜づくり） */
     .tool-badge-test { font-size: 9px; font-weight: 700; color: var(--text-3); text-transform: uppercase; letter-spacing: 0.3px; }
 
-    .sec-label { font-size: 15px; font-weight: 700; color: var(--text); padding: 20px 4px 10px; display: flex; align-items: center; gap: 6px; }
     .card { background: var(--card); border-radius: var(--r); padding: 16px; box-shadow: 0 1px 4px rgba(0,0,0,0.07); margin-bottom: 14px; }
     .card p { font-size: 13px; line-height: 1.8; color: var(--text); }
     .card a { color: var(--pink-d); text-decoration: underline; text-underline-offset: 2px; }
@@ -295,7 +292,6 @@
     }
     .transport-btn.primary { background: var(--pink-btn); color: #fff; border-color: var(--pink-btn); }
     .transport-btn.active { background: var(--green); color: #fff; border-color: var(--green); }
-    .transport-btn.danger-outline { color: var(--red); border-color: var(--red); }
 
     .practice-range-row { display: flex; align-items: center; gap: 8px; margin-bottom: 12px; flex-wrap: wrap; }
     .practice-range-row label { font-size: 12.5px; color: var(--text-2); font-weight: 600; white-space: nowrap; }
@@ -1387,7 +1383,6 @@ const I18N = {
   ja: {
     pageTitle: '楽譜づくり - Sky所持率管理',
     navTitle: '🎵 楽譜づくり',
-    sidebarToggle: 'ツール',
     relatedTools: '関連ツール',
     toolItem: '🗂️ アイテム所持管理',
     toolEmote: '🎭 エモート所持率管理',
@@ -1654,7 +1649,6 @@ const I18N = {
   en: {
     pageTitle: 'Sheet Music Maker - Sky Collection Tracker',
     navTitle: '🎵 Sheet Music Maker',
-    sidebarToggle: 'Tools',
     relatedTools: 'Related Tools',
     toolItem: '🗂️ Item Collection',
     toolEmote: '🎭 Emote Collection',
@@ -3395,7 +3389,13 @@ function togglePlayback() {
     document.getElementById('playBtn').textContent = t('countInLabel');
     document.getElementById('stopBtn').style.display = 'flex';
     document.getElementById('floatingStopBtn').classList.add('show');
-    runCountIn(currentSong.bpm, null, startPlaybackLoop);
+    // カウントインのテンポは、実際に再生が始まるマスで効いているBPM
+    // （bpmOverridesがあればそれ）に合わせる。startPlaybackLoop()と同じ
+    // 開始位置の求め方（ループ範囲外なら範囲の先頭から）に揃える
+    const looping = loopRangeEnabled();
+    const range = looping ? getPracticeRange() : null;
+    const startIdx = (looping && (selectedFrameIndex < range.start || selectedFrameIndex > range.end)) ? range.start : selectedFrameIndex;
+    runCountIn(effectiveBpmAtFrame(currentSong, startIdx), null, startPlaybackLoop);
     return;
   }
   startPlaybackLoop();
@@ -3506,7 +3506,9 @@ function startPerfSession(mode) {
     // 鳴らし続けられない。代わりに開始前の4拍カウントインだけを鳴らす。
     perfCountingIn = true;
     document.getElementById('perfProgress').textContent = '';
-    runCountIn(currentSong.bpm, (beat, total) => {
+    // カウントインのテンポは、実際に再生が始まるマス（範囲の先頭）で
+    // 効いているBPM（bpmOverridesがあればそれ）に合わせる
+    runCountIn(effectiveBpmAtFrame(currentSong, range.start), (beat, total) => {
       document.getElementById('perfFooter').textContent = t('countInBeatLabel', { n: total - beat + 1 });
     }, () => {
       perfCountingIn = false;
@@ -3803,6 +3805,7 @@ function closeTopmostOpenModal() {
   if (document.getElementById('shareModal').classList.contains('open')) { closeModal('shareModal'); return; }
   if (document.getElementById('importModal').classList.contains('open')) { closeModal('importModal'); return; }
   if (document.getElementById('dmModal').classList.contains('open')) { closeModal('dmModal'); return; }
+  if (document.getElementById('composeToolsModal').classList.contains('open')) { closeModal('composeToolsModal'); return; }
 }
 
 /* ================================================================
