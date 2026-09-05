@@ -76,6 +76,18 @@
       --text-3:    #636366;
       --note-off:  #2C2C2E;
     }
+
+    .inline-icon { stroke: var(--pink-d); fill: none; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; vertical-align: -3px; color: var(--pink-d); }
+    .inline-icon.warn { stroke: var(--red-d); color: var(--red-d); }
+    .inline-icon.ok { stroke: var(--green); color: var(--green); }
+    .icon-chip {
+      display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0;
+      border-radius: 26%; color: var(--pink-d);
+    }
+    .icon-chip svg { display: block; stroke: var(--pink-d); fill: none; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; }
+    .pf-titles-caret { transition: transform 0.15s ease; }
+    .pf-titles-toggle[aria-expanded="true"] .pf-titles-caret { transform: rotate(180deg); }
+
     *, *::before, *::after { margin:0; padding:0; box-sizing:border-box; }
     a { text-decoration:none; color:inherit; -webkit-tap-highlight-color:transparent; }
     button { cursor:pointer; border:none; background:none; font-family:inherit; }
@@ -219,7 +231,15 @@
       list-style: none; display: flex; align-items: center; gap: 6px; user-select: none;
     }
     .test-feature-summary::-webkit-details-marker { display: none; }
-    .test-feature-summary::before { content: '▶'; font-size: 9px; color: var(--text-3); transition: transform 0.15s; }
+    .test-feature-summary::before {
+      content: ''; display: inline-block; width: 9px; height: 9px;
+      background-color: var(--text-3);
+      -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M9 6l6 6-6 6' fill='none' stroke='black' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+      mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M9 6l6 6-6 6' fill='none' stroke='black' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+      -webkit-mask-size: contain; mask-size: contain;
+      -webkit-mask-repeat: no-repeat; mask-repeat: no-repeat;
+      transition: transform 0.15s;
+    }
     .test-feature-details[open] .test-feature-summary::before { transform: rotate(90deg); }
     .test-feature-body { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 8px; }
     .song-list { display: flex; flex-direction: column; gap: 10px; margin-top: 14px; }
@@ -887,8 +907,93 @@
 </head>
 <body>
 
+<svg id="pf-icon-sprite" style="position:absolute;width:0;height:0;overflow:hidden;" aria-hidden="true"><defs>
+    <symbol id="i-folder" viewBox="0 0 24 24"><g transform="translate(12 12) scale(1.094) translate(-12 -12)"><path d="M4 6.5A1.5 1.5 0 0 1 5.5 5h4l1.6 2H18.5A1.5 1.5 0 0 1 20 8.5v9a1.5 1.5 0 0 1-1.5 1.5h-13A1.5 1.5 0 0 1 4 17.5Z"/></g></symbol>
+    <symbol id="i-close" viewBox="0 0 24 24"><g transform="translate(12 12) scale(1.458) translate(-12 -12)"><path d="M6 6l12 12M18 6L6 18"/></g></symbol>
+    <symbol id="i-search" viewBox="0 0 24 24"><path d="M11 4a7 7 0 1 0 0 14 7 7 0 0 0 0-14Z"/><path d="M21 21l-4.8-4.8"/></symbol>
+    <symbol id="i-calendar" viewBox="0 0 24 24"><path d="M4.5 5.5h15a1 1 0 0 1 1 1V19a1 1 0 0 1-1 1h-15a1 1 0 0 1-1-1V6.5a1 1 0 0 1 1-1Z"/><path d="M8 3.5v4M16 3.5v4M3.5 10h17"/></symbol>
+    <symbol id="i-warning" viewBox="0 0 24 24"><path d="M12 4L3 20h18L12 4Z"/><path d="M12 10v4M12 17h.01"/></symbol>
+    <symbol id="i-edit" viewBox="0 0 24 24"><g transform="translate(12 12) scale(1.149) translate(-11.615 -12.385)"><path d="M4 20l1-4.2L15.6 5.2a1.5 1.5 0 0 1 2.1 0l1.1 1.1a1.5 1.5 0 0 1 0 2.1L8.2 19 4 20Z"/><path d="M13.8 6.8l3.4 3.4"/></g></symbol>
+    <symbol id="i-candle" viewBox="0 0 24 24"><path d="M9.5 21h5a1 1 0 0 0 1-1v-7.5a3 3 0 0 0-3-3h-1a3 3 0 0 0-3 3V20a1 1 0 0 0 1 1Z"/><path d="M12 9.5V5M10.3 5.2C10.3 3.7 12 3.5 12 2c0 1.5 1.7 1.7 1.7 3.2 0 .9-.75 1.3-1.7 1.3s-1.7-.4-1.7-1.3Z"/></symbol>
+    <symbol id="i-star-candle" viewBox="0 0 24 24"><path d="M9.5 21h5a1 1 0 0 0 1-1v-7.5a3 3 0 0 0-3-3h-1a3 3 0 0 0-3 3V20a1 1 0 0 0 1 1Z"/><path d="M12 9.5V5M10.3 5.2C10.3 3.7 12 3.5 12 2c0 1.5 1.7 1.7 1.7 3.2 0 .9-.75 1.3-1.7 1.3s-1.7-.4-1.7-1.3Z"/><path fill="currentColor" stroke="none" d="M18 4.7L18.7 6.3L20.3 7L18.7 7.7L18 9.3L17.3 7.7L15.7 7L17.3 6.3Z"/></symbol>
+    <symbol id="i-check" viewBox="0 0 24 24"><g transform="translate(12 12) scale(1.129) translate(-12.25 -12)"><path d="M4.5 12.5l5 5L20 6.5"/></g></symbol>
+    <symbol id="i-star" viewBox="0 0 24 24"><path d="M12 3.5l2.5 5.6 6.1.6-4.6 4.1 1.3 6-5.3-3.2-5.3 3.2 1.3-6-4.6-4.1 6.1-.6Z"/></symbol>
+    <symbol id="i-heart" viewBox="0 0 24 24"><path d="M12 20.5c-5-3.5-9-7-9-11.2C3 6 5 4 7.7 4c1.7 0 3.3.9 4.3 2.4C13 4.9 14.6 4 16.3 4 19 4 21 6 21 9.3c0 4.2-4 7.7-9 11.2Z"/></symbol>
+    <symbol id="i-coin" viewBox="0 0 24 24"><path d="M6 3l6 9m6-9l-6 9M12 12v9M8.5 14.5h7M8.5 17.5h7"/></symbol>
+    <symbol id="i-ticket" viewBox="0 0 24 24"><g transform="translate(12 12) scale(1.094) translate(-12 -12)"><path d="M4 9a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v1.3a1.5 1.5 0 0 0 0 3.4V15a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2v-1.3a1.5 1.5 0 0 0 0-3.4Z"/><path d="M12 7v10" stroke-dasharray="1.5 2"/></g></symbol>
+    <symbol id="i-cart" viewBox="0 0 24 24"><path d="M3 4h2l2.5 11h10L20 8H6"/><path d="M9 19a1 1 0 1 0 0-2 1 1 0 0 0 0 2ZM17 19a1 1 0 1 0 0-2 1 1 0 0 0 0 2Z"/></symbol>
+    <symbol id="i-upload" viewBox="0 0 24 24"><g transform="translate(12 12) scale(1.094) translate(-12 -12)"><path d="M12 15V4M8 8l4-4 4 4"/><path d="M5 13v6a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-6"/></g></symbol>
+    <symbol id="i-palette" viewBox="0 0 24 24"><path d="M12 4a8 8 0 0 0 0 16c1.2 0 2-.9 2-2 0-.5-.2-1-.5-1.3-.3-.4-.5-.8-.5-1.3 0-1 .8-1.9 1.8-1.9H16a4 4 0 0 0 4-4c0-3.9-3.6-7-8-7Z"/><path d="M9 9v.01M13 7.5v.01M16.5 10v.01M9.5 13.5v.01"/></symbol>
+    <symbol id="i-question" viewBox="0 0 24 24"><g transform="translate(12 12) scale(1.167) translate(-12 -12)"><path d="M12 4.5a7.5 7.5 0 1 0 0 15 7.5 7.5 0 0 0 0-15Z"/><path d="M9.5 9.3a2.5 2.5 0 0 1 4.6 1.3c0 1.7-2.1 1.9-2.1 3.4"/><path d="M12 17v.01"/></g></symbol>
+    <symbol id="i-masks" viewBox="0 0 24 24"><g transform="translate(12 12) scale(1.094) translate(-12 -12)"><path d="M12 4a8 8 0 1 0 0 16 8 8 0 0 0 0-16Z"/><path d="M9 10v.01M15 10v.01"/><path d="M8.5 14.5q3.5 3 7 0"/></g></symbol>
+    <symbol id="i-pin" viewBox="0 0 24 24"><path d="M12 21s-6.5-6.1-6.5-11A6.5 6.5 0 0 1 18.5 10c0 4.9-6.5 11-6.5 11Z"/><path d="M12 12.5a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5Z"/></symbol>
+    <symbol id="i-sparkle" viewBox="0 0 24 24"><path d="M12 3l1.5 6L20 12l-6.5 1.5L12 21l-1.5-6L4 12l6.5-1.5Z"/></symbol>
+    <symbol id="i-wing" viewBox="0 0 24 24"><g transform="translate(12 12) scale(1.281) translate(-10.5 -12.83)"><path d="M4 19c2-6 6-11 13-13-1 6-2 9-6 12-3 2-5 2-7 1Z"/><path d="M7 17c3-2 6-5 8-9"/></g></symbol>
+    <symbol id="i-music-note" viewBox="0 0 24 24"><g transform="translate(12 12) scale(1.207) translate(-13.75 -10.75)"><path d="M9 18a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5Z"/><path d="M11.5 15.5V5l7-1.5v9"/><path d="M18.5 12.5a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5Z"/></g></symbol>
+    <symbol id="i-sync" viewBox="0 0 24 24"><g transform="translate(12 12) scale(1.094) translate(-12 -12)"><path d="M17 7h-8a4 4 0 0 0-4 4"/><path d="M11 4l-2 3 2 3"/><path d="M7 17h8a4 4 0 0 0 4-4"/><path d="M13 20l2-3-2-3"/></g></symbol>
+    <symbol id="i-settings" viewBox="0 0 24 24"><path fill="currentColor" stroke="none" d="M19.14,12.94c0.04-0.3,0.06-0.61,0.06-0.94c0-0.32-0.02-0.64-0.07-0.94l2.03-1.58c0.18-0.14,0.23-0.41,0.12-0.61l-1.92-3.32c-0.12-0.22-0.37-0.29-0.59-0.22l-2.39,0.96c-0.5-0.38-1.03-0.7-1.62-0.94L14.4,2.81c-0.04-0.24-0.24-0.41-0.48-0.41h-3.84c-0.24,0-0.43,0.17-0.47,0.41L9.25,5.35C8.66,5.59,8.12,5.92,7.63,6.29L5.24,5.33c-0.22-0.08-0.47,0-0.59,0.22L2.74,8.87C2.62,9.08,2.66,9.34,2.86,9.48l2.03,1.58C4.84,11.36,4.8,11.69,4.8,12s0.02,0.64,0.07,0.94l-2.03,1.58c-0.18,0.14-0.23,0.41-0.12,0.61l1.92,3.32c0.12,0.22,0.37,0.29,0.59,0.22l2.39-0.96c0.5,0.38,1.03,0.7,1.62,0.94l0.36,2.54c0.05,0.24,0.24,0.41,0.48,0.41h3.84c0.24,0,0.44-0.17,0.47-0.41l0.36-2.54c0.59-0.24,1.13-0.56,1.62-0.94l2.39,0.96c0.22,0.08,0.47,0,0.59-0.22l1.92-3.32c0.12-0.22,0.07-0.47-0.12-0.61L19.14,12.94z M12,15.6c-1.98,0-3.6-1.62-3.6-3.6s1.62-3.6,3.6-3.6s3.6,1.62,3.6,3.6S13.98,15.6,12,15.6z"/></symbol>
+    <symbol id="i-person" viewBox="0 0 24 24"><g transform="translate(12 12) scale(1.094) translate(-12 -12)"><path d="M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8Z"/><path d="M4.5 20a7.5 7.5 0 0 1 15 0"/></g></symbol>
+    <symbol id="i-menu" viewBox="0 0 24 24"><g transform="translate(12 12) scale(1.094) translate(-12 -12)"><path d="M4 7h16M4 12h16M4 17h16"/></g></symbol>
+    <symbol id="i-lightbulb" viewBox="0 0 24 24"><path d="M9 18h6M10 21h4"/><path d="M12 3a6 6 0 0 0-6 6c0 2.5 1.5 4 2.5 5.5.5.7.5 1 .5 1.5h6c0-.5 0-.8.5-1.5C16.5 13 18 11.5 18 9a6 6 0 0 0-6-6Z"/></symbol>
+    <symbol id="i-sheet-music" viewBox="0 0 24 24"><path d="M6 4h9l3 3v13a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1Z"/><path d="M8 10h8M8 13h8M8 16h5"/></symbol>
+    <symbol id="i-dice" viewBox="0 0 24 24"><g transform="translate(12 12) scale(1.25) translate(-12 -12)"><path d="M5 6.5A1.5 1.5 0 0 1 6.5 5h11A1.5 1.5 0 0 1 19 6.5v11a1.5 1.5 0 0 1-1.5 1.5h-11A1.5 1.5 0 0 1 5 17.5Z"/><path d="M8.5 8.5v.01M15.5 8.5v.01M12 12v.01M8.5 15.5v.01M15.5 15.5v.01"/></g></symbol>
+    <symbol id="i-hanger" viewBox="0 0 24 24"><path d="M12 4.2a1.8 1.8 0 1 0-1.8 1.8"/><path d="M12 6v1.6"/><path d="M3.5 17.5 12 11l8.5 6.5"/><path d="M3.5 17.5h17"/></symbol>
+    <symbol id="i-image" viewBox="0 0 24 24"><g transform="translate(12 12) scale(1.167) translate(-12 -12)"><path d="M4.5 4.5h15v15h-15Z"/><path d="M4.5 15.5l4.2-4.5a1 1 0 0 1 1.5 0l2.3 2.5 2.5-3a1 1 0 0 1 1.5 0l3 4.5"/><path d="M9 9.5a1.2 1.2 0 1 0 0-2.4 1.2 1.2 0 0 0 0 2.4Z"/></g></symbol>
+    <symbol id="i-monitor" viewBox="0 0 24 24"><path d="M4 5.5h16a1 1 0 0 1 1 1V16a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V6.5a1 1 0 0 1 1-1Z"/><path d="M9 20.5h6M12 17v3.5"/></symbol>
+    <symbol id="i-keyboard" viewBox="0 0 24 24"><path d="M3.5 7.5A1.5 1.5 0 0 1 5 6h14a1.5 1.5 0 0 1 1.5 1.5v9A1.5 1.5 0 0 1 19 18H5a1.5 1.5 0 0 1-1.5-1.5Z"/><path d="M6.5 9.5h.01M9.5 9.5h.01M12.5 9.5h.01M15.5 9.5h.01M17.5 9.5h.01M6.5 12.5h.01M9.5 12.5h.01M12.5 12.5h.01M15.5 12.5h.01M17.5 12.5h.01M8 15.5h8"/></symbol>
+    <symbol id="i-sun" viewBox="0 0 24 24"><path d="M12 6.5a5.5 5.5 0 1 0 0 11 5.5 5.5 0 0 0 0-11Z"/><path d="M12 2v2M12 20v2M4.2 4.2l1.4 1.4M18.4 18.4l1.4 1.4M2 12h2M20 12h2M4.2 19.8l1.4-1.4M18.4 5.6l1.4-1.4"/></symbol>
+    <symbol id="i-moon" viewBox="0 0 24 24"><g transform="translate(12 12) scale(1.049) translate(-11.66 -12.34)"><path d="M20 14.5A8.5 8.5 0 1 1 9.5 4a7 7 0 0 0 10.5 10.5Z"/></g></symbol>
+    <symbol id="i-globe" viewBox="0 0 24 24"><g transform="translate(12 12) scale(1.094) translate(-12 -12)"><path d="M12 20a8 8 0 1 0 0-16 8 8 0 0 0 0 16Z"/><path d="M4.5 9h15M4.5 15h15"/><path d="M12 4a12 12 0 0 1 0 16"/><path d="M12 4a12 12 0 0 0 0 16"/></g></symbol>
+    <symbol id="i-crown" viewBox="0 0 24 24"><g transform="translate(12 12) scale(1.094) translate(-12 -12)"><path d="M4 10l4 3 4-6 4 6 4-3v7H4Z"/></g></symbol>
+    <symbol id="i-medal" viewBox="0 0 24 24"><path d="M8 3l3 8M16 3l-3 8"/><path d="M12 20a5.5 5.5 0 1 0 0-11 5.5 5.5 0 0 0 0 11Z"/><path d="M10 14.5l2-1.2 2 1.2"/></symbol>
+    <symbol id="i-trophy" viewBox="0 0 24 24"><g transform="translate(12 12) scale(1.061) translate(-12 -12.25)"><path d="M8 4h8v6a4 4 0 0 1-8 0V4Z"/><path d="M8 5H5.5A1.5 1.5 0 0 0 4 6.5 3.5 3.5 0 0 0 7.5 10H8"/><path d="M16 5h2.5A1.5 1.5 0 0 1 20 6.5 3.5 3.5 0 0 1 16.5 10H16"/><path d="M12 14v3M9 20.5h6M9.5 17.5h5v3h-5Z"/></g></symbol>
+    <symbol id="i-gift" viewBox="0 0 24 24"><g transform="translate(12 12) scale(1.094) translate(-12 -12.5)"><path d="M4 9h16v3H4Z"/><path d="M5 12h14v8H5Z"/><path d="M12 9v11"/><path d="M9 9c-1.3 0-2.3-.9-2.3-2S7.7 5 9 5c1.3 0 3 1.7 3 4M15 9c1.3 0 2.3-.9 2.3-2S16.3 5 15 5c-1.3 0-3 1.7-3 4"/></g></symbol>
+    <symbol id="i-gem" viewBox="0 0 24 24"><path d="M6.5 9L12 3l5.5 6L12 20Z"/><path d="M6.5 9h11"/></symbol>
+    <symbol id="i-map" viewBox="0 0 24 24"><g transform="translate(12 12) scale(1.074) translate(-12 -12.15)"><path d="M4 6l6-2 4 2 6-2v14l-6 2-4-2-6 2Z"/><path d="M10 4.3v14M14 6.3v14"/></g></symbol>
+    <symbol id="i-compass" viewBox="0 0 24 24"><g transform="translate(12 12) scale(1.094) translate(-12 -12)"><path d="M12 20a8 8 0 1 0 0-16 8 8 0 0 0 0 16Z"/><path d="M14.5 9.5l-1.8 4.2-4.2 1.8 1.8-4.2Z"/></g></symbol>
+    <symbol id="i-flashlight" viewBox="0 0 24 24"><path d="M9 4h6l1.5 2.5v3l-1.5 1.5v9a1 1 0 0 1-1 1h-4a1 1 0 0 1-1-1v-9L7.5 9.5v-3Z"/><path d="M9.5 4V2.5h5V4"/></symbol>
+    <symbol id="i-leaf" viewBox="0 0 24 24"><path d="M12 3c-5 2-8 6-8 11a8 8 0 0 0 8 7c5-2 8-6 8-11a8 8 0 0 0-8-7Z"/><path d="M12 21V9"/></symbol>
+    <symbol id="i-flame" viewBox="0 0 24 24"><path d="M12 21c4 0 6-3 6-6.5 0-2-1-3.5-2-5 0 2-1.5 3-2.5 2C14 9 13 6 10 4c1 3-1 5-2.5 7-1 1.3-1.5 2.5-1.5 3.5C6 18 8 21 12 21Z"/></symbol>
+    <symbol id="i-bolt" viewBox="0 0 24 24"><path d="M13 3L5 14h5l-1 7 9-12h-5Z"/></symbol>
+    <symbol id="i-hammer" viewBox="0 0 24 24"><g transform="translate(12 12) scale(1.389) translate(-11.5 -12.1)"><path d="M14.8 6.2l3 3-2.1 2.1-3-3Z"/><path d="M12.7 8.3l-7.5 7.5v2.2h2.2l7.5-7.5Z"/></g></symbol>
+    <symbol id="i-building" viewBox="0 0 24 24"><g transform="translate(12 12) scale(1.094) translate(-12 -12.75)"><path d="M4 20.5h16"/><path d="M5.5 20.5V10L12 5l6.5 5v10.5"/><path d="M8 20.5v-6M12 20.5v-6M16 20.5v-6"/></g></symbol>
+    <symbol id="i-trash" viewBox="0 0 24 24"><g transform="translate(12 12) scale(1.097) translate(-12 -12.475)"><path d="M5 7h14"/><path d="M9 7V5.5a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1V7"/><path d="M7 7l1 12.5a1 1 0 0 0 1 .95h6a1 1 0 0 0 1-.95L17 7"/><path d="M10 11v5M14 11v5"/></g></symbol>
+    <symbol id="i-wallet" viewBox="0 0 24 24"><path d="M4 7.5A1.5 1.5 0 0 1 5.5 6h11A1.5 1.5 0 0 1 18 7.5V9h1.5A1.5 1.5 0 0 1 21 10.5v7A1.5 1.5 0 0 1 19.5 19h-14A1.5 1.5 0 0 1 4 17.5Z"/><path d="M15.5 14.5a1 1 0 1 0 0-2 1 1 0 0 0 0 2Z"/></symbol>
+    <symbol id="i-lock" viewBox="0 0 24 24"><g transform="translate(12 12) scale(1.094) translate(-12 -12)"><path d="M6.5 11h11a1 1 0 0 1 1 1v7a1 1 0 0 1-1 1h-11a1 1 0 0 1-1-1v-7a1 1 0 0 1 1-1Z"/><path d="M8 11V8a4 4 0 1 1 8 0v3"/></g></symbol>
+    <symbol id="i-tree" viewBox="0 0 24 24"><path d="M12 4a6 6 0 1 0 0 12 6 6 0 0 0 0-12Z"/><path d="M12 16v5"/></symbol>
+    <symbol id="i-scroll" viewBox="0 0 24 24"><g transform="translate(12 12) scale(1.094) translate(-13 -12)"><path d="M5 7a2 2 0 1 1 0 4h1.5"/><path d="M19 17a2 2 0 1 0 0-4h-1.5"/><path d="M6.5 7H17a1.5 1.5 0 0 1 1.5 1.5v7a1.5 1.5 0 0 1-1.5 1.5H6.5"/><path d="M9 10.5h6M9 13.5h4"/></g></symbol>
+    <symbol id="i-geyser" viewBox="0 0 24 24"><g transform="translate(12 12) scale(1.25) translate(-12 -12)"><path d="M5 19h14"/><path d="M8 19c0-3 1.5-5 4-5s4 2 4 5"/><path d="M12 12V5"/><path d="M9.5 8l2.5-3 2.5 3"/></g></symbol>
+    <symbol id="i-bread" viewBox="0 0 24 24"><g transform="translate(12 12) scale(1.094) translate(-12 -13.75)"><path d="M4 14a8 5 0 0 1 16 0v2.5a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2Z"/><path d="M9 12l1-3M13.5 12l1-3"/></g></symbol>
+    <symbol id="i-turtle" viewBox="0 0 24 24"><g transform="translate(12 12) scale(1.389) translate(-12 -12)"><path d="M12 8a6 4.2 0 0 0-6 4.2A6 4.2 0 0 0 12 16.4a6 4.2 0 0 0 6-4.2A6 4.2 0 0 0 12 8Z"/><path d="M12 8V6M8 10.5l-2.3-1.2M16 10.5l2.3-1.2M8.3 14l-2 1.4M15.7 14l2 1.4M10.3 16l-1 2M13.7 16l1 2"/></g></symbol>
+    <symbol id="i-chevron-down" viewBox="0 0 24 24"><g transform="translate(12 12) scale(1.458) translate(-12 -12)"><path d="M6 9l6 6-6 6"/></g></symbol>
+    <symbol id="i-chevron-right" viewBox="0 0 24 24"><g transform="translate(12 12) scale(1.458) translate(-12 -12)"><path d="M9 6l6 6-6 6"/></g></symbol>
+    <symbol id="i-chevron-left" viewBox="0 0 24 24"><g transform="translate(12 12) scale(1.25) translate(-11.5 -12)"><path d="M15 5l-7 7 7 7"/></g></symbol>
+    <symbol id="i-plus" viewBox="0 0 24 24"><g transform="translate(12 12) scale(1.25) translate(-12 -12)"><path d="M12 5v14M5 12h14"/></g></symbol>
+    <symbol id="i-minus" viewBox="0 0 24 24"><g transform="translate(12 12) scale(1.25) translate(-12 -12)"><path d="M5 12h14"/></g></symbol>
+    <symbol id="i-tap" viewBox="0 0 24 24"><g transform="translate(12 12) scale(1.094) translate(-12.5 -11)"><path d="M6 3l4.5 15.5 2-6 6-2L6 3Z"/><path d="M14 14l5 5"/></g></symbol>
+    <symbol id="i-shoe" viewBox="0 0 24 24"><path d="M4 18v-3.2c0-.8.5-1.5 1.3-1.8L9 11.5l3-3a2 2 0 0 1 2.6-.2L17 10h2a2 2 0 0 1 2 2v3a3 3 0 0 1-3 3H5a1 1 0 0 1-1-1Z"/><path d="M4 18h17"/></symbol>
+    <symbol id="i-necklace" viewBox="0 0 24 24"><g transform="translate(12 12) scale(1.094) translate(-12 -12)"><path d="M5 4c0 5.5 3 9 7 9s7-3.5 7-9"/><path d="M12 13v2.3"/><circle cx="12" cy="17.7" r="2.3"/></g></symbol>
+    <symbol id="i-scissors" viewBox="0 0 24 24"><g transform="translate(12 12) scale(1.207) translate(-12.75 -12)"><circle cx="7.5" cy="8" r="2"/><circle cx="7.5" cy="16" r="2"/><path d="M9 9.5L20 17M9 14.5L20 7"/></g></symbol>
+    <symbol id="i-hat" viewBox="0 0 24 24"><path d="M4 13c0-4.5 3.5-8 8-8s8 3.5 8 8"/><path d="M2.5 13h19"/><path d="M6 13v1.5A2.5 2.5 0 0 0 8.5 17h7a2.5 2.5 0 0 0 2.5-2.5V13"/></symbol>
+    <symbol id="i-headphones" viewBox="0 0 24 24"><g transform="translate(12 12) scale(1.094) translate(-12 -11.25)"><path d="M4 14v-2a8 8 0 0 1 16 0v2"/><path d="M4 14a1.5 1.5 0 0 1 1.5-1.5h1A1.5 1.5 0 0 1 8 14v3a1.5 1.5 0 0 1-1.5 1.5h-1A1.5 1.5 0 0 1 4 17Z"/><path d="M16 14a1.5 1.5 0 0 1 1.5-1.5h1a1.5 1.5 0 0 1 1.5 1.5v3a1.5 1.5 0 0 1-1.5 1.5h-1a1.5 1.5 0 0 1-1.5-1.5Z"/></g></symbol>
+    <symbol id="i-link" viewBox="0 0 24 24"><g transform="translate(12 12) scale(1.167) translate(-12.5 -11.5)"><path d="M9 5H6.5A1.5 1.5 0 0 0 5 6.5v11A1.5 1.5 0 0 0 6.5 19h11a1.5 1.5 0 0 0 1.5-1.5V15"/><path d="M14 4h6v6"/><path d="M20 4L10 14"/></g></symbol>
+    <symbol id="i-flower" viewBox="0 0 24 24"><g transform="translate(12 12) scale(1.094) translate(-12 -12)"><circle cx="12" cy="12" r="2"/><path d="M12 4a3 3 0 0 1 3 3 3 3 0 0 1-3 3 3 3 0 0 1-3-3 3 3 0 0 1 3-3ZM12 20a3 3 0 0 1-3-3 3 3 0 0 1 3-3 3 3 0 0 1 3 3 3 3 0 0 1-3 3ZM4 12a3 3 0 0 1 3-3 3 3 0 0 1 3 3 3 3 0 0 1-3 3 3 3 0 0 1-3-3ZM20 12a3 3 0 0 1-3 3 3 3 0 0 1-3-3 3 3 0 0 1 3-3 3 3 0 0 1 3 3Z"/></g></symbol>
+    <symbol id="i-cloud" viewBox="0 0 24 24"><path d="M7 18a4 4 0 0 1-.5-7.97A5 5 0 0 1 16.2 8.1 4.5 4.5 0 0 1 17.5 18Z"/></symbol>
+    <symbol id="i-peach" viewBox="0 0 24 24"><g transform="translate(12 12) scale(1.108) translate(-12 -11.1)"><path d="M12 6c-3 0-5.5 2.5-5.5 6s2 7 5.5 7 5.5-3.5 5.5-7S15 6 12 6Z"/><path d="M12 6c0-1.2.6-2.2 1.8-2.8"/><path d="M8.6 8.3c0-2 .6-3.3 1.8-4.2"/></g></symbol>
+    <symbol id="i-x-logo" viewBox="0 0 24 24"><g transform="translate(12 12) scale(1.25) translate(-12 -12)"><path d="M5 5l14 14M19 5L5 19"/></g></symbol>
+    <symbol id="i-ribbon" viewBox="0 0 24 24"><g transform="translate(12 12) scale(1.25) translate(-12 -13.5)"><path d="M12 12L5 6.5v3.5c0 1.2 1 2.2 2.2 2.2H12ZM12 12l7-5.5v3.5c0 1.2-1 2.2-2.2 2.2H12Z"/><circle cx="12" cy="12" r="1.6"/><path d="M12 13.6v6.9M9.3 20.5h5.4"/></g></symbol>
+    <symbol id="i-grid" viewBox="0 0 24 24"><g transform="translate(12 12) scale(1.167) translate(-12 -12)"><path d="M4.5 4.5h6.5v6.5h-6.5Z"/><path d="M13 4.5h6.5v6.5h-6.5Z"/><path d="M4.5 13h6.5v6.5h-6.5Z"/><path d="M13 13h6.5v6.5h-6.5Z"/></g></symbol>
+    <symbol id="i-download" viewBox="0 0 24 24"><g transform="translate(12 12) scale(1.094) translate(-12 -12)"><path d="M12 4v11M8 11l4 4 4-4"/><path d="M5 13v6a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-6"/></g></symbol>
+    <symbol id="i-bell" viewBox="0 0 24 24"><path d="M12 3.2a1.3 1.3 0 0 0-1.3 1.3v.4C8.6 5.5 7 7.8 7 10.4V14l-1.8 2.8h13.6L17 14v-3.6c0-2.6-1.6-4.9-3.7-5.5v-.4A1.3 1.3 0 0 0 12 3.2Z"/><path d="M9.8 18.3a2.2 2.2 0 0 0 4.4 0"/></symbol>
+    <symbol id="i-clock" viewBox="0 0 24 24"><g transform="translate(12 12) scale(1.167) translate(-12 -12)"><path d="M12 4.5a7.5 7.5 0 1 0 0 15 7.5 7.5 0 0 0 0-15Z"/><path d="M12 8.2V12.3l3 1.8"/></g></symbol>
+    <symbol id="i-duplicate" viewBox="0 0 24 24"><path d="M8.5 8.5V5.5A1.5 1.5 0 0 1 10 4h8.5A1.5 1.5 0 0 1 20 5.5v9a1.5 1.5 0 0 1-1.5 1.5H15.5"/><path d="M4 9.5A1.5 1.5 0 0 1 5.5 8h8A1.5 1.5 0 0 1 15 9.5v9a1.5 1.5 0 0 1-1.5 1.5h-8A1.5 1.5 0 0 1 4 18.5Z"/></symbol>
+    <symbol id="i-undo" viewBox="0 0 24 24"><path d="M7 8H4V5"/><path d="M4 8c2-3 5.5-4 8.5-3a7 7 0 1 1-4.5 12.5"/></symbol>
+    <symbol id="i-redo" viewBox="0 0 24 24"><path d="M17 8h3V5"/><path d="M20 8c-2-3-5.5-4-8.5-3a7 7 0 1 0 4.5 12.5"/></symbol>
+    <symbol id="i-stop" viewBox="0 0 24 24"><path fill="currentColor" stroke="none" d="M6 6h12v12H6Z"/></symbol>
+</defs></svg>
+
 <nav>
-  <div class="nav-title" data-i18n="navTitle">🎵 楽譜づくり</div>
+  <div class="nav-title" data-i18n-html="navTitle"><svg class="inline-icon" width="19" height="19"><use href="#i-music-note"/></svg> 楽譜づくり</div>
   <div class="nav-right">
     <button class="lang-toggle-btn" id="langToggleBtn" onclick="toggleLang()">EN</button>
   </div>
@@ -900,25 +1005,25 @@
   <aside class="sidebar" id="sidebar">
     <div class="sidebar-head">
       <div class="sidebar-section-label" data-i18n="relatedTools">関連ツール</div>
-      <button class="sidebar-close-btn" onclick="toggleSidebar()">✕</button>
+      <button class="sidebar-close-btn" onclick="toggleSidebar()"><svg class="inline-icon" width="16" height="16"><use href="#i-close"/></svg></button>
     </div>
-    <a href="https://taipak5000.github.io/tai-item/" class="sidebar-nav-link" data-i18n="toolItem">🗂️ アイテム所持管理</a>
-    <a href="https://taipak5000.github.io/tai-emote/" class="sidebar-nav-link" data-i18n="toolEmote">🎭 エモート所持率管理</a>
-    <a href="https://taipak5000.github.io/share/" class="sidebar-nav-link" data-i18n="toolShare">📍 創作物管理ツール</a>
-    <a href="https://taipak5000.github.io/tai-nomacan/" class="sidebar-nav-link" data-i18n="toolNomacan">🕯️ ノマキャン計算機</a>
-    <a href="https://taipak5000.github.io/star-candle/" class="sidebar-nav-link" data-i18n="toolStarCandle">🕯️ 星のキャンドル計算機</a>
-    <a href="https://taipak5000.github.io/companion/" class="sidebar-nav-link" data-i18n="toolCompanion">✨ 精霊同行ツール</a>
-    <a href="https://taipak5000.github.io/wings/" class="sidebar-nav-link" data-i18n="toolWings">🪽 羽トラッカー</a>
-    <a href="https://taipak5000.github.io/tai-score/" class="sidebar-nav-link current-tool"><span class="tool-badge-test">test</span><span data-i18n="toolScore">🎵 楽譜づくり</span></a>
-    <a href="https://taipak5000.github.io/tai-transfer/" class="sidebar-nav-link" data-i18n="toolTransfer">🔄 データ引継ぎ</a>
-    <a href="https://taipak5000.github.io/tai-info/" class="sidebar-nav-link" data-i18n="toolInfo">⚙️ 設定・更新情報</a>
-    <a href="https://taipak5000.github.io/skyzztai-profile/" class="sidebar-nav-link" data-i18n="toolProfile">👤 作者プロフィール</a>
+    <a href="https://taipak5000.github.io/tai-item/" class="sidebar-nav-link" data-i18n-html="toolItem"><svg class="inline-icon" width="19" height="19"><use href="#i-folder"/></svg> アイテム所持管理</a>
+    <a href="https://taipak5000.github.io/tai-emote/" class="sidebar-nav-link" data-i18n-html="toolEmote"><svg class="inline-icon" width="19" height="19"><use href="#i-masks"/></svg> エモート所持率管理</a>
+    <a href="https://taipak5000.github.io/share/" class="sidebar-nav-link" data-i18n-html="toolShare"><svg class="inline-icon" width="19" height="19"><use href="#i-pin"/></svg> 創作物管理ツール</a>
+    <a href="https://taipak5000.github.io/tai-nomacan/" class="sidebar-nav-link" data-i18n-html="toolNomacan"><svg class="inline-icon" width="19" height="19"><use href="#i-candle"/></svg> ノマキャン計算機</a>
+    <a href="https://taipak5000.github.io/star-candle/" class="sidebar-nav-link" data-i18n-html="toolStarCandle"><svg class="inline-icon" width="19" height="19"><use href="#i-star-candle"/></svg> 星のキャンドル計算機</a>
+    <a href="https://taipak5000.github.io/companion/" class="sidebar-nav-link" data-i18n-html="toolCompanion"><svg class="inline-icon" width="19" height="19"><use href="#i-sparkle"/></svg> 精霊同行ツール</a>
+    <a href="https://taipak5000.github.io/wings/" class="sidebar-nav-link" data-i18n-html="toolWings"><svg class="inline-icon" width="19" height="19"><use href="#i-wing"/></svg> 羽トラッカー</a>
+    <a href="https://taipak5000.github.io/tai-score/" class="sidebar-nav-link current-tool"><span class="tool-badge-test">test</span><span data-i18n-html="toolScore"><svg class="inline-icon" width="19" height="19"><use href="#i-music-note"/></svg> 楽譜づくり</span></a>
+    <a href="https://taipak5000.github.io/tai-transfer/" class="sidebar-nav-link" data-i18n-html="toolTransfer"><svg class="inline-icon" width="19" height="19"><use href="#i-sync"/></svg> データ引継ぎ</a>
+    <a href="https://taipak5000.github.io/tai-info/" class="sidebar-nav-link" data-i18n-html="toolInfo"><svg class="inline-icon" width="19" height="19"><use href="#i-settings"/></svg> 設定・更新情報</a>
+    <a href="https://taipak5000.github.io/skyzztai-profile/" class="sidebar-nav-link" data-i18n-html="toolProfile"><svg class="inline-icon" width="19" height="19"><use href="#i-person"/></svg> 作者プロフィール</a>
   </aside>
 
   <div>
     <div class="banner">
       <div class="banner-inner">
-        <div class="banner-icon-wrap"><span class="banner-icon">🎼</span></div>
+        <div class="banner-icon-wrap"><span class="banner-icon"><svg class="inline-icon" width="28" height="28"><use href="#i-sheet-music"/></svg></span></div>
         <div class="banner-text">
           <div class="banner-title" data-i18n="heroBannerTitle">制作記録</div>
           <div class="banner-nums">
@@ -998,7 +1103,7 @@
   <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="shareModalTitle" tabindex="-1">
     <div class="modal-header">
       <span class="modal-title" id="shareModalTitle" data-i18n="shareModalTitle">共有・保存</span>
-      <button class="modal-close" onclick="closeModal('shareModal')">✕</button>
+      <button class="modal-close" onclick="closeModal('shareModal')"><svg class="inline-icon" width="16" height="16"><use href="#i-close"/></svg></button>
     </div>
     <div class="hint" data-i18n="shareHint1">この楽譜専用のコードを作成し、別の端末やSNSで共有できます。ファイルとしても保存できます。</div>
     <button type="button" class="action-btn primary" data-i18n="createShareCodeBtn" onclick="generateShareCode()">共有コードを作成</button>
@@ -1020,7 +1125,7 @@
   <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="importModalTitle" tabindex="-1">
     <div class="modal-header">
       <span class="modal-title" id="importModalTitle" data-i18n="importModalTitle">楽譜を読み込む</span>
-      <button class="modal-close" onclick="closeModal('importModal')">✕</button>
+      <button class="modal-close" onclick="closeModal('importModal')"><svg class="inline-icon" width="16" height="16"><use href="#i-close"/></svg></button>
     </div>
     <div class="hint" data-i18n="importHint">共有コード、テキスト譜面（ABC譜）、またはこのサイト／Sky Music Nightly／Sky Studio形式の.json・.txtファイルを読み込めます。</div>
     <textarea class="code-box" id="importCodeInput" data-i18n-placeholder="importCodePlaceholder" placeholder="共有コードまたはテキスト譜面を貼り付け"></textarea>
@@ -1036,7 +1141,7 @@
   <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="audioImportModalTitle" tabindex="-1">
     <div class="modal-header">
       <span class="modal-title" id="audioImportModalTitle" data-i18n="audioImportModalTitle">音声から楽譜を作成</span>
-      <button class="modal-close" onclick="closeAudioImportModal()">✕</button>
+      <button class="modal-close" onclick="closeAudioImportModal()"><svg class="inline-icon" width="16" height="16"><use href="#i-close"/></svg></button>
     </div>
     <div class="hint" data-i18n="audioImportHint">演奏音声（または演奏動画）のファイルを選ぶと、自動で楽譜を作成します。ファイルはどこにもアップロードされず、すべてこの端末（ブラウザ）内だけで処理されます。自動解析のため完璧ではありません。作成後は編集画面で内容をご確認・修正してください。</div>
 
@@ -1073,7 +1178,7 @@
   <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="imageImportModalTitle" tabindex="-1">
     <div class="modal-header">
       <span class="modal-title" id="imageImportModalTitle" data-i18n="imageImportModalTitle">楽譜画像から楽譜を作成</span>
-      <button class="modal-close" onclick="closeImageImportModal()">✕</button>
+      <button class="modal-close" onclick="closeImageImportModal()"><svg class="inline-icon" width="16" height="16"><use href="#i-close"/></svg></button>
     </div>
     <div class="hint" data-i18n-html="imageImportHint">五線譜の画像（MuseScore等で書き出したPNG/JPGなど）を選ぶと、自動で楽譜を作成します。複数ページある場合はまとめて選ぶと、ファイル名順につなげて読み込みます。画像はどこにもアップロードされず、すべてこの端末（ブラウザ）内だけで処理されます。<br><br>
       ⚠️ 自動認識のため精度は完璧ではありません。特に「#・♭」は判定せずいったん自然音として割り当て、Skyの音域（2オクターブ）に収まるようオクターブを丸め込みます。作成後は編集画面で必ず内容をご確認・修正してください。</div>
@@ -1100,7 +1205,7 @@
   <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="midiImportModalTitle" tabindex="-1">
     <div class="modal-header">
       <span class="modal-title" id="midiImportModalTitle" data-i18n="midiImportModalTitle">MIDIから楽譜を作成</span>
-      <button class="modal-close" onclick="closeMidiImportModal()">✕</button>
+      <button class="modal-close" onclick="closeMidiImportModal()"><svg class="inline-icon" width="16" height="16"><use href="#i-close"/></svg></button>
     </div>
     <div class="hint" data-i18n="midiImportHint">標準MIDIファイル（.mid・.midi）を選ぶと、自動で楽譜を作成します。ファイルはどこにもアップロードされず、すべてこの端末（ブラウザ）内だけで処理されます。⚠️ 自動変換のため完璧ではありません。Skyの楽器で鳴らせない音（半音や音域外の音）は、オクターブ移動や最も近い音への置き換えで対応します。作成後は編集画面で内容を必ずご確認・修正してください。</div>
     <input type="file" id="midiFileInput" accept=".mid,.midi,audio/midi,audio/x-midi" onchange="onMidiFileSelected(event)">
@@ -1113,7 +1218,7 @@
   <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="dmModalTitle" tabindex="-1">
     <div class="modal-header">
       <span class="modal-title" id="dmModalTitle" data-i18n="dmModalTitle">データのバックアップ・復元</span>
-      <button class="modal-close" onclick="closeModal('dmModal')">✕</button>
+      <button class="modal-close" onclick="closeModal('dmModal')"><svg class="inline-icon" width="16" height="16"><use href="#i-close"/></svg></button>
     </div>
     <div class="hint" data-i18n="dmHint">作成した楽譜はすべてこの端末のブラウザだけに保存されています。機種変更やブラウザの変更に備えて、
       ときどきファイルとしてバックアップすることをおすすめします。</div>
@@ -1132,7 +1237,7 @@
   <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="confirmModalTitle" tabindex="-1">
     <div class="modal-header">
       <span class="modal-title" id="confirmModalTitle" data-i18n="confirmModalTitle">確認</span>
-      <button class="modal-close" onclick="closeConfirm()">✕</button>
+      <button class="modal-close" onclick="closeConfirm()"><svg class="inline-icon" width="16" height="16"><use href="#i-close"/></svg></button>
     </div>
     <div class="hint" id="confirmModalMessage"></div>
     <button type="button" class="action-btn secondary" id="confirmModalOkBtn" style="background:var(--red-btn); color:#fff; border-color:var(--red-btn);"></button>
@@ -1145,7 +1250,7 @@
   <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="keyBindModalTitle" tabindex="-1">
     <div class="modal-header">
       <span class="modal-title" id="keyBindModalTitle" data-i18n="keyBindModalTitle">キーボード設定</span>
-      <button class="modal-close" onclick="closeKeyBindModal()">✕</button>
+      <button class="modal-close" onclick="closeKeyBindModal()"><svg class="inline-icon" width="16" height="16"><use href="#i-close"/></svg></button>
     </div>
     <div class="hint" data-i18n="keyBindHint">パソコンのキーボードで楽譜の作成・演奏ができます。「変更」を押してから、割り当てたいキーを押してください。すでに他のマスで使われているキーを選ぶと、入れ替わります。</div>
     <div class="keybind-list" id="keyBindList"><!-- JS --></div>
@@ -1159,7 +1264,7 @@
   <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="settingsModalTitle" tabindex="-1">
     <div class="modal-header">
       <span class="modal-title" id="settingsModalTitle" data-i18n="settingsModalTitle">表示設定</span>
-      <button class="modal-close" onclick="closeModal('settingsModal')">✕</button>
+      <button class="modal-close" onclick="closeModal('settingsModal')"><svg class="inline-icon" width="16" height="16"><use href="#i-close"/></svg></button>
     </div>
 
     <div class="settings-section-label" data-i18n="settingsDisplaySection">表示</div>
@@ -1194,7 +1299,7 @@
   <div class="perf-header">
     <div style="display:flex; gap:6px;">
       <button type="button" class="perf-close" id="perfCloseBtn" onclick="closePerformance()">終了</button>
-      <button type="button" class="perf-close" onclick="openKeyBindModal()" data-i18n-title="keySettingsBtn" title="キーボード設定">⌨️</button>
+      <button type="button" class="perf-close" onclick="openKeyBindModal()" data-i18n-title="keySettingsBtn" title="キーボード設定"><svg class="inline-icon" width="16" height="16"><use href="#i-keyboard"/></svg></button>
     </div>
     <div class="perf-title" id="perfTitle"></div>
     <div class="perf-progress" id="perfProgress"></div>
@@ -1208,12 +1313,12 @@
      .openクラスで画面いっぱいに表示する」構造。中身は旧#viewEditorから移設したもの） -->
 <div class="compose-overlay" id="composeOverlay">
   <div class="compose-header">
-    <button type="button" class="compose-close" onclick="switchView('library')" data-i18n-title="composeCloseTitle" title="閉じてライブラリへ戻る" aria-label="閉じてライブラリへ戻る" data-i18n-aria-label="composeCloseTitle">✕</button>
+    <button type="button" class="compose-close" onclick="switchView('library')" data-i18n-title="composeCloseTitle" title="閉じてライブラリへ戻る" aria-label="閉じてライブラリへ戻る" data-i18n-aria-label="composeCloseTitle"><svg class="inline-icon" width="16" height="16"><use href="#i-close"/></svg></button>
     <input type="text" id="songNameInput" class="compose-title-input" data-i18n-placeholder="songNamePlaceholder" placeholder="曲名" oninput="onSongMetaChange()">
     <div class="compose-header-actions">
       <button class="transport-btn primary" id="playBtn" data-i18n="playBtn" onclick="togglePlayback()">再生</button>
       <button class="transport-btn" id="stopBtn" data-i18n="stopBtn" onclick="stopPlayback()" style="display:none;">停止</button>
-      <button type="button" class="compose-tools-btn" onclick="openModal('composeToolsModal')" data-i18n-title="composeToolsBtnTitle" title="ツール（キー/楽器・練習範囲・共有・キー設定など）" aria-label="ツール" data-i18n-aria-label="composeToolsBtnTitle">🔧</button>
+      <button type="button" class="compose-tools-btn" onclick="openModal('composeToolsModal')" data-i18n-title="composeToolsBtnTitle" title="ツール（キー/楽器・練習範囲・共有・キー設定など）" aria-label="ツール" data-i18n-aria-label="composeToolsBtnTitle"><svg class="inline-icon" width="16" height="16"><use href="#i-hammer"/></svg></button>
     </div>
   </div>
 
@@ -1239,9 +1344,9 @@
          同じ機能のボタンが上部ツールバー・ツールパネル・矢印キーに揃っているため
          操作が失われることはない。 -->
     <div class="compose-side-rail rail-left">
-      <button type="button" class="rail-btn" onclick="selectPrevFrame()" data-i18n-title="railPrevFrameTitle" title="前のマスへ" aria-label="前のマスへ" data-i18n-aria-label="railPrevFrameTitle">⏮️</button>
-      <button type="button" class="rail-btn undo-edit-btn" onclick="undoEdit()" disabled data-i18n-title="undoEditBtnTitle" title="元に戻す" aria-label="元に戻す" data-i18n-aria-label="undoEditBtnTitle">↩️</button>
-      <button type="button" class="rail-btn danger" onclick="deleteFrameRange()" data-i18n-title="railDeleteRangeTitle" title="選択範囲を削除" aria-label="選択範囲を削除" data-i18n-aria-label="railDeleteRangeTitle">🗑️</button>
+      <button type="button" class="rail-btn" onclick="selectPrevFrame()" data-i18n-title="railPrevFrameTitle" title="前のマスへ" aria-label="前のマスへ" data-i18n-aria-label="railPrevFrameTitle"><svg class="inline-icon" width="16" height="16"><use href="#i-chevron-left"/></svg></button>
+      <button type="button" class="rail-btn undo-edit-btn" onclick="undoEdit()" disabled data-i18n-title="undoEditBtnTitle" title="元に戻す" aria-label="元に戻す" data-i18n-aria-label="undoEditBtnTitle"><svg class="inline-icon" width="16" height="16"><use href="#i-undo"/></svg></button>
+      <button type="button" class="rail-btn danger" onclick="deleteFrameRange()" data-i18n-title="railDeleteRangeTitle" title="選択範囲を削除" aria-label="選択範囲を削除" data-i18n-aria-label="railDeleteRangeTitle"><svg class="inline-icon" width="16" height="16"><use href="#i-trash"/></svg></button>
     </div>
     <div class="current-frame-card">
       <div class="current-frame-head">
@@ -1272,10 +1377,10 @@
       </div>
     </div>
     <div class="compose-side-rail rail-right">
-      <button type="button" class="rail-btn" onclick="selectNextFrame()" data-i18n-title="railNextFrameTitle" title="次のマスへ" aria-label="次のマスへ" data-i18n-aria-label="railNextFrameTitle">⏭️</button>
-      <button type="button" class="rail-btn redo-edit-btn" onclick="redoEdit()" disabled data-i18n-title="redoEditBtnTitle" title="やり直す" aria-label="やり直す" data-i18n-aria-label="redoEditBtnTitle">↪️</button>
-      <button type="button" class="rail-btn" onclick="copyFrameRange()" data-i18n-title="railCopyRangeTitle" title="選択範囲をコピー" aria-label="選択範囲をコピー" data-i18n-aria-label="railCopyRangeTitle">📋</button>
-      <button type="button" class="rail-btn paste-frame-btn" onclick="pasteFrameRange()" disabled data-i18n-title="railPasteRangeTitle" title="選択中のマスの後に貼り付け" aria-label="選択中のマスの後に貼り付け" data-i18n-aria-label="railPasteRangeTitle">📥</button>
+      <button type="button" class="rail-btn" onclick="selectNextFrame()" data-i18n-title="railNextFrameTitle" title="次のマスへ" aria-label="次のマスへ" data-i18n-aria-label="railNextFrameTitle"><svg class="inline-icon" width="16" height="16"><use href="#i-chevron-right"/></svg></button>
+      <button type="button" class="rail-btn redo-edit-btn" onclick="redoEdit()" disabled data-i18n-title="redoEditBtnTitle" title="やり直す" aria-label="やり直す" data-i18n-aria-label="redoEditBtnTitle"><svg class="inline-icon" width="16" height="16"><use href="#i-redo"/></svg></button>
+      <button type="button" class="rail-btn" onclick="copyFrameRange()" data-i18n-title="railCopyRangeTitle" title="選択範囲をコピー" aria-label="選択範囲をコピー" data-i18n-aria-label="railCopyRangeTitle"><svg class="inline-icon" width="16" height="16"><use href="#i-duplicate"/></svg></button>
+      <button type="button" class="rail-btn paste-frame-btn" onclick="pasteFrameRange()" disabled data-i18n-title="railPasteRangeTitle" title="選択中のマスの後に貼り付け" aria-label="選択中のマスの後に貼り付け" data-i18n-aria-label="railPasteRangeTitle"><svg class="inline-icon" width="16" height="16"><use href="#i-download"/></svg></button>
     </div>
   </div>
 
@@ -1293,18 +1398,18 @@
   <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="composeToolsModalTitle" tabindex="-1">
     <div class="modal-header">
       <span class="modal-title" id="composeToolsModalTitle" data-i18n="composeToolsModalTitle">ツール</span>
-      <button type="button" class="modal-close" onclick="closeModal('composeToolsModal')" aria-label="閉じる">✕</button>
+      <button type="button" class="modal-close" onclick="closeModal('composeToolsModal')" aria-label="閉じる"><svg class="inline-icon" width="16" height="16"><use href="#i-close"/></svg></button>
     </div>
 
     <div class="compose-tools-section">
       <div class="editor-top-row" style="margin-bottom:0;">
         <select id="songPitchInput" onchange="onSongMetaChange()"></select>
         <select id="songInstrumentInput" onchange="onSongMetaChange()">
-          <option value="Harp" data-i18n="instrumentHarp">🎼 楽器A</option>
-          <option value="Guitar" data-i18n="instrumentGuitar">🎸 楽器B</option>
-          <option value="Bass" data-i18n="instrumentBass">🎸 楽器C</option>
-          <option value="Flute" data-i18n="instrumentFlute">🪈 楽器D</option>
-          <option value="Bells" data-i18n="instrumentBells">🔔 楽器E</option>
+          <option value="Harp" data-i18n="instrumentHarp">楽器A</option>
+          <option value="Guitar" data-i18n="instrumentGuitar">楽器B</option>
+          <option value="Bass" data-i18n="instrumentBass">楽器C</option>
+          <option value="Flute" data-i18n="instrumentFlute">楽器D</option>
+          <option value="Bells" data-i18n="instrumentBells">楽器E</option>
         </select>
       </div>
     </div>
@@ -1364,23 +1469,23 @@
   </span>
 </footer>
 
-<button type="button" class="floating-stop-btn" id="floatingStopBtn" onclick="stopPlayback()" data-i18n-title="stopBtn" title="停止" aria-label="停止" data-i18n-aria-label="stopBtn">⏹️</button>
+<button type="button" class="floating-stop-btn" id="floatingStopBtn" onclick="stopPlayback()" data-i18n-title="stopBtn" title="停止" aria-label="停止" data-i18n-aria-label="stopBtn"><svg class="inline-icon" width="16" height="16"><use href="#i-stop"/></svg></button>
 
 <nav class="site-dock" aria-label="クイックメニュー" data-i18n-aria-label="dockAriaLabel">
   <button type="button" onclick="switchView('library')">
-    <span class="site-dock-icon">📚</span>
+    <span class="site-dock-icon"><svg class="inline-icon" width="20" height="20"><use href="#i-sheet-music"/></svg></span>
     <span class="site-dock-label" data-i18n="dockLibrary">ライブラリ</span>
   </button>
   <button type="button" onclick="switchView('editor')">
-    <span class="site-dock-icon">✏️</span>
+    <span class="site-dock-icon"><svg class="inline-icon" width="20" height="20"><use href="#i-edit"/></svg></span>
     <span class="site-dock-label" data-i18n="dockEditor">作成・演奏</span>
   </button>
   <button type="button" onclick="toggleSidebar()">
-    <span class="site-dock-icon">☰</span>
+    <span class="site-dock-icon"><svg class="inline-icon" width="20" height="20"><use href="#i-menu"/></svg></span>
     <span class="site-dock-label" data-i18n="dockTools">他のツール</span>
   </button>
   <button type="button" onclick="settingsOpen()">
-    <span class="site-dock-icon">⚙️</span>
+    <span class="site-dock-icon"><svg class="inline-icon" width="20" height="20"><use href="#i-settings"/></svg></span>
     <span class="site-dock-label" data-i18n="dockSettings">表示設定</span>
   </button>
 </nav>
@@ -1429,20 +1534,20 @@ let LANG = loadLang();
 const I18N = {
   ja: {
     pageTitle: '楽譜づくり - Sky所持率管理',
-    navTitle: '🎵 楽譜づくり',
+    navTitle: '<svg class="inline-icon" width="19" height="19"><use href="#i-music-note"/></svg> 楽譜づくり',
     relatedTools: '関連ツール',
-    toolItem: '🗂️ アイテム所持管理',
-    toolEmote: '🎭 エモート所持率管理',
-    toolShare: '📍 創作物管理ツール',
-    toolNomacan: '🕯️ ノマキャン計算機',
-    toolStarCandle: '🕯️ 星のキャンドル計算機',
-    toolCompanion: '✨ 精霊同行ツール',
-    toolWings: '🪽 羽トラッカー',
-    toolScore: '🎵 楽譜づくり',
-    toolTransfer: '🔄 データ引継ぎ',
-    toolInfo: '⚙️ 設定・更新情報',
+    toolItem: '<svg class="inline-icon" width="19" height="19"><use href="#i-folder"/></svg> アイテム所持管理',
+    toolEmote: '<svg class="inline-icon" width="19" height="19"><use href="#i-masks"/></svg> エモート所持率管理',
+    toolShare: '<svg class="inline-icon" width="19" height="19"><use href="#i-pin"/></svg> 創作物管理ツール',
+    toolNomacan: '<svg class="inline-icon" width="19" height="19"><use href="#i-candle"/></svg> ノマキャン計算機',
+    toolStarCandle: '<svg class="inline-icon" width="19" height="19"><use href="#i-star-candle"/></svg> 星のキャンドル計算機',
+    toolCompanion: '<svg class="inline-icon" width="19" height="19"><use href="#i-sparkle"/></svg> 精霊同行ツール',
+    toolWings: '<svg class="inline-icon" width="19" height="19"><use href="#i-wing"/></svg> 羽トラッカー',
+    toolScore: '<svg class="inline-icon" width="19" height="19"><use href="#i-music-note"/></svg> 楽譜づくり',
+    toolTransfer: '<svg class="inline-icon" width="19" height="19"><use href="#i-sync"/></svg> データ引継ぎ',
+    toolInfo: '<svg class="inline-icon" width="19" height="19"><use href="#i-settings"/></svg> 設定・更新情報',
     dockAriaLabel: 'クイックメニュー',
-    toolProfile: '👤 作者プロフィール',
+    toolProfile: '<svg class="inline-icon" width="19" height="19"><use href="#i-person"/></svg> 作者プロフィール',
     introText: `Skyの5×3マス（ハープ等）の楽器で演奏できる楽譜を、自由に作成・保存・共有・練習できるツールです。
         <a href="https://sky-music.specy.app/" target="_blank" rel="noopener noreferrer">Sky Music Nightly</a>形式の楽譜ファイルの
         インポート・エクスポートにも対応しているほか、Sky Studio形式の楽譜ファイルの読み込みにも対応しているので、
@@ -1486,11 +1591,11 @@ const I18N = {
     btnExportAllText: '全曲をテキスト譜面で書き出す',
     btnNewSong: '＋ 新規作成',
     songNamePlaceholder: '曲名',
-    instrumentHarp: '🎼 楽器A',
-    instrumentGuitar: '🎸 楽器B',
-    instrumentBass: '🎸 楽器C',
-    instrumentFlute: '🪈 楽器D',
-    instrumentBells: '🔔 楽器E',
+    instrumentHarp: '楽器A',
+    instrumentGuitar: '楽器B',
+    instrumentBass: '楽器C',
+    instrumentFlute: '楽器D',
+    instrumentBells: '楽器E',
     tapTempoBtn: 'タップでBPM測定',
     tapTempoHint: 'リズムに合わせて連続でタップしてください',
     metronomeToggleLabel: 'メトロノーム／カウントインを鳴らす（再生・練習・試験モード）',
@@ -1639,9 +1744,9 @@ const I18N = {
     deletedToast: '削除しました',
     emptyLibraryText: 'まだ楽譜がありません。「＋ 新規作成」から作ってみましょう。',
     songCardMeta: '{frames}マス・{notes}音　・　BPM{bpm}　・　更新: {date}',
-    openBtn: '✏️ 開く',
-    duplicateBtn: '📄 複製',
-    deleteBtn: '🗑️ 削除',
+    openBtn: '開く',
+    duplicateBtn: '複製',
+    deleteBtn: '削除',
     pitchOptionLabel: '調: {p}',
     lastFrameCannotDelete: '最後の1マスは削除できません',
     undoEditBtn: '元に戻す',
@@ -1662,8 +1767,8 @@ const I18N = {
     perfCloseClose: '閉じる',
     freePlayModeTitle: 'フリー演奏モード',
     freePlayFooterHint: '楽譜には関係なく、自由に押して演奏を楽しめます',
-    wrongAnswerFooter: '❌ 不正解（ミス{count}回）。もう一度そのマスから挑戦しましょう',
-    passNoMistake: '🎉 ノーミスで合格です！閉じてもう一度開くと最初からになります。',
+    wrongAnswerFooter: '<svg class="inline-icon warn" width="14" height="14"><use href="#i-close"/></svg> 不正解（ミス{count}回）。もう一度そのマスから挑戦しましょう',
+    passNoMistake: '<svg class="inline-icon" width="14" height="14"><use href="#i-sparkle"/></svg> ノーミスで合格です！閉じてもう一度開くと最初からになります。',
     passWithMistakes: '試験終了（ミス{count}回）。閉じてもう一度開くと最初からになります。',
     performedToEnd: '最後まで演奏できました！閉じてもう一度開くと最初からになります。',
     practiceTargetFooter: '光っているマスを押しましょう',
@@ -1695,20 +1800,20 @@ const I18N = {
   },
   en: {
     pageTitle: 'Sheet Music Maker - Sky Collection Tracker',
-    navTitle: '🎵 Sheet Music Maker',
+    navTitle: '<svg class="inline-icon" width="19" height="19"><use href="#i-music-note"/></svg> Sheet Music Maker',
     relatedTools: 'Related Tools',
-    toolItem: '🗂️ Item Collection',
-    toolEmote: '🎭 Emote Collection',
-    toolShare: '📍 Creation Manager',
-    toolNomacan: '🕯️ Nomacan Calculator',
-    toolStarCandle: '🕯️ Star Candle Calculator',
-    toolCompanion: '✨ Spirit Companion Tool',
-    toolWings: '🪽 Wing Tracker',
-    toolScore: '🎵 Sheet Music Maker',
-    toolTransfer: '🔄 Data Transfer',
-    toolInfo: '⚙️ Settings & Updates',
+    toolItem: '<svg class="inline-icon" width="19" height="19"><use href="#i-folder"/></svg> Item Collection',
+    toolEmote: '<svg class="inline-icon" width="19" height="19"><use href="#i-masks"/></svg> Emote Collection',
+    toolShare: '<svg class="inline-icon" width="19" height="19"><use href="#i-pin"/></svg> Creation Manager',
+    toolNomacan: '<svg class="inline-icon" width="19" height="19"><use href="#i-candle"/></svg> Nomacan Calculator',
+    toolStarCandle: '<svg class="inline-icon" width="19" height="19"><use href="#i-star-candle"/></svg> Star Candle Calculator',
+    toolCompanion: '<svg class="inline-icon" width="19" height="19"><use href="#i-sparkle"/></svg> Spirit Companion Tool',
+    toolWings: '<svg class="inline-icon" width="19" height="19"><use href="#i-wing"/></svg> Wing Tracker',
+    toolScore: '<svg class="inline-icon" width="19" height="19"><use href="#i-music-note"/></svg> Sheet Music Maker',
+    toolTransfer: '<svg class="inline-icon" width="19" height="19"><use href="#i-sync"/></svg> Data Transfer',
+    toolInfo: '<svg class="inline-icon" width="19" height="19"><use href="#i-settings"/></svg> Settings & Updates',
     dockAriaLabel: 'Quick menu',
-    toolProfile: '👤 Creator Profile',
+    toolProfile: '<svg class="inline-icon" width="19" height="19"><use href="#i-person"/></svg> Creator Profile',
     introText: `A free tool for creating, saving, sharing, and practicing sheet music playable on Sky's 5×3-key
         instruments (Harp, etc). It also supports importing and exporting
         <a href="https://sky-music.specy.app/" target="_blank" rel="noopener noreferrer">Sky Music Nightly</a>-format
@@ -1753,11 +1858,11 @@ const I18N = {
     btnExportAllText: 'Export All as Text Sheets',
     btnNewSong: '+ New Song',
     songNamePlaceholder: 'Song title',
-    instrumentHarp: '🎼 Instrument A',
-    instrumentGuitar: '🎸 Instrument B',
-    instrumentBass: '🎸 Instrument C',
-    instrumentFlute: '🪈 Instrument D',
-    instrumentBells: '🔔 Instrument E',
+    instrumentHarp: 'Instrument A',
+    instrumentGuitar: 'Instrument B',
+    instrumentBass: 'Instrument C',
+    instrumentFlute: 'Instrument D',
+    instrumentBells: 'Instrument E',
     tapTempoBtn: 'Tap for BPM',
     tapTempoHint: 'Tap repeatedly in rhythm',
     metronomeToggleLabel: 'Play metronome / count-in (Play, Practice & Test modes)',
@@ -1906,9 +2011,9 @@ const I18N = {
     deletedToast: 'Deleted',
     emptyLibraryText: 'No sheet music yet. Try creating one with "+ New Song".',
     songCardMeta: '{frames} tiles · {notes} notes　·　BPM {bpm}　·　Updated: {date}',
-    openBtn: '✏️ Open',
-    duplicateBtn: '📄 Duplicate',
-    deleteBtn: '🗑️ Delete',
+    openBtn: 'Open',
+    duplicateBtn: 'Duplicate',
+    deleteBtn: 'Delete',
     pitchOptionLabel: 'Key: {p}',
     lastFrameCannotDelete: "Can't delete the last remaining tile",
     undoEditBtn: 'Undo',
@@ -1929,8 +2034,8 @@ const I18N = {
     perfCloseClose: 'Close',
     freePlayModeTitle: 'Free Play Mode',
     freePlayFooterHint: 'Play freely, unrelated to any sheet music',
-    wrongAnswerFooter: '❌ Incorrect ({count} miss(es)). Try that tile again from the start.',
-    passNoMistake: '🎉 Perfect, no mistakes! Close and reopen to start over.',
+    wrongAnswerFooter: '<svg class="inline-icon warn" width="14" height="14"><use href="#i-close"/></svg> Incorrect ({count} miss(es)). Try that tile again from the start.',
+    passNoMistake: '<svg class="inline-icon" width="14" height="14"><use href="#i-sparkle"/></svg> Perfect, no mistakes! Close and reopen to start over.',
     passWithMistakes: 'Test complete ({count} miss(es)). Close and reopen to start over.',
     performedToEnd: 'You played all the way through! Close and reopen to start over.',
     practiceTargetFooter: 'Press the tiles that light up',
@@ -2213,12 +2318,12 @@ function songNoteCount(s) { return s.frames.reduce((sum, f) => sum + f.length, 0
    ================================================================ */
 const TITLES_KEY = 'taiScoreTitles_v1';
 const TITLES = [
-  { id: 'firstSong',   icon: '🎼', nameKey: 'titleFirstSongName',   descKey: 'titleFirstSongDesc',   check: d => d.songsCreatedTotal >= 1 },
-  { id: 'apprentice',  icon: '🎶', nameKey: 'titleApprenticeName',  descKey: 'titleApprenticeDesc',  check: d => d.songsCreatedTotal >= 5 },
-  { id: 'craftsman',   icon: '🎹', nameKey: 'titleCraftsmanName',   descKey: 'titleCraftsmanDesc',   check: d => d.songsCreatedTotal >= 20 },
-  { id: 'legend',      icon: '🏅', nameKey: 'titleLegendName',      descKey: 'titleLegendDesc',      check: d => d.songsCreatedTotal >= 50 },
-  { id: 'passionate',  icon: '🔥', nameKey: 'titlePassionateName',  descKey: 'titlePassionateDesc',  check: d => d.maxNoteCount >= 100 },
-  { id: 'virtuoso',    icon: '⚡', nameKey: 'titleVirtuosoName',    descKey: 'titleVirtuosoDesc',    check: d => d.maxNoteCount >= 300 },
+  { id: 'firstSong',   icon: '<svg class="inline-icon" width="15" height="15"><use href="#i-sheet-music"/></svg>', nameKey: 'titleFirstSongName',   descKey: 'titleFirstSongDesc',   check: d => d.songsCreatedTotal >= 1 },
+  { id: 'apprentice',  icon: '<svg class="inline-icon" width="15" height="15"><use href="#i-music-note"/></svg>', nameKey: 'titleApprenticeName',  descKey: 'titleApprenticeDesc',  check: d => d.songsCreatedTotal >= 5 },
+  { id: 'craftsman',   icon: '<svg class="inline-icon" width="15" height="15"><use href="#i-music-note"/></svg>', nameKey: 'titleCraftsmanName',   descKey: 'titleCraftsmanDesc',   check: d => d.songsCreatedTotal >= 20 },
+  { id: 'legend',      icon: '<svg class="inline-icon" width="15" height="15"><use href="#i-medal"/></svg>', nameKey: 'titleLegendName',      descKey: 'titleLegendDesc',      check: d => d.songsCreatedTotal >= 50 },
+  { id: 'passionate',  icon: '<svg class="inline-icon" width="15" height="15"><use href="#i-flame"/></svg>', nameKey: 'titlePassionateName',  descKey: 'titlePassionateDesc',  check: d => d.maxNoteCount >= 100 },
+  { id: 'virtuoso',    icon: '<svg class="inline-icon" width="15" height="15"><use href="#i-bolt"/></svg>', nameKey: 'titleVirtuosoName',    descKey: 'titleVirtuosoDesc',    check: d => d.maxNoteCount >= 300 },
 ];
 function loadTitlesData() {
   try {
@@ -2268,7 +2373,7 @@ function renderTitles() {
   row.innerHTML = TITLES.map(ti => {
     if (!earnedIds.has(ti.id)) {
       // 未解除：名前・条件とも伏せ、🔒表示のみ。ホバーしても中身が漏れないよう汎用文言に固定する
-      return `<span class="title-chip locked" title="${escapeHtml(t('titleLockedHint'))}"><span class="title-chip-icon">🔒</span>${escapeHtml(t('titleLockedName'))}</span>`;
+      return `<span class="title-chip locked" title="${escapeHtml(t('titleLockedHint'))}"><span class="title-chip-icon"><svg class="inline-icon" width="13" height="13"><use href="#i-lock"/></svg></span>${escapeHtml(t('titleLockedName'))}</span>`;
     }
     return `<span class="title-chip" title="${escapeHtml(t(ti.descKey))}"><span class="title-chip-icon">${ti.icon}</span>${escapeHtml(t(ti.nameKey))}</span>`;
   }).join('');
@@ -2821,7 +2926,7 @@ function renderFrameStrip() {
     return `
     <div class="${cls}" id="frameBox_${fi}" onclick="selectFrame(${fi})">
       ${showIndex ? `<span class="frame-index">${fi + 1}</span>` : ''}
-      <button class="frame-del-btn" onclick="event.stopPropagation(); deleteFrame(${fi})">✕</button>
+      <button class="frame-del-btn" onclick="event.stopPropagation(); deleteFrame(${fi})"><svg class="inline-icon" width="12" height="12"><use href="#i-close"/></svg></button>
       <button class="frame-insert-btn" onclick="event.stopPropagation(); insertBlankFrameAfter(${fi})" title="${escapeHtml(t('insertFrameAfterTitle'))}" aria-label="${escapeHtml(t('insertFrameAfterTitle'))}">＋</button>
       ${columnMode ? frameColumnSvg(frame)
         : staffMode ? frameStaffSvg(frame)
@@ -2830,7 +2935,7 @@ function renderFrameStrip() {
             const dotDiamond = (ni % 5) % 2 === 1;
             return `<div class="frame-dot${dotOn ? ' on' : ''}${dotDiamond ? ' diamond-shape' : ''}"></div>`;
           }).join('')}
-      ${bpmOv !== null ? `<span class="frame-bpm-badge" title="${escapeHtml(t('frameBpmBadgeTitle', { bpm: bpmOv }))}">🥁${bpmOv}</span>` : ''}
+      ${bpmOv !== null ? `<span class="frame-bpm-badge" title="${escapeHtml(t('frameBpmBadgeTitle', { bpm: bpmOv }))}"><svg class="inline-icon" width="10" height="10"><use href="#i-clock"/></svg>${bpmOv}</span>` : ''}
     </div>
   `;
   }).join('') + `<button class="add-frame-btn" onclick="addFrame()">＋</button>`;
@@ -3581,7 +3686,8 @@ function openFreeMode() {
 }
 function renderFreePlayInstrumentRow() {
   const row = document.getElementById('perfInstrumentRow');
-  const icons = { Harp: '🎼', Guitar: '🎸', Bass: '🎸', Flute: '🪈', Bells: '🔔' };
+  const noteIcon = '<svg class="inline-icon" width="15" height="15"><use href="#i-music-note"/></svg>';
+  const icons = { Harp: noteIcon, Guitar: noteIcon, Bass: noteIcon, Flute: noteIcon, Bells: noteIcon };
   row.innerHTML = Object.keys(INSTRUMENT_LABELS).map(code => `
     <button type="button" class="perf-instrument-btn${code === freePlayInstrument ? ' active' : ''}" onclick="setFreePlayInstrument('${code}')">${icons[code] || ''} ${escapeHtml(instrumentLabel(code))}</button>
   `).join('');
@@ -3677,7 +3783,7 @@ function onPerfKeyPress(idx) {
       el.classList.add('miss-flash');
       setTimeout(() => el.classList.remove('miss-flash'), 250);
     }
-    document.getElementById('perfFooter').textContent = t('wrongAnswerFooter', { count: perfMistakeCount });
+    document.getElementById('perfFooter').innerHTML = t('wrongAnswerFooter', { count: perfMistakeCount });
   }
 }
 
@@ -3692,7 +3798,7 @@ function goToNextPerfFrame() {
   if (perfFrameIndex > perfRangeEnd) {
     clearPerfTargets();
     if (perfMode === 'test') {
-      document.getElementById('perfFooter').textContent = perfMistakeCount === 0
+      document.getElementById('perfFooter').innerHTML = perfMistakeCount === 0
         ? t('passNoMistake')
         : t('passWithMistakes', { count: perfMistakeCount });
     } else {
