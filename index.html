@@ -82,7 +82,11 @@
     .inline-icon.ok { stroke: var(--green); color: var(--green); }
     .icon-chip {
       display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0;
-      border-radius: 26%; color: var(--pink-d);
+      background: var(--pink-bg);
+      background-image: linear-gradient(180deg, rgba(255,255,255,0.32), rgba(255,255,255,0) 60%);
+      border-radius: 26%;
+      box-shadow: inset 0 0 0 1px rgba(255,255,255,0.35), inset 0 1px 1px rgba(255,255,255,0.5), 0 1px 2px rgba(0,0,0,0.10);
+      color: var(--pink-d);
     }
     .icon-chip svg { display: block; stroke: var(--pink-d); fill: none; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; }
     .pf-titles-caret { transition: transform 0.15s ease; }
@@ -1005,7 +1009,7 @@
   <aside class="sidebar" id="sidebar">
     <div class="sidebar-head">
       <div class="sidebar-section-label" data-i18n="relatedTools">関連ツール</div>
-      <button class="sidebar-close-btn" onclick="toggleSidebar()"><svg class="inline-icon" width="16" height="16"><use href="#i-close"/></svg></button>
+      <button class="sidebar-close-btn" onclick="toggleSidebar()"><span class="icon-chip" style="width:22px; height:22px;"><svg width="16" height="16"><use href="#i-close"/></svg></span></button>
     </div>
     <a href="https://taipak5000.github.io/tai-item/" class="sidebar-nav-link" data-i18n-html="toolItem"><svg class="inline-icon" width="19" height="19"><use href="#i-folder"/></svg> アイテム所持管理</a>
     <a href="https://taipak5000.github.io/tai-emote/" class="sidebar-nav-link" data-i18n-html="toolEmote"><svg class="inline-icon" width="19" height="19"><use href="#i-masks"/></svg> エモート所持率管理</a>
@@ -1103,7 +1107,7 @@
   <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="shareModalTitle" tabindex="-1">
     <div class="modal-header">
       <span class="modal-title" id="shareModalTitle" data-i18n="shareModalTitle">共有・保存</span>
-      <button class="modal-close" onclick="closeModal('shareModal')"><svg class="inline-icon" width="16" height="16"><use href="#i-close"/></svg></button>
+      <button class="modal-close" onclick="closeModal('shareModal')"><span class="icon-chip" style="width:22px; height:22px;"><svg width="16" height="16"><use href="#i-close"/></svg></span></button>
     </div>
     <div class="hint" data-i18n="shareHint1">この楽譜専用のコードを作成し、別の端末やSNSで共有できます。ファイルとしても保存できます。</div>
     <button type="button" class="action-btn primary" data-i18n="createShareCodeBtn" onclick="generateShareCode()">共有コードを作成</button>
@@ -1125,7 +1129,7 @@
   <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="importModalTitle" tabindex="-1">
     <div class="modal-header">
       <span class="modal-title" id="importModalTitle" data-i18n="importModalTitle">楽譜を読み込む</span>
-      <button class="modal-close" onclick="closeModal('importModal')"><svg class="inline-icon" width="16" height="16"><use href="#i-close"/></svg></button>
+      <button class="modal-close" onclick="closeModal('importModal')"><span class="icon-chip" style="width:22px; height:22px;"><svg width="16" height="16"><use href="#i-close"/></svg></span></button>
     </div>
     <div class="hint" data-i18n="importHint">共有コード、テキスト譜面（ABC譜）、またはこのサイト／Sky Music Nightly／Sky Studio形式の.json・.txtファイルを読み込めます。</div>
     <textarea class="code-box" id="importCodeInput" data-i18n-placeholder="importCodePlaceholder" placeholder="共有コードまたはテキスト譜面を貼り付け"></textarea>
@@ -1141,7 +1145,7 @@
   <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="audioImportModalTitle" tabindex="-1">
     <div class="modal-header">
       <span class="modal-title" id="audioImportModalTitle" data-i18n="audioImportModalTitle">音声から楽譜を作成</span>
-      <button class="modal-close" onclick="closeAudioImportModal()"><svg class="inline-icon" width="16" height="16"><use href="#i-close"/></svg></button>
+      <button class="modal-close" onclick="closeAudioImportModal()"><span class="icon-chip" style="width:22px; height:22px;"><svg width="16" height="16"><use href="#i-close"/></svg></span></button>
     </div>
     <div class="hint" data-i18n="audioImportHint">演奏音声（または演奏動画）のファイルを選ぶと、自動で楽譜を作成します。ファイルはどこにもアップロードされず、すべてこの端末（ブラウザ）内だけで処理されます。自動解析のため完璧ではありません。作成後は編集画面で内容をご確認・修正してください。</div>
 
@@ -1178,7 +1182,7 @@
   <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="imageImportModalTitle" tabindex="-1">
     <div class="modal-header">
       <span class="modal-title" id="imageImportModalTitle" data-i18n="imageImportModalTitle">楽譜画像から楽譜を作成</span>
-      <button class="modal-close" onclick="closeImageImportModal()"><svg class="inline-icon" width="16" height="16"><use href="#i-close"/></svg></button>
+      <button class="modal-close" onclick="closeImageImportModal()"><span class="icon-chip" style="width:22px; height:22px;"><svg width="16" height="16"><use href="#i-close"/></svg></span></button>
     </div>
     <div class="hint" data-i18n-html="imageImportHint">五線譜の画像（MuseScore等で書き出したPNG/JPGなど）を選ぶと、自動で楽譜を作成します。複数ページある場合はまとめて選ぶと、ファイル名順につなげて読み込みます。画像はどこにもアップロードされず、すべてこの端末（ブラウザ）内だけで処理されます。<br><br>
       ⚠️ 自動認識のため精度は完璧ではありません。特に「#・♭」は判定せずいったん自然音として割り当て、Skyの音域（2オクターブ）に収まるようオクターブを丸め込みます。作成後は編集画面で必ず内容をご確認・修正してください。</div>
@@ -1205,7 +1209,7 @@
   <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="midiImportModalTitle" tabindex="-1">
     <div class="modal-header">
       <span class="modal-title" id="midiImportModalTitle" data-i18n="midiImportModalTitle">MIDIから楽譜を作成</span>
-      <button class="modal-close" onclick="closeMidiImportModal()"><svg class="inline-icon" width="16" height="16"><use href="#i-close"/></svg></button>
+      <button class="modal-close" onclick="closeMidiImportModal()"><span class="icon-chip" style="width:22px; height:22px;"><svg width="16" height="16"><use href="#i-close"/></svg></span></button>
     </div>
     <div class="hint" data-i18n="midiImportHint">標準MIDIファイル（.mid・.midi）を選ぶと、自動で楽譜を作成します。ファイルはどこにもアップロードされず、すべてこの端末（ブラウザ）内だけで処理されます。⚠️ 自動変換のため完璧ではありません。Skyの楽器で鳴らせない音（半音や音域外の音）は、オクターブ移動や最も近い音への置き換えで対応します。作成後は編集画面で内容を必ずご確認・修正してください。</div>
     <input type="file" id="midiFileInput" accept=".mid,.midi,audio/midi,audio/x-midi" onchange="onMidiFileSelected(event)">
@@ -1218,7 +1222,7 @@
   <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="dmModalTitle" tabindex="-1">
     <div class="modal-header">
       <span class="modal-title" id="dmModalTitle" data-i18n="dmModalTitle">データのバックアップ・復元</span>
-      <button class="modal-close" onclick="closeModal('dmModal')"><svg class="inline-icon" width="16" height="16"><use href="#i-close"/></svg></button>
+      <button class="modal-close" onclick="closeModal('dmModal')"><span class="icon-chip" style="width:22px; height:22px;"><svg width="16" height="16"><use href="#i-close"/></svg></span></button>
     </div>
     <div class="hint" data-i18n="dmHint">作成した楽譜はすべてこの端末のブラウザだけに保存されています。機種変更やブラウザの変更に備えて、
       ときどきファイルとしてバックアップすることをおすすめします。</div>
@@ -1237,7 +1241,7 @@
   <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="confirmModalTitle" tabindex="-1">
     <div class="modal-header">
       <span class="modal-title" id="confirmModalTitle" data-i18n="confirmModalTitle">確認</span>
-      <button class="modal-close" onclick="closeConfirm()"><svg class="inline-icon" width="16" height="16"><use href="#i-close"/></svg></button>
+      <button class="modal-close" onclick="closeConfirm()"><span class="icon-chip" style="width:22px; height:22px;"><svg width="16" height="16"><use href="#i-close"/></svg></span></button>
     </div>
     <div class="hint" id="confirmModalMessage"></div>
     <button type="button" class="action-btn secondary" id="confirmModalOkBtn" style="background:var(--red-btn); color:#fff; border-color:var(--red-btn);"></button>
@@ -1250,7 +1254,7 @@
   <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="keyBindModalTitle" tabindex="-1">
     <div class="modal-header">
       <span class="modal-title" id="keyBindModalTitle" data-i18n="keyBindModalTitle">キーボード設定</span>
-      <button class="modal-close" onclick="closeKeyBindModal()"><svg class="inline-icon" width="16" height="16"><use href="#i-close"/></svg></button>
+      <button class="modal-close" onclick="closeKeyBindModal()"><span class="icon-chip" style="width:22px; height:22px;"><svg width="16" height="16"><use href="#i-close"/></svg></span></button>
     </div>
     <div class="hint" data-i18n="keyBindHint">パソコンのキーボードで楽譜の作成・演奏ができます。「変更」を押してから、割り当てたいキーを押してください。すでに他のマスで使われているキーを選ぶと、入れ替わります。</div>
     <div class="keybind-list" id="keyBindList"><!-- JS --></div>
@@ -1264,16 +1268,16 @@
   <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="settingsModalTitle" tabindex="-1">
     <div class="modal-header">
       <span class="modal-title" id="settingsModalTitle" data-i18n="settingsModalTitle">表示設定</span>
-      <button class="modal-close" onclick="closeModal('settingsModal')"><svg class="inline-icon" width="16" height="16"><use href="#i-close"/></svg></button>
+      <button class="modal-close" onclick="closeModal('settingsModal')"><span class="icon-chip" style="width:22px; height:22px;"><svg width="16" height="16"><use href="#i-close"/></svg></span></button>
     </div>
 
-    <div class="settings-section-label" data-i18n="settingsDisplaySection">表示</div>
+    <div class="settings-section-label" data-i18n-html="settingsDisplaySection"><svg class="inline-icon" width="15" height="15"><use href="#i-monitor"/></svg> 表示</div>
     <div class="settings-row">
       <span data-i18n="settingsDarkModeLabel">ダークモード</span>
       <button type="button" class="mini-btn primary" id="themeToggleBtn" onclick="toggleTheme()">ダーク</button>
     </div>
 
-    <div class="settings-section-label" style="margin-top:18px;" data-i18n="settingsShortcutsSection">キーボードショートカット</div>
+    <div class="settings-section-label" style="margin-top:18px;" data-i18n-html="settingsShortcutsSection"><svg class="inline-icon" width="15" height="15"><use href="#i-keyboard"/></svg> キーボードショートカット</div>
     <label class="settings-row" style="cursor:pointer;">
       <span data-i18n="settingsShortcutsEnableLabel">ショートカットを有効にする</span>
       <input type="checkbox" id="shortcutsEnabledCheckbox" style="accent-color:var(--pink); width:17px; height:17px; flex-shrink:0;" onchange="onShortcutsEnabledChange(event)">
@@ -1284,7 +1288,7 @@
       <div class="shortcut-row"><span class="keybind-key-display" style="min-width:34px;">Esc</span><span data-i18n="settingsShortcutEsc">開いているウィンドウを閉じる</span></div>
     </div>
 
-    <div class="settings-section-label" style="margin-top:18px;" data-i18n="settingsLangSection">言語</div>
+    <div class="settings-section-label" style="margin-top:18px;" data-i18n-html="settingsLangSection"><svg class="inline-icon" width="15" height="15"><use href="#i-globe"/></svg> 言語</div>
     <div class="settings-lang-row">
       <button type="button" class="mini-btn lang-select-btn" id="settingsLangJaBtn" onclick="setLang('ja')">日本語</button>
       <button type="button" class="mini-btn lang-select-btn" id="settingsLangEnBtn" onclick="setLang('en')">English</button>
@@ -1398,7 +1402,7 @@
   <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="composeToolsModalTitle" tabindex="-1">
     <div class="modal-header">
       <span class="modal-title" id="composeToolsModalTitle" data-i18n="composeToolsModalTitle">ツール</span>
-      <button type="button" class="modal-close" onclick="closeModal('composeToolsModal')" aria-label="閉じる"><svg class="inline-icon" width="16" height="16"><use href="#i-close"/></svg></button>
+      <button type="button" class="modal-close" onclick="closeModal('composeToolsModal')" aria-label="閉じる"><span class="icon-chip" style="width:22px; height:22px;"><svg width="16" height="16"><use href="#i-close"/></svg></span></button>
     </div>
 
     <div class="compose-tools-section">
@@ -1473,19 +1477,19 @@
 
 <nav class="site-dock" aria-label="クイックメニュー" data-i18n-aria-label="dockAriaLabel">
   <button type="button" onclick="switchView('library')">
-    <span class="site-dock-icon"><svg class="inline-icon" width="20" height="20"><use href="#i-sheet-music"/></svg></span>
+    <span class="site-dock-icon"><span class="icon-chip" style="width:28px; height:28px;"><svg width="22" height="22"><use href="#i-sheet-music"/></svg></span></span>
     <span class="site-dock-label" data-i18n="dockLibrary">ライブラリ</span>
   </button>
   <button type="button" onclick="switchView('editor')">
-    <span class="site-dock-icon"><svg class="inline-icon" width="20" height="20"><use href="#i-edit"/></svg></span>
+    <span class="site-dock-icon"><span class="icon-chip" style="width:28px; height:28px;"><svg width="22" height="22"><use href="#i-edit"/></svg></span></span>
     <span class="site-dock-label" data-i18n="dockEditor">作成・演奏</span>
   </button>
   <button type="button" onclick="toggleSidebar()">
-    <span class="site-dock-icon"><svg class="inline-icon" width="20" height="20"><use href="#i-menu"/></svg></span>
+    <span class="site-dock-icon"><span class="icon-chip" style="width:28px; height:28px;"><svg width="22" height="22"><use href="#i-menu"/></svg></span></span>
     <span class="site-dock-label" data-i18n="dockTools">他のツール</span>
   </button>
   <button type="button" onclick="settingsOpen()">
-    <span class="site-dock-icon"><svg class="inline-icon" width="20" height="20"><use href="#i-settings"/></svg></span>
+    <span class="site-dock-icon"><span class="icon-chip" style="width:28px; height:28px;"><svg width="22" height="22"><use href="#i-settings"/></svg></span></span>
     <span class="site-dock-label" data-i18n="dockSettings">表示設定</span>
   </button>
 </nav>
@@ -1781,17 +1785,17 @@ const I18N = {
     keySwapToast: '「{label}」（マス{n}）と入れ替えました',
     sharedSongLoadedToast: '共有された楽譜「{name}」を読み込みました',
     settingsModalTitle: '表示設定',
-    settingsDisplaySection: '表示',
+    settingsDisplaySection: '<svg class="inline-icon" width="15" height="15"><use href="#i-monitor"/></svg> 表示',
     settingsDarkModeLabel: 'ダークモード',
     themeDark: 'ダーク',
     themeLight: 'ライト',
     themeSystem: 'システム',
-    settingsShortcutsSection: 'キーボードショートカット',
+    settingsShortcutsSection: '<svg class="inline-icon" width="15" height="15"><use href="#i-keyboard"/></svg> キーボードショートカット',
     settingsShortcutsEnableLabel: 'ショートカットを有効にする',
     settingsShortcutOpen: 'この設定を開く',
     settingsShortcutTheme: 'ダークモード切替（ライト→ダーク→システム）',
     settingsShortcutEsc: '開いているウィンドウを閉じる',
-    settingsLangSection: '言語',
+    settingsLangSection: '<svg class="inline-icon" width="15" height="15"><use href="#i-globe"/></svg> 言語',
     settingsCloseBtn: '閉じる',
     dockLibrary: 'ライブラリ',
     dockEditor: '作成・演奏',
@@ -2048,17 +2052,17 @@ const I18N = {
     keySwapToast: 'Swapped with "{label}" (tile {n})',
     sharedSongLoadedToast: 'Loaded the shared song "{name}"',
     settingsModalTitle: 'Display Settings',
-    settingsDisplaySection: 'Display',
+    settingsDisplaySection: '<svg class="inline-icon" width="15" height="15"><use href="#i-monitor"/></svg> Display',
     settingsDarkModeLabel: 'Dark Mode',
     themeDark: 'Dark',
     themeLight: 'Light',
     themeSystem: 'System',
-    settingsShortcutsSection: 'Keyboard Shortcuts',
+    settingsShortcutsSection: '<svg class="inline-icon" width="15" height="15"><use href="#i-keyboard"/></svg> Keyboard Shortcuts',
     settingsShortcutsEnableLabel: 'Enable keyboard shortcuts',
     settingsShortcutOpen: 'Open this settings panel',
     settingsShortcutTheme: 'Cycle theme (Light → Dark → System)',
     settingsShortcutEsc: 'Close the open window',
-    settingsLangSection: 'Language',
+    settingsLangSection: '<svg class="inline-icon" width="15" height="15"><use href="#i-globe"/></svg> Language',
     settingsCloseBtn: 'Close',
     dockLibrary: 'Library',
     dockEditor: 'Create',
