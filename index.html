@@ -1396,7 +1396,7 @@
     <div class="compose-bpm-row bpm-row compact">
       <label>BPM</label>
       <input type="range" id="bpmSlider" min="40" max="999" value="150" oninput="onBpmChange(this.value)">
-      <input type="number" id="bpmNumber" min="40" max="999" value="150" oninput="onBpmChange(this.value)">
+      <input type="number" id="bpmNumber" min="40" max="999" value="150" oninput="onBpmChange(this.value, 'number')" onchange="onBpmChange(this.value)">
     </div>
   </div>
 </div>
@@ -3204,7 +3204,8 @@ function onFrameBpmOverrideToggle(e) {
 }
 function onFrameBpmOverrideValueChange(val) {
   if (!currentSong) return;
-  const bpm = Math.max(40, Math.min(999, parseInt(val, 10) || currentSong.bpm));
+  const parsed = parseInt(val, 10);
+  const bpm = Math.max(40, Math.min(999, isNaN(parsed) ? currentSong.bpm : parsed));
   pushEditHistory();
   if (!currentSong.bpmOverrides) currentSong.bpmOverrides = {};
   currentSong.bpmOverrides[selectedFrameIndex] = bpm;
@@ -3289,11 +3290,16 @@ function onSongMetaChange() {
   persistCurrentSong();
 }
 
-function onBpmChange(val) {
-  const bpm = Math.max(40, Math.min(999, parseInt(val) || 150));
+function onBpmChange(val, source) {
+  const parsed = parseInt(val, 10);
+  const bpm = Math.max(40, Math.min(999, isNaN(parsed) ? 150 : parsed));
   currentSong.bpm = bpm;
   document.getElementById('bpmSlider').value = bpm;
-  document.getElementById('bpmNumber').value = bpm;
+  // 数字入力欄自身がイベント元のとき（=入力途中）は書き戻さない。
+  // 書き戻すと最初の1文字が40未満で即座に「40」に矯正され、
+  // カーソルが末尾に飛んで以降の入力が「40」への追記になってしまうため。
+  // フォーカスが外れた時点（oninputを付けないonchange呼び出し）では通常通り書き戻して確定値に揃える。
+  if (source !== 'number') document.getElementById('bpmNumber').value = bpm;
   persistCurrentSong();
 }
 
