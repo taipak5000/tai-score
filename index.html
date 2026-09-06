@@ -301,11 +301,11 @@
       user-select: none;
     }
     .tap-tempo-btn.flash { transform: scale(0.94); background: var(--pink-btn); color: #fff; }
-    .tap-tempo-hint { font-size: 12px; color: var(--text-2); }
+    .tap-tempo-hint { font-size: 12px; color: var(--text-2); line-height: 1.5; }
 
     .metronome-row {
       display: flex; align-items: center; gap: 8px; margin-bottom: 14px; font-size: 12.5px;
-      font-weight: 600; color: var(--text-2); cursor: pointer;
+      font-weight: 600; color: var(--text-2); cursor: pointer; line-height: 1.5;
     }
     .metronome-row input[type=checkbox] { accent-color: var(--pink); width: 16px; height: 16px; flex-shrink: 0; }
 
@@ -501,11 +501,11 @@
       background: var(--card); border-radius: var(--r); padding: 16px; box-shadow: 0 1px 4px rgba(0,0,0,0.07);
       width: 100%; max-width: 680px;
     }
-    .current-frame-label { font-size: 12.5px; color: var(--text-2); font-weight: 600; margin-bottom: 10px; }
+    .current-frame-label { font-size: 12.5px; color: var(--text-2); font-weight: 600; margin-bottom: 10px; line-height: 1.5; }
     .frame-bpm-row { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; flex-wrap: wrap; }
     .frame-bpm-toggle {
       display: flex; align-items: center; gap: 8px; font-size: 12.5px;
-      font-weight: 600; color: var(--text-2); cursor: pointer;
+      font-weight: 600; color: var(--text-2); cursor: pointer; line-height: 1.5;
     }
     .frame-bpm-toggle input[type=checkbox] { accent-color: var(--pink); width: 16px; height: 16px; flex-shrink: 0; }
     .frame-bpm-row input[type=number] {
@@ -569,7 +569,7 @@
       background: linear-gradient(180deg, #3a3a3c, #1c1c1e); border-radius: 0 0 4px 4px;
       box-shadow: 0 2px 3px rgba(0,0,0,0.35); pointer-events: none;
     }
-    .piano-hint { font-size: 11.5px; color: var(--text-2); text-align: center; margin-top: 8px; }
+    .piano-hint { font-size: 11.5px; color: var(--text-2); text-align: left; line-height: 1.5; margin-top: 8px; }
 
     /* ── 五線譜入力 ─────────────────────────── */
     .staff-wrap { text-align: center; }
@@ -635,8 +635,12 @@
       border: 1px dashed var(--sep); border-radius: var(--r-sm); padding: 10px 12px; margin-top: 10px;
     }
 
-    footer { text-align: center; padding: 24px 16px; color: var(--text-2); font-size: 13px; border-top: 1px solid var(--sep); margin-top: 40px; line-height: 1.6; }
+    footer { text-align: left; padding: 24px 16px; color: var(--text-2); font-size: 13px; border-top: 1px solid var(--sep); margin-top: 40px; line-height: 1.6; }
     footer a { color: var(--pink-d); text-decoration: none; }
+    /* 📝 文中に埋め込まれるリンク（Sky Music Nightlyへの言及）だけは、文章の途中に
+       あるとひと目でリンクと分かるよう下線を付ける。クレジット行の@Skyzztai等は
+       ナビ的な短いリンク列のため対象外のまま。 */
+    footer a.footer-inline-link { text-decoration: underline; text-underline-offset: 2px; }
 
     /* ── 演奏オーバーレイ（練習／フリー演奏） ─────────────────
        position: fixed で画面いっぱいに独立して表示するため、
@@ -740,7 +744,7 @@
       flex-shrink: 0; display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 0 4px 6px;
       flex-wrap: wrap;
     }
-    .compose-timeline-label { font-size: 12.5px; color: var(--text-2); font-weight: 600; }
+    .compose-timeline-label { font-size: 12.5px; color: var(--text-2); font-weight: 600; line-height: 1.5; }
     .compose-timeline-actions { display: flex; align-items: center; gap: 8px; flex-shrink: 0; flex-wrap: wrap; }
     /* 🎼 タイル/縦列どちらのビューも自前でmax-height+overflowを持つ(A/B参照)ため、
        ここは伸びすぎないようflex:0 1 autoにする。画面が低いときはこの欄自体も
@@ -1468,7 +1472,7 @@
 <footer>
   <span data-i18n="footerDisclaimer">このサイトはSky 星を紡ぐ子どもたちの非公式ファンサイトです。thatgamecompanyは一切関与していません。</span><br>
   <span data-i18n="footerAudioDisclaimer">演奏音はすべてブラウザ内で合成しており、ゲームから抽出した音源は使用していません。</span><br>
-  <span data-i18n-html="footerFormatCredit">楽譜ファイルの形式は<a href="https://sky-music.specy.app/" target="_blank" rel="noopener noreferrer">Sky Music Nightly</a>（Specy氏）を参考にしています。</span><br>
+  <span data-i18n-html="footerFormatCredit">楽譜ファイルの形式は<a href="https://sky-music.specy.app/" target="_blank" rel="noopener noreferrer" class="footer-inline-link">Sky Music Nightly</a>（Specy氏）を参考にしています。</span><br>
   <span data-i18n="footerCreditLabel">作成・ご意見:</span> <a href="https://x.com/Skyzztai" target="_blank" rel="noopener noreferrer">@Skyzztai</a>　／
   <a href="https://odaibako.net/u/Skyzztai" target="_blank" rel="noopener noreferrer" data-i18n="footerRequestForm">リクエストフォーム</a><br>
   <span style="font-size:12px; margin-top:4px; display:inline-block;">
@@ -1740,7 +1744,7 @@ const I18N = {
     resetKeyBindingsBtn: '初期設定（Y U I O P / H J K L ; / N M , . /）に戻す',
     footerDisclaimer: 'このサイトはSky 星を紡ぐ子どもたちの非公式ファンサイトです。thatgamecompanyは一切関与していません。',
     footerAudioDisclaimer: '演奏音はすべてブラウザ内で合成しており、ゲームから抽出した音源は使用していません。',
-    footerFormatCredit: '楽譜ファイルの形式は<a href="https://sky-music.specy.app/" target="_blank" rel="noopener noreferrer">Sky Music Nightly</a>（Specy氏）を参考にしています。',
+    footerFormatCredit: '楽譜ファイルの形式は<a href="https://sky-music.specy.app/" target="_blank" rel="noopener noreferrer" class="footer-inline-link">Sky Music Nightly</a>（Specy氏）を参考にしています。',
     footerCreditLabel: '作成・ご意見:',
     footerRequestForm: 'リクエストフォーム',
     footerInfoLink: '設定・更新情報・クレジット・プライバシーポリシー',
@@ -2007,7 +2011,7 @@ const I18N = {
     resetKeyBindingsBtn: 'Reset to Default (Y U I O P / H J K L ; / N M , . /)',
     footerDisclaimer: 'This is an unofficial fan site for Sky: Children of the Light. thatgamecompany is not involved in any way.',
     footerAudioDisclaimer: 'All playback sounds are synthesized entirely in the browser — no audio extracted from the game is used.',
-    footerFormatCredit: 'The sheet music file format is based on <a href="https://sky-music.specy.app/" target="_blank" rel="noopener noreferrer">Sky Music Nightly</a> (by Specy).',
+    footerFormatCredit: 'The sheet music file format is based on <a href="https://sky-music.specy.app/" target="_blank" rel="noopener noreferrer" class="footer-inline-link">Sky Music Nightly</a> (by Specy).',
     footerCreditLabel: 'Created by / feedback:',
     footerRequestForm: 'Request form',
     footerInfoLink: "Settings / What's New / Credits / Privacy Policy",
