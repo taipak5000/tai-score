@@ -2139,7 +2139,7 @@ function refreshDynamicUI() {
       document.getElementById('perfTitle').textContent = t('freePlayModeTitle');
       document.getElementById('perfFooter').textContent = t('freePlayFooterHint');
       renderFreePlayInstrumentRow();
-    } else if (perfMode === 'practice' || perfMode === 'test') {
+    } else if (perfMode === 'practice') {
       highlightPerfTargets();
     }
     document.getElementById('perfCloseBtn').textContent = perfMode === 'free' ? t('perfCloseClose') : t('perfCloseEnd');
