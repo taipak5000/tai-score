@@ -150,7 +150,7 @@
     /* 精度に不安がある新機能であることを示す小さな注記（例: 楽譜づくり） */
     .tool-badge-test { font-size: 9px; font-weight: 700; color: var(--text-3); text-transform: uppercase; letter-spacing: 0.3px; }
 
-    .card { background: var(--card); border-radius: var(--r); padding: 16px; box-shadow: 0 1px 4px rgba(0,0,0,0.07); margin-bottom: 14px; }
+    .card { background: var(--card); border-radius: var(--r); padding: 16px; box-shadow: 0 1px 4px rgba(0,0,0,0.07), 0 0.5px 1px rgba(0,0,0,0.04); margin-bottom: 14px; }
     .card p { font-size: 13px; line-height: 1.8; color: var(--text); }
     .card a { color: var(--pink-d); text-decoration: underline; text-underline-offset: 2px; }
     .hint { font-size: 12px; color: var(--text-2); line-height: 1.7; }
@@ -247,7 +247,7 @@
     .test-feature-details[open] .test-feature-summary::before { transform: rotate(90deg); }
     .test-feature-body { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 8px; }
     .song-list { display: flex; flex-direction: column; gap: 10px; margin-top: 14px; }
-    .song-card { background: var(--card); border-radius: var(--r); padding: 14px; box-shadow: 0 1px 4px rgba(0,0,0,0.07); }
+    .song-card { background: var(--card); border-radius: var(--r); padding: 14px; box-shadow: 0 1px 4px rgba(0,0,0,0.07), 0 0.5px 1px rgba(0,0,0,0.04); }
     .song-card-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
     .song-card-name { font-size: 15px; font-weight: 700; overflow-wrap: break-word; word-break: break-word; }
     .song-card-meta { font-size: 12px; color: var(--text-2); margin-top: 3px; }
@@ -498,7 +498,7 @@
          より先に余った横幅を全部吸収する」ため、レールがカードのすぐ隣ではなく
          画面の両端に張り付いてしまう（左右のレールとカードの間隔が画面幅に比例して
          広がってしまう不具合になる）。 */
-      background: var(--card); border-radius: var(--r); padding: 16px; box-shadow: 0 1px 4px rgba(0,0,0,0.07);
+      background: var(--card); border-radius: var(--r); padding: 16px; box-shadow: 0 1px 4px rgba(0,0,0,0.07), 0 0.5px 1px rgba(0,0,0,0.04);
       width: 100%; max-width: 680px;
     }
     .current-frame-label { font-size: 12.5px; color: var(--text-2); font-weight: 600; margin-bottom: 10px; line-height: 1.5; }
@@ -607,7 +607,7 @@
       border: 1px dashed var(--sep); border-radius: var(--r-sm); padding: 10px 12px; margin-top: 8px;
     }
     .action-btn {
-      display: block; width: 100%; padding: 12px; border-radius: var(--r-sm); font-size: 14px; font-weight: 700;
+      display: block; width: 100%; padding: 10px; border-radius: var(--r-sm); font-size: 14px; font-weight: 700;
       text-align: center; cursor: pointer; margin-top: 10px; box-sizing: border-box;
     }
     .action-btn.primary { background: var(--pink-btn); color: #fff; }
