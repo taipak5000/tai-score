@@ -2201,8 +2201,11 @@ function normalizeKeyEvent(e) { return e.key.length === 1 ? e.key.toLowerCase() 
 
 /* ================================================================
    ♿ モーダル／サイドバーのフォーカス管理（wings基準のスタック式trapPush/trapPop）
-   個別のopen/close関数はすべて最終的にこのopenModal/closeModal（またはサイドバーの
-   open/closeSidebar）を呼ぶため、ここだけで全モーダル・サイドバーに効く。
+   個別のopen/close関数は、通常モーダルはopenModal/closeModal、サイドバーは
+   open/closeSidebarを経由し、フリー演奏・練習・試験モード（.perf-overlay）と
+   作成・演奏モード（.compose-overlay）は全画面オーバーレイ自身を「カード」として
+   openPerfOverlay/closePerformance・openComposeMode/closeComposeModeから直接
+   trapPush/trapPopを呼ぶ。いずれも最終的にこのtrapPush/trapPopに集約される。
    - 開く時: カード内の最初のフォーカス可能要素へフォーカスを移す。
    - 開いている間: Tab/Shift+Tabを、開いている中で一番手前（＝スタック最上段）の
      カードだけに閉じ込める。フリー演奏／練習オーバーレイの上からキーボード設定を
@@ -2629,12 +2632,15 @@ function duplicateSong(id) {
    タブ切替
    ================================================================ */
 // 🖥️ 作曲モード（全画面オーバーレイ）の開閉。.perf-overlayのopenPerfOverlay()/
-// closePerformance()と同じ、.openクラスのトグルだけの薄いラッパー。
+// closePerformance()と同じく、他のモーダル・サイドバーと共通のtrapPush/trapPop
+// フォーカストラップに登録する（全画面オーバーレイなのでカードは自分自身）。
 function openComposeMode() {
   document.getElementById('composeOverlay').classList.add('open');
+  trapPush('composeOverlay', document.getElementById('composeOverlay'));
 }
 function closeComposeMode() {
   document.getElementById('composeOverlay').classList.remove('open');
+  trapPop('composeOverlay');
 }
 
 function switchView(view) {
@@ -3780,11 +3786,13 @@ function renderFreePlayInstrumentRow() {
 
 function openPerfOverlay() {
   document.getElementById('perfOverlay').classList.add('open');
+  trapPush('perfOverlay', document.getElementById('perfOverlay'));
 }
 function closePerformance() {
   cancelCountIn();
   perfCountingIn = false;
   document.getElementById('perfOverlay').classList.remove('open');
+  trapPop('perfOverlay');
   perfMode = null;
   renderLastResult(); // 練習・試験モード終了で結果が更新されている場合、下の画面にも反映する
 }
