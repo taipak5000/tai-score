@@ -829,13 +829,23 @@
       /* 注意: bare "nav {...}" ルール（ヘッダー用）が top / border-bottom / align-items 等を
          定義しているため、同じプロパティは明示的に上書きしている（CSS詳細度は同じでも
          プロパティ単位で競合するため、指定していないプロパティは漏れてしまう） */
-      display: flex; position: fixed; left: 0; right: 0; top: auto; bottom: 0; z-index: 90;
+      /* z-indexは.sidebar-overlay(499)／.modal-overlay(1000、settingsModal等は1250)より
+         高くする。そうしないとモーダル表示中にドックの別アイコンをクリックしても、
+         backdropのクリックアウトサイド判定に先に奪われて現在のモーダルが閉じるだけになり、
+         意図した切り替えが1回のクリックで起きない。演奏オーバーレイ・作曲モード（下の
+         .perf-overlay.open ~ .site-dock 等）は半透明backdropではなく全画面の別モードのため
+         対象外＝表示中はドック自体を隠す（従来通り）。 */
+      display: flex; position: fixed; left: 0; right: 0; top: auto; bottom: 0; z-index: 1260;
       padding: 6px 10px calc(8px + env(safe-area-inset-bottom));
       background: var(--card);
       backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
       border-top: 0.5px solid var(--sep); border-bottom: none;
       justify-content: space-around; align-items: stretch; gap: 4px;
     }
+    /* 演奏オーバーレイ／作曲モードは画面いっぱいの独立モードのため、z-indexを上げた
+       ドックがその上に浮いて重なって見えないよう、表示中は明示的に隠す
+       （これまではz-indexが低かったため結果的に隠れていた挙動を、意図を明示して維持）。 */
+    .perf-overlay.open ~ .site-dock, .compose-overlay.open ~ .site-dock { display: none; }
     .site-dock button {
       flex: 1 1 0; max-width: 110px; border: 0; background: none; cursor: pointer;
       display: flex; flex-direction: column; align-items: center; gap: 2px;
@@ -2644,6 +2654,12 @@ function closeComposeMode() {
 }
 
 function switchView(view) {
+  // 📐 サイトドック（下部）のz-indexをモーダル群より上げたことで、モーダル表示中でも
+  // 「ライブラリ」「作成・演奏」のドックアイコンが直接クリックできるようになったが、
+  // switchView自体はこれまでモーダルを閉じていなかった（クリックがbackdropに奪われて
+  // 実質到達しなかったため問題化していなかった）。他のドックボタン（openSidebar/
+  // settingsOpen）と同じくcloseOtherTopLevelOverlays()で先に片付けてから切り替える。
+  closeOtherTopLevelOverlays();
   document.getElementById('viewLibrary').classList.toggle('active', view === 'library');
   document.getElementById('viewEditor').classList.toggle('active', view === 'editor');
   document.getElementById('tabLibraryBtn').classList.toggle('active', view === 'library');
@@ -4070,6 +4086,10 @@ function closeTopmostOpenModal() {
      入力欄にフォーカスが無ければ画面やモーダルの開閉状態を問わず常に受け付ける
      （音マスに割り当て済みのキーはそちらが先に処理されるため、二重に発火することはない）
    ================================================================ */
+// checkbox/radio/range/color等は文字入力を受け付けないため、フォーカスしていても
+// 「入力中」扱いしない（isTypingがtagName==='INPUT'だけで判定すると、これらにフォーカスが
+// あるだけで?やd/Dショートカットが誤って抑止されてしまう）。
+const NON_TEXT_INPUT_TYPES = ['checkbox', 'radio', 'range', 'color', 'button', 'submit', 'reset', 'file', 'image', 'hidden'];
 function handleGlobalKeydown(e) {
   if (e.repeat) return; // キーリピート（押しっぱなし）で音の連打やトグルの誤爆が起きるのを防ぐ
   if (capturingKeyIndex !== null) {
@@ -4099,8 +4119,10 @@ function handleGlobalKeydown(e) {
     return;
   }
 
-  const activeTag = document.activeElement && document.activeElement.tagName;
-  const isTyping = activeTag === 'INPUT' || activeTag === 'TEXTAREA' || activeTag === 'SELECT';
+  const activeEl = document.activeElement;
+  const activeTag = activeEl && activeEl.tagName;
+  const isTextInput = activeTag === 'INPUT' && NON_TEXT_INPUT_TYPES.indexOf((activeEl.type || '').toLowerCase()) === -1;
+  const isTyping = isTextInput || activeTag === 'TEXTAREA' || activeTag === 'SELECT';
   if (e.metaKey || e.ctrlKey || e.altKey) return;
 
   // 音マスの演奏・編集や←→でのマス移動は、入力欄にフォーカスが無く、かつモーダル／
