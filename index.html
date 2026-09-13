@@ -617,7 +617,8 @@
     .status-msg.err { color: var(--red); }
 
     /* ── 音声から楽譜を作成モーダル ─────────────────────────── */
-    #audioImportModal .modal-card { max-width: 560px; }
+    /* 📐 幅の統一（cross-site consistency）: 独自の560px上限は撤去し、他の通常サイズの
+       モーダルと同じ基準（.modal-card本体のmax-width:720px/850px以上で960px）に揃える。 */
     #audioFileInput {
       width: 100%; box-sizing: border-box; font-size: 12.5px; color: var(--text-2);
       border: 1px dashed var(--sep); border-radius: var(--r-sm); padding: 10px 12px; margin-top: 10px;
@@ -629,7 +630,8 @@
     .video-progress-fill { height: 100%; background: linear-gradient(90deg, var(--pink), #FF8FB3); width: 0%; transition: width 0.15s; }
 
     /* ── 楽譜画像から楽譜を作成モーダル ─────────────────────────── */
-    #imageImportModal .modal-card { max-width: 560px; }
+    /* 📐 幅の統一（cross-site consistency）: 独自の560px上限は撤去し、他の通常サイズの
+       モーダルと同じ基準（.modal-card本体のmax-width:720px/850px以上で960px）に揃える。 */
     #imageFileInput {
       width: 100%; box-sizing: border-box; font-size: 12.5px; color: var(--text-2);
       border: 1px dashed var(--sep); border-radius: var(--r-sm); padding: 10px 12px; margin-top: 10px;
@@ -882,7 +884,12 @@
     .modal-overlay.open { animation: iosFade 0.32s cubic-bezier(0.25, 1, 0.5, 1); }
     .modal-overlay.is-closing { display: flex; pointer-events: none; }
     .modal-card {
-      width: 100%; max-width: 100%; max-height: 88vh; max-height: 88dvh;
+      /* 📐 幅の統一（cross-site consistency）: 基準サイト item の .wrap と同じ
+         max-width: 720px（850px以上で960px）を、ここでは「通常サイズの」ボトムシート
+         モーダル全般の基準値として使う（旧: 560px以上で600pxだった独自基準を是正）。
+         モバイル幅では実際のビューポート幅の方が狭いため、この基準値自体は見た目に
+         影響しない（従来の max-width:100% と同じ edge-to-edge のまま）。 */
+      width: 100%; max-width: 720px; max-height: 88vh; max-height: 88dvh;
       border-radius: 20px 20px 0 0;
       box-shadow: 0 -8px 40px rgba(0, 0, 0, 0.25);
       position: relative; overscroll-behavior: contain;
@@ -890,9 +897,15 @@
       animation: sheetSlideUp 0.32s cubic-bezier(0.25, 1, 0.5, 1);
       transition: transform 0.32s cubic-bezier(0.25, 1, 0.5, 1);
     }
+    /* ⚙️ 表示設定モーダルだけは他サイトの多くと同様、意図的に狭いまま据え置く
+       （トグル数個の短いリストは720-960px幅より狭い方が読みやすいため）。
+       この分岐点（560px）自体は従来から変えていない — 変えたのは一般モーダルの
+       基準値・分岐点（下のmin-width:850pxブロック）だけ。 */
     @media (min-width: 560px) {
-      .modal-card { max-width: 600px; }
       #settingsModal .modal-card { max-width: 360px; }
+    }
+    @media (min-width: 850px) {
+      .modal-card { max-width: 960px; }
     }
     .modal-card.is-dragging, .modal-card.js-anim { transition: none; animation: none; cursor: grabbing; user-select: none; }
     .modal-card::before {
@@ -1011,13 +1024,13 @@
   </div>
 </nav>
 
-<div class="sidebar-overlay" id="sidebarOverlay" onclick="toggleSidebar()"></div>
+<div class="sidebar-overlay" id="sidebarOverlay" onclick="closeSidebar()"></div>
 
 <div class="app-layout">
   <aside class="sidebar" id="sidebar">
     <div class="sidebar-head">
       <div class="sidebar-section-label" data-i18n="relatedTools">関連ツール</div>
-      <button class="sidebar-close-btn" onclick="toggleSidebar()"><span class="icon-chip" style="width:22px; height:22px;"><svg width="16" height="16"><use href="#i-close"/></svg></span></button>
+      <button class="sidebar-close-btn" onclick="closeSidebar()"><span class="icon-chip" style="width:22px; height:22px;"><svg width="16" height="16"><use href="#i-close"/></svg></span></button>
     </div>
     <a href="https://taipak5000.github.io/tai-item/" class="sidebar-nav-link" data-i18n-html="toolItem"><svg class="inline-icon" width="19" height="19"><use href="#i-folder"/></svg> アイテム所持管理</a>
     <a href="https://taipak5000.github.io/tai-emote/" class="sidebar-nav-link" data-i18n-html="toolEmote"><svg class="inline-icon" width="19" height="19"><use href="#i-masks"/></svg> エモート所持率管理</a>
@@ -1492,7 +1505,7 @@
     <span class="site-dock-icon"><span class="icon-chip" style="width:28px; height:28px;"><svg width="22" height="22"><use href="#i-edit"/></svg></span></span>
     <span class="site-dock-label" data-i18n="dockEditor">作成・演奏</span>
   </button>
-  <button type="button" onclick="toggleSidebar()">
+  <button type="button" onclick="openSidebar()">
     <span class="site-dock-icon"><span class="icon-chip" style="width:28px; height:28px;"><svg width="22" height="22"><use href="#i-menu"/></svg></span></span>
     <span class="site-dock-label" data-i18n="dockTools">他のツール</span>
   </button>
@@ -2186,39 +2199,103 @@ let keyBindings = loadKeyBindings();
 function keyDisplayLabel(k) { return k === ' ' ? 'Space' : (k.length === 1 ? k.toUpperCase() : k); }
 function normalizeKeyEvent(e) { return e.key.length === 1 ? e.key.toLowerCase() : e.key; }
 
-function toggleSidebar() {
-  document.getElementById('sidebar').classList.toggle('sidebar-open');
-  document.getElementById('sidebarOverlay').classList.toggle('show');
-}
-// ♿ モーダルのフォーカス管理（全モーダル共通の1実装。個別のopen/close関数は
-// すべて最終的にこのopenModal/closeModalを呼ぶため、ここだけで全モーダルに効く）。
-// - 開く時: モーダル内の最初のフォーカス可能要素（DOM順で常に✕閉じるボタンが先頭）へ
-//   フォーカスを移す。背景のページ要素はオーバーレイがマウス操作を塞いでいるが、
-//   キーボード操作にはこのガードがないと素通りしてしまう。
-// - 開いている間: Tab/Shift+Tabをモーダル内だけに閉じ込める（下のkeydownリスナー）。
-// - 閉じる時: 開く直前にフォーカスがあった要素（トリガー）に戻す。
-const modalTriggerEls = {};
-function getModalFocusableEls(container) {
-  const nodes = container.querySelectorAll(
+/* ================================================================
+   ♿ モーダル／サイドバーのフォーカス管理（wings基準のスタック式trapPush/trapPop）
+   個別のopen/close関数はすべて最終的にこのopenModal/closeModal（またはサイドバーの
+   open/closeSidebar）を呼ぶため、ここだけで全モーダル・サイドバーに効く。
+   - 開く時: カード内の最初のフォーカス可能要素へフォーカスを移す。
+   - 開いている間: Tab/Shift+Tabを、開いている中で一番手前（＝スタック最上段）の
+     カードだけに閉じ込める。フリー演奏／練習オーバーレイの上からキーボード設定を
+     開く等、2つ目のオーバーレイが重なるケースにもpush/popだけで自動対応できる。
+   - 閉じる時: 開く直前にフォーカスがあった要素（トリガー）に戻す。
+   ================================================================ */
+const trapStack = [];
+let trapListenerAttached = false;
+function trapFocusableEls(container) {
+  const all = container.querySelectorAll(
     'a[href], button:not([disabled]), textarea:not([disabled]), input:not([disabled]):not([type="hidden"]), select:not([disabled]), [tabindex]:not([tabindex="-1"])'
   );
-  return Array.from(nodes).filter(el => el.offsetWidth > 0 || el.offsetHeight > 0 || el === document.activeElement);
+  return Array.prototype.filter.call(all, el => el.offsetParent !== null);
 }
-function focusFirstInModal(id) {
-  const modalEl = document.getElementById(id);
-  const focusables = getModalFocusableEls(modalEl);
-  if (focusables.length) focusables[0].focus();
-  else modalEl.querySelector('.modal-card').focus();
+function trapKeydown(e) {
+  if (e.key !== 'Tab' || !trapStack.length) return;
+  const card = trapStack[trapStack.length - 1].card;
+  const focusable = trapFocusableEls(card);
+  if (!focusable.length) return;
+  const first = focusable[0];
+  const last = focusable[focusable.length - 1];
+  if (e.shiftKey) {
+    if (document.activeElement === first || !card.contains(document.activeElement)) {
+      e.preventDefault();
+      last.focus();
+    }
+  } else {
+    if (document.activeElement === last || !card.contains(document.activeElement)) {
+      e.preventDefault();
+      first.focus();
+    }
+  }
 }
+// overlayIdをキーにカードへフォーカスを移し、Tabトラップのスタックに積む。同じ
+// overlayIdが既にスタックにある（＝多重呼び出し）場合は何もしない
+// （トリガー参照の上書き防止。openModal()側の「既に開いていれば何もしない」ガードと同じ考え方）。
+function trapPush(overlayId, card) {
+  if (!card || trapStack.some(s => s.overlayId === overlayId)) return;
+  trapStack.push({ overlayId, card, prevFocusEl: document.activeElement });
+  if (!trapListenerAttached) {
+    document.addEventListener('keydown', trapKeydown, true);
+    trapListenerAttached = true;
+  }
+  const focusable = trapFocusableEls(card);
+  (focusable[0] || card).focus();
+}
+// overlayIdをスタックから取り除き、そのモーダルを開く前にフォーカスしていた要素
+// （トリガー）へフォーカスを戻す。
+function trapPop(overlayId) {
+  const idx = trapStack.findIndex(s => s.overlayId === overlayId);
+  if (idx === -1) return;
+  const [entry] = trapStack.splice(idx, 1);
+  if (!trapStack.length && trapListenerAttached) {
+    document.removeEventListener('keydown', trapKeydown, true);
+    trapListenerAttached = false;
+  }
+  if (entry.prevFocusEl && typeof entry.prevFocusEl.focus === 'function' && document.contains(entry.prevFocusEl)) {
+    entry.prevFocusEl.focus();
+  }
+}
+
+// 表示設定／共有・保存／読み込み／音声・画像・MIDIから作成／バックアップ・復元／確認／
+// キー設定／ツール（作曲）／サイドバー（関連ツールドロワー）は、いずれもメイン画面や
+// フリー演奏・作曲モードのオーバーレイから独立して直接開けるため、他のどれかが開いた
+// ままもう1つを開くと重なってしまう。開く前に、開こうとしているもの以外を閉じておく
+// （各close関数は未オープン時は何もしない安全な関数）。
+const TOP_LEVEL_MODAL_IDS = ['settingsModal', 'shareModal', 'importModal', 'audioImportModal', 'imageImportModal', 'midiImportModal', 'dmModal', 'confirmModal', 'keyBindModal', 'composeToolsModal'];
+function closeOtherTopLevelOverlays(exceptId) {
+  TOP_LEVEL_MODAL_IDS.forEach(id => {
+    if (id === exceptId) return;
+    if (!document.getElementById(id).classList.contains('open')) return;
+    if (id === 'audioImportModal') closeAudioImportModal();
+    else if (id === 'imageImportModal') closeImageImportModal();
+    else if (id === 'midiImportModal') closeMidiImportModal();
+    else if (id === 'confirmModal') closeConfirm();
+    else if (id === 'keyBindModal') closeKeyBindModal();
+    else closeModal(id);
+  });
+  if (exceptId !== 'sidebar' && document.getElementById('sidebar').classList.contains('sidebar-open')) closeSidebar();
+}
+
 function openModal(id) {
-  modalTriggerEls[id] = document.activeElement;
+  // 既に開いている場合は何もしない（ここでガードしないとtrapPush側のトリガー参照が
+  // モーダル内の要素で上書きされ、閉じたときにフォーカスの戻し先を見失う）
+  if (document.getElementById(id).classList.contains('open')) return;
+  closeOtherTopLevelOverlays(id);
   if (id === 'dmModal') dmRenderWipeArea(); // 閉じている間の言語切り替えにも追従させる
   // 前回開いた時に作成した共有コード/テキスト譜面が、曲の切り替えや編集後もそのまま
   // 残ってしまうと、実際には古い（別の曲・編集前の）内容を今の曲のものと誤認して
   // コピー/ダウンロードしてしまう恐れがあるため、開くたびに一旦クリアする。
   if (id === 'shareModal') resetShareModalOutputs();
   document.getElementById(id).classList.add('open');
-  focusFirstInModal(id);
+  trapPush(id, document.querySelector('#' + id + ' .modal-card'));
 }
 function resetShareModalOutputs() {
   lastShareCode = null;
@@ -2231,32 +2308,22 @@ function resetShareModalOutputs() {
 }
 function closeModal(id) {
   document.getElementById(id).classList.remove('open');
-  const trigger = modalTriggerEls[id];
-  if (trigger && typeof trigger.focus === 'function' && document.contains(trigger)) trigger.focus();
-  delete modalTriggerEls[id];
+  trapPop(id);
 }
-// Tab/Shift+Tabを、開いているモーダルの中だけに閉じ込める（tai-score内では
-// 一度に開くmodal-overlayは常に1つのため、開いているものを直接探せばよい）。
-document.addEventListener('keydown', function (e) {
-  if (e.key !== 'Tab') return;
-  const openOverlay = document.querySelector('.modal-overlay.open');
-  if (!openOverlay) return;
-  const focusables = getModalFocusableEls(openOverlay);
-  if (focusables.length === 0) return;
-  const first = focusables[0];
-  const last = focusables[focusables.length - 1];
-  if (e.shiftKey) {
-    if (document.activeElement === first || !openOverlay.contains(document.activeElement)) {
-      e.preventDefault();
-      last.focus();
-    }
-  } else {
-    if (document.activeElement === last || !openOverlay.contains(document.activeElement)) {
-      e.preventDefault();
-      first.focus();
-    }
-  }
-});
+
+// ▸ サイドバー（関連ツールドロワー）。他の全モーダルと同じopen/close+トラップ方式に統一。
+function openSidebar() {
+  if (document.getElementById('sidebar').classList.contains('sidebar-open')) return;
+  closeOtherTopLevelOverlays('sidebar');
+  document.getElementById('sidebar').classList.add('sidebar-open');
+  document.getElementById('sidebarOverlay').classList.add('show');
+  trapPush('sidebar', document.getElementById('sidebar'));
+}
+function closeSidebar() {
+  document.getElementById('sidebar').classList.remove('sidebar-open');
+  document.getElementById('sidebarOverlay').classList.remove('show');
+  trapPop('sidebar');
+}
 // トースト表示は1個のグローバル要素を使い回している。以前は呼ぶたびに即座に文言を
 // 上書きしていたため、同じ操作の中で複数回連続して呼ばれる（例:
 // 称号を複数同時に獲得した時にcheckTitles()が1件ずつ呼ぶ、複製・共有曲読込の
@@ -3967,6 +4034,9 @@ function settingsOpen() {
 // 必要なモーダルは専用のclose関数を呼ぶ。演奏オーバーレイ（.perf-overlay）はmodal-overlayでは
 // ないため、ここでは一切対象にならない（＝演奏中にEscapeを押しても演奏オーバーレイは閉じない）。
 function closeTopmostOpenModal() {
+  // サイドバー（関連ツールドロワー）はclass名が'open'ではなく'sidebar-open'のため、
+  // 下のモーダル判定とは別に先頭でチェックする。
+  if (document.getElementById('sidebar').classList.contains('sidebar-open')) { closeSidebar(); return; }
   if (document.getElementById('confirmModal').classList.contains('open')) { closeConfirm(); return; }
   if (document.getElementById('keyBindModal').classList.contains('open')) { closeKeyBindModal(); return; }
   if (document.getElementById('audioImportModal').classList.contains('open')) { closeAudioImportModal(); return; }
@@ -3982,14 +4052,15 @@ function closeTopmostOpenModal() {
 /* ================================================================
    キーボード操作の受付
    ・キー割り当て待ち中はそのキーを割り当てる（Escでキャンセル）
-   ・Escapeは、割り当て待ち中でなければ開いているモーダルを閉じる（全ツール共通）
+   ・Escapeは、割り当て待ち中でなければ、開いている中で一番手前のモーダル／サイドバーを
+     閉じる（全ツール共通。入力欄にフォーカスがあっても常に有効）
    ・演奏オーバーレイが開いていれば演奏（onPerfKeyPress）
    ・エディタ画面を表示中なら作成（toggleNote＝マスのON/OFF切替）
-   ・どの音マスにも一致しないキーであれば、画面（ライブラリ／エディタ／フリー演奏／
-     練習・テスト）を問わず、?（表示設定を開く）・d/D（ダークモード切替）を
-     全ツール共通ショートカットとして受け付ける（音マスに割り当て済みのキーは
-     常にそちらが優先されるため、二重に発火することはない）
-   ・他のモーダルが開いている時や、入力欄にフォーカスがある時は無効
+   ・音マスの演奏・編集や←→でのマス移動は、入力欄にフォーカスが無く、かつモーダル／
+     サイドバーが何も開いていない時だけ
+   ・?（表示設定を開く）・d/D（ダークモード切替）は、全ツール共通ショートカットとして
+     入力欄にフォーカスが無ければ画面やモーダルの開閉状態を問わず常に受け付ける
+     （音マスに割り当て済みのキーはそちらが先に処理されるため、二重に発火することはない）
    ================================================================ */
 function handleGlobalKeydown(e) {
   if (e.repeat) return; // キーリピート（押しっぱなし）で音の連打やトグルの誤爆が起きるのを防ぐ
@@ -4011,23 +4082,33 @@ function handleGlobalKeydown(e) {
     return;
   }
 
-  // Escapeは「開いているモーダルを閉じる」共通ショートカット。クリックアウトサイドで閉じる
-  // 既存の挙動と同格のUXのため、sky_shortcuts_enabledのON/OFFに関わらず常に有効。
+  // Escapeは「開いている中で一番手前のモーダル／サイドバーを閉じる」共通ショートカット。
+  // クリックアウトサイドで閉じる既存の挙動と同格のUXのため、入力欄にフォーカスがあっても、
+  // sky_shortcuts_enabledのON/OFFに関わらず常に有効（下のisTypingガードの対象外）。
+  const anyOverlayOpen = () => !!document.querySelector('.modal-overlay.open') || document.getElementById('sidebar').classList.contains('sidebar-open');
   if (e.key === 'Escape') {
-    if (document.querySelector('.modal-overlay.open')) { closeTopmostOpenModal(); e.preventDefault(); }
+    if (anyOverlayOpen()) { closeTopmostOpenModal(); e.preventDefault(); }
     return;
   }
 
-  if (document.querySelector('.modal-overlay.open')) return;
   const activeTag = document.activeElement && document.activeElement.tagName;
-  if (activeTag === 'INPUT' || activeTag === 'TEXTAREA' || activeTag === 'SELECT') return;
+  const isTyping = activeTag === 'INPUT' || activeTag === 'TEXTAREA' || activeTag === 'SELECT';
   if (e.metaKey || e.ctrlKey || e.altKey) return;
 
-  const idx = keyBindings.indexOf(normalizeKeyEvent(e));
-  if (idx < 0) {
-    // どの音マスにも割り当てられていないキー。画面を問わず、?/d を全ツール共通
-    // ショートカットとして受け付ける（音マスに割り当て済みのキーはこの分岐に
-    // 入って来ないため、演奏・編集・キー割り当てと衝突することはない）。
+  // 音マスの演奏・編集や←→でのマス移動は、入力欄にフォーカスが無く、かつモーダル／
+  // サイドバーが何も開いていない時だけ受け付ける（開いている間は裏のグリッドが隠れているため）。
+  if (!isTyping && !anyOverlayOpen()) {
+    const idx = keyBindings.indexOf(normalizeKeyEvent(e));
+    if (idx >= 0) {
+      if (perfMode && document.getElementById('perfOverlay').classList.contains('open')) {
+        onPerfKeyPress(idx);
+        e.preventDefault();
+      } else if (currentSong && document.getElementById('viewEditor').classList.contains('active')) {
+        toggleNote(idx);
+        e.preventDefault();
+      }
+      return;
+    }
     // ←→ キーは、エディタ画面を開いていて音マスに割り当てられていない時だけ、
     // 前後のマスへの移動に使う（同じ理由でノートやショートカットと衝突しない）。
     if ((e.key === 'ArrowLeft' || e.key === 'ArrowRight') && currentSong && document.getElementById('viewEditor').classList.contains('active')) {
@@ -4035,19 +4116,17 @@ function handleGlobalKeydown(e) {
       if (e.key === 'ArrowLeft') selectPrevFrame(); else selectNextFrame();
       return;
     }
-    if (skyShortcutsEnabled()) {
-      if (e.key === '?') { e.preventDefault(); settingsOpen(); return; }
-      if (e.key === 'd' || e.key === 'D') { e.preventDefault(); toggleTheme(); return; }
-    }
-    return;
   }
 
-  if (perfMode && document.getElementById('perfOverlay').classList.contains('open')) {
-    onPerfKeyPress(idx);
-    e.preventDefault();
-  } else if (currentSong && document.getElementById('viewEditor').classList.contains('active')) {
-    toggleNote(idx);
-    e.preventDefault();
+  // ?（表示設定を開く）・d/D（ダークモード切替）は、画面や他のモーダルの開閉状態を問わず
+  // 全ツール共通ショートカットとして受け付ける（wings等の基準実装と同じ挙動）。例えば
+  // フリー演奏・練習オーバーレイの表示中や、別のモーダルが開いている状態で「?」を押した
+  // 場合も、settingsOpen()内部のcloseOtherTopLevelOverlays()が他を片付けてから開くため、
+  // 二重に重なって見えることはない。入力欄にフォーカスがある時だけ、通常の文字入力を
+  // 妨げないようガードする。
+  if (!isTyping && skyShortcutsEnabled()) {
+    if (e.key === '?') { e.preventDefault(); settingsOpen(); return; }
+    if (e.key === 'd' || e.key === 'D') { e.preventDefault(); toggleTheme(); return; }
   }
 }
 document.addEventListener('keydown', handleGlobalKeydown);
