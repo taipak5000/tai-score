@@ -1484,10 +1484,10 @@
     </div>
 
     <div class="compose-tools-section" style="display:flex; gap:8px; flex-wrap:wrap; margin-bottom:0;">
-      <button class="transport-btn" data-i18n="practiceModeBtn" onclick="closeModal('composeToolsModal'); openPractice()">練習モード</button>
-      <button class="transport-btn" data-i18n="testModeBtn" onclick="closeModal('composeToolsModal'); openTestMode()">試験モード</button>
-      <button class="transport-btn" data-i18n="shareBtn" onclick="closeModal('composeToolsModal'); openModal('shareModal')">共有・保存</button>
-      <button class="transport-btn" data-i18n="keySettingsBtn" onclick="closeModal('composeToolsModal'); openKeyBindModal()">キー設定</button>
+      <button class="transport-btn" data-i18n="practiceModeBtn" onclick="composeToolsSwitchTo(openPractice)">練習モード</button>
+      <button class="transport-btn" data-i18n="testModeBtn" onclick="composeToolsSwitchTo(openTestMode)">試験モード</button>
+      <button class="transport-btn" data-i18n="shareBtn" onclick="composeToolsSwitchTo(() => openModal('shareModal'))">共有・保存</button>
+      <button class="transport-btn" data-i18n="keySettingsBtn" onclick="composeToolsSwitchTo(openKeyBindModal)">キー設定</button>
     </div>
   </div>
 </div>
@@ -2224,6 +2224,35 @@ function normalizeKeyEvent(e) { return e.key.length === 1 ? e.key.toLowerCase() 
    ================================================================ */
 const trapStack = [];
 let trapListenerAttached = false;
+// 連鎖的なクローズ（closeOtherTopLevelOverlays()や、下のcomposeToolsSwitchTo()のように
+// 「自分を閉じてから別のオーバーレイを開く」パターン）の最中だけ1以上になるカウンター。
+// 0より大きい間、trapPop()は「閉じる」時点でのフォーカス復帰処理を一時的に抑止する
+// （理由は下のtrapPop()内のコメント参照）。単純なbool値ではなくカウンターにしているのは、
+// closeOtherTopLevelOverlays()の中からさらに別の連鎖が起きても正しく数え上げて0に
+// 戻すため。
+let trapSuppressFocusRestore = 0;
+// trapPop()が本来のトリガーへ戻せない（要素ごと無くなった／別のオーバーレイの中に
+// 埋もれて非表示になった等）時に逃がす、安全な「行き先」。
+function trapFocusFallback() {
+  // 1. まずは常時DOM上にあり、通常のモーダル群のz-indexより手前にあるサイトドックの
+  //    最初のボタンへ。ただしフリー演奏・練習・試験モードや作成・演奏モード（全画面の
+  //    .perf-overlay/.compose-overlay）表示中はCSSでドック自体を隠しているため
+  //    （「.perf-overlay.open ~ .site-dock」等）、その間はこの経路は使えない。
+  const dockBtn = document.querySelector('.site-dock button');
+  if (dockBtn && dockBtn.offsetParent !== null) { dockBtn.focus(); return; }
+  // 2. ドックが隠れている＝全画面オーバーレイ表示中ということなので、その全画面
+  //    オーバーレイ自身（トラップスタックに残っている一番手前のカード）の中の最初の
+  //    フォーカス可能要素へ逃がす。これなら演奏・作曲モードの外に焦点が漏れず、
+  //    そのモードの中で操作を続けられる。
+  if (trapStack.length) {
+    const topCard = trapStack[trapStack.length - 1].card;
+    const focusable = trapFocusableEls(topCard);
+    (focusable[0] || topCard).focus();
+    return;
+  }
+  // 3. 最終手段（通常は到達しない）。
+  document.body.focus();
+}
 function trapFocusableEls(container) {
   const all = container.querySelectorAll(
     'a[href], button:not([disabled]), textarea:not([disabled]), input:not([disabled]):not([type="hidden"]), select:not([disabled]), [tabindex]:not([tabindex="-1"])'
@@ -2272,8 +2301,23 @@ function trapPop(overlayId) {
     document.removeEventListener('keydown', trapKeydown, true);
     trapListenerAttached = false;
   }
-  if (entry.prevFocusEl && typeof entry.prevFocusEl.focus === 'function' && document.contains(entry.prevFocusEl)) {
-    entry.prevFocusEl.focus();
+  // 連鎖クローズ中（closeOtherTopLevelOverlays()やcomposeToolsSwitchTo()の最中）は、
+  // ここで本来のトリガーへフォーカスを戻してしまうと、直後に走る「これから開こうとしている
+  // 側」のtrapPush()が、そのフォーカス（＝今閉じている側の古いトリガー）を誤って新しい
+  // トリガーとして捕まえてしまう。そのため連鎖クローズ中はフォーカス移動そのものを
+  // スキップし、activeElementを触らないまま次のtrapPush()に渡す。Escapeやバックドロップ
+  // クリックなど単独クローズ（＝連鎖ではない）の場合はこのカウンターが0のままなので、
+  // これまで通り即座にフォーカスを戻す。
+  if (trapSuppressFocusRestore > 0) return;
+  const el = entry.prevFocusEl;
+  // document内に残っているかだけでなく、実際に今フォーカス可能か（＝表示されている。
+  // offsetParentがnullでない）も確認する。トリガーが別のオーバーレイの中にあり、
+  // そちらも閉じられてしまっている場合は要素自体は残っていてもフォーカスが当たらず
+  // 宙に浮いてしまうため、その場合は常時表示のドックへ逃がす。
+  if (el && typeof el.focus === 'function' && document.contains(el) && el.offsetParent !== null) {
+    el.focus();
+  } else {
+    trapFocusFallback();
   }
 }
 
@@ -2284,17 +2328,43 @@ function trapPop(overlayId) {
 // （各close関数は未オープン時は何もしない安全な関数）。
 const TOP_LEVEL_MODAL_IDS = ['settingsModal', 'shareModal', 'importModal', 'audioImportModal', 'imageImportModal', 'midiImportModal', 'dmModal', 'confirmModal', 'keyBindModal', 'composeToolsModal'];
 function closeOtherTopLevelOverlays(exceptId) {
-  TOP_LEVEL_MODAL_IDS.forEach(id => {
-    if (id === exceptId) return;
-    if (!document.getElementById(id).classList.contains('open')) return;
-    if (id === 'audioImportModal') closeAudioImportModal();
-    else if (id === 'imageImportModal') closeImageImportModal();
-    else if (id === 'midiImportModal') closeMidiImportModal();
-    else if (id === 'confirmModal') closeConfirm();
-    else if (id === 'keyBindModal') closeKeyBindModal();
-    else closeModal(id);
-  });
-  if (exceptId !== 'sidebar' && document.getElementById('sidebar').classList.contains('sidebar-open')) closeSidebar();
+  // ここで閉じる他のオーバーレイは「exceptId側を開くための後始末」であって、ユーザーが
+  // 単独でそれを閉じたわけではない。trapSuppressFocusRestoreを立てて、各close関数の中の
+  // trapPop()が今ここでフォーカスを戻すのを抑止する（詳細はtrapPop()内のコメント参照）。
+  // これから開くexceptId側のtrapPush()が、汚染される前のactiveElement（本当のトリガー）
+  // をそのまま捕まえられるようにするため。
+  trapSuppressFocusRestore++;
+  try {
+    TOP_LEVEL_MODAL_IDS.forEach(id => {
+      if (id === exceptId) return;
+      if (!document.getElementById(id).classList.contains('open')) return;
+      if (id === 'audioImportModal') closeAudioImportModal();
+      else if (id === 'imageImportModal') closeImageImportModal();
+      else if (id === 'midiImportModal') closeMidiImportModal();
+      else if (id === 'confirmModal') closeConfirm();
+      else if (id === 'keyBindModal') closeKeyBindModal();
+      else closeModal(id);
+    });
+    if (exceptId !== 'sidebar' && document.getElementById('sidebar').classList.contains('sidebar-open')) closeSidebar();
+  } finally {
+    trapSuppressFocusRestore--;
+  }
+}
+
+// composeToolsModal（ツール）内の各ボタン（練習モード／試験モード／共有・保存／キー設定）は
+// 自分自身（composeToolsModal）を閉じてから別のオーバーレイを開く。これも上のcloseOtherTopLevelOverlays()
+// と同じ「Aを閉じてからBを開く」連鎖であり、同じ理由でtrapSuppressFocusRestoreを挟んでおかないと、
+// closeModal('composeToolsModal')のtrapPop()がcomposeToolsModal自身の古いトリガーへ先に
+// フォーカスを戻してしまい、直後に走るopenFn()側のtrapPush()がそれを誤って新しいトリガーとして
+// 捕まえてしまう。
+function composeToolsSwitchTo(openFn) {
+  trapSuppressFocusRestore++;
+  try {
+    closeModal('composeToolsModal');
+    openFn();
+  } finally {
+    trapSuppressFocusRestore--;
+  }
 }
 
 function openModal(id) {
