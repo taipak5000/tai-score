@@ -591,8 +591,12 @@
     }
     .modal-overlay.open { display: flex; }
     .modal-card {
-      background: var(--card); border-radius: var(--r); padding: 20px; max-width: 440px; width: 100%;
+      background: var(--card); border-radius: var(--r); max-width: 440px; width: 100%;
       max-height: 85vh; overflow-y: auto;
+      /* 🩹 .site-dock（画面下部固定、z-index:1260でこのシートより常に手前）に
+         最後の項目が隠れてしまわないよう、下端の余白をbody{padding-bottom}と同じ
+         「下部クイックアクセスドック分の余白」(76px)に底上げする。 */
+      padding: 20px 20px calc(76px + env(safe-area-inset-bottom));
     }
     .modal-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
     .modal-title { font-size: 16px; font-weight: 700; }
