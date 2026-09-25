@@ -1315,6 +1315,10 @@
       <span data-i18n="settingsDarkModeLabel">ダークモード</span>
       <button type="button" class="mini-btn primary" id="themeToggleBtn" onclick="toggleTheme()">ダーク</button>
     </div>
+    <label class="settings-row" style="cursor:pointer;">
+      <span data-i18n="settingsShowTitlesLabel">称号を表示する</span>
+      <input type="checkbox" id="titlesVisibleCheckbox" style="accent-color:var(--pink); width:17px; height:17px; flex-shrink:0;" onchange="onTitlesVisibleChange(event)">
+    </label>
 
     <div class="settings-section-label" style="margin-top:18px;" data-i18n-html="settingsShortcutsSection"><svg class="inline-icon" width="15" height="15"><use href="#i-keyboard"/></svg> キーボードショートカット</div>
     <label class="settings-row" style="cursor:pointer;">
@@ -1829,6 +1833,7 @@ const I18N = {
     settingsModalTitle: '表示設定',
     settingsDisplaySection: '<svg class="inline-icon" width="15" height="15"><use href="#i-monitor"/></svg> 表示',
     settingsDarkModeLabel: 'ダークモード',
+    settingsShowTitlesLabel: '称号を表示する',
     themeDark: 'ダーク',
     themeLight: 'ライト',
     themeSystem: 'システム',
@@ -2099,6 +2104,7 @@ const I18N = {
     settingsModalTitle: 'Display Settings',
     settingsDisplaySection: '<svg class="inline-icon" width="15" height="15"><use href="#i-monitor"/></svg> Display',
     settingsDarkModeLabel: 'Dark Mode',
+    settingsShowTitlesLabel: 'Show titles',
     themeDark: 'Dark',
     themeLight: 'Light',
     themeSystem: 'System',
@@ -2540,6 +2546,10 @@ function recordNoteCount(count) {
   checkTitles(d);
 }
 function renderTitles() {
+  // 表示設定で「称号を表示する」がオフの間は、称号カードごと非表示にする
+  // （判定・獲得トーストなど裏側の処理自体は表示設定に関係なく続ける）
+  const card = document.querySelector('.titles-card');
+  if (card) card.style.display = titlesVisible() ? '' : 'none';
   const row = document.getElementById('titlesChipRow');
   const countEl = document.getElementById('titlesCount');
   if (!row) return;
@@ -4130,10 +4140,26 @@ function skyShortcutsEnabled() {
 function onShortcutsEnabledChange(e) {
   try { localStorage.setItem(SHORTCUTS_KEY, e.target.checked ? '1' : '0'); } catch (err) { /* 無視 */ }
 }
+
+// 称号カードの表示/非表示（端末ごとの表示設定。taiScoreMetronomeEnabled_v1等と同じ扱いで、
+// プロフィールごとの保存枠の対象外）。未設定時はオン扱い＝既存ユーザーは今まで通り見える。
+const TITLES_VISIBLE_KEY = 'taiScoreTitlesVisible_v1';
+function titlesVisible() {
+  try {
+    const v = localStorage.getItem(TITLES_VISIBLE_KEY);
+    return v === null ? true : v === '1';
+  } catch (e) { return true; }
+}
+function onTitlesVisibleChange(e) {
+  try { localStorage.setItem(TITLES_VISIBLE_KEY, e.target.checked ? '1' : '0'); } catch (err) { /* 無視 */ }
+  renderTitles();
+}
 function settingsOpen() {
   applyThemeToDOM(isDarkMode()); // モーダルを開くたびボタン表示を現在のテーマに合わせ直す
   const cb = document.getElementById('shortcutsEnabledCheckbox');
   if (cb) cb.checked = skyShortcutsEnabled();
+  const titlesCb = document.getElementById('titlesVisibleCheckbox');
+  if (titlesCb) titlesCb.checked = titlesVisible();
   syncLangSelectButtons(); // モーダルを開くたびハイライトを現在の言語に合わせ直す
   openModal('settingsModal');
 }
