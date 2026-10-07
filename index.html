@@ -146,7 +146,6 @@
       width: 100%; box-sizing: border-box; white-space: nowrap;
     }
     .sidebar-nav-link:hover { background: var(--bg); }
-    .sidebar-nav-link.current-tool { background: var(--pink-bg); color: var(--pink-d); font-weight: 700; }
     /* 精度に不安がある新機能であることを示す小さな注記（例: 楽譜づくり） */
     .tool-badge-test { font-size: 9px; font-weight: 700; color: var(--text-3); text-transform: uppercase; letter-spacing: 0.3px; }
 
@@ -1047,20 +1046,7 @@
       <div class="sidebar-section-label" data-i18n="relatedTools">関連ツール</div>
       <button class="sidebar-close-btn" onclick="closeSidebar()"><span class="icon-chip" style="width:22px; height:22px;"><svg width="16" height="16"><use href="#i-close"/></svg></span></button>
     </div>
-    <a href="https://taipak5000.github.io/tai-item/" class="sidebar-nav-link" data-i18n-html="toolItem"><svg class="inline-icon" width="19" height="19"><use href="#i-folder"/></svg> アイテム所持管理</a>
-    <a href="https://taipak5000.github.io/tai-emote/" class="sidebar-nav-link" data-i18n-html="toolEmote"><svg class="inline-icon" width="19" height="19"><use href="#i-masks"/></svg> エモート所持率管理</a>
-    <a href="https://taipak5000.github.io/share/" class="sidebar-nav-link" data-i18n-html="toolShare"><svg class="inline-icon" width="19" height="19"><use href="#i-pin"/></svg> 創作物管理ツール</a>
-    <a href="https://taipak5000.github.io/tai-nomacan/" class="sidebar-nav-link" data-i18n-html="toolNomacan"><svg class="inline-icon" width="19" height="19"><use href="#i-candle"/></svg> ノマキャン計算機</a>
-    <a href="https://taipak5000.github.io/star-candle/" class="sidebar-nav-link" data-i18n-html="toolStarCandle"><svg class="inline-icon" width="19" height="19"><use href="#i-star-candle"/></svg> 星のキャンドル計算機</a>
-    <a href="https://taipak5000.github.io/companion/" class="sidebar-nav-link" data-i18n-html="toolCompanion"><svg class="inline-icon" width="19" height="19"><use href="#i-sparkle"/></svg> 精霊同行ツール</a>
-    <a href="https://taipak5000.github.io/wings/" class="sidebar-nav-link" data-i18n-html="toolWings"><svg class="inline-icon" width="19" height="19"><use href="#i-wing"/></svg> 羽トラッカー</a>
-    <a href="https://taipak5000.github.io/tai-catalog/" class="sidebar-nav-link"><svg class="inline-icon" width="19" height="19"><use href="#i-tree"/></svg><span class="tool-badge-test">test</span> <span data-i18n-html="toolCatalog">精霊ツリー管理</span></a>
-    <a href="https://taipak5000.github.io/tai-revisit/" class="sidebar-nav-link" data-i18n-html="toolRevisit"><svg class="inline-icon" width="19" height="19"><use href="#i-wing"/></svg> 再訪精霊データベース</a>
-    <a href="https://taipak5000.github.io/tai-score/" class="sidebar-nav-link current-tool"><svg class="inline-icon" width="19" height="19"><use href="#i-music-note"/></svg><span class="tool-badge-test">test</span> <span data-i18n-html="toolScore">楽譜づくり</span></a>
-    <a href="https://taipak5000.github.io/tai-card/" class="sidebar-nav-link" data-i18n-html="toolCard"><svg class="inline-icon" width="19" height="19"><use href="#i-card"/></svg> 星紡ぎカード</a>
-    <a href="https://taipak5000.github.io/tai-transfer/" class="sidebar-nav-link" data-i18n-html="toolTransfer"><svg class="inline-icon" width="19" height="19"><use href="#i-sync"/></svg> データ引継ぎ</a>
-    <a href="https://taipak5000.github.io/tai-info/" class="sidebar-nav-link" data-i18n-html="toolInfo"><svg class="inline-icon" width="19" height="19"><use href="#i-settings"/></svg> 設定・クレジット</a>
-    <a href="https://taipak5000.github.io/skyzztai-profile/" class="sidebar-nav-link" data-i18n-html="toolProfile"><svg class="inline-icon" width="19" height="19"><use href="#i-person"/></svg> 作者プロフィール</a>
+    <div id="siteLinksNav"></div>
   </aside>
 
   <div>
@@ -1583,21 +1569,7 @@ const I18N = {
     pageTitle: '楽譜づくり - Sky所持率管理',
     navTitle: '<svg class="inline-icon" width="19" height="19"><use href="#i-music-note"/></svg> 楽譜づくり',
     relatedTools: '関連ツール',
-    toolItem: '<svg class="inline-icon" width="19" height="19"><use href="#i-folder"/></svg> アイテム所持管理',
-    toolEmote: '<svg class="inline-icon" width="19" height="19"><use href="#i-masks"/></svg> エモート所持率管理',
-    toolShare: '<svg class="inline-icon" width="19" height="19"><use href="#i-pin"/></svg> 創作物管理ツール',
-    toolNomacan: '<svg class="inline-icon" width="19" height="19"><use href="#i-candle"/></svg> ノマキャン計算機',
-    toolStarCandle: '<svg class="inline-icon" width="19" height="19"><use href="#i-star-candle"/></svg> 星のキャンドル計算機',
-    toolCompanion: '<svg class="inline-icon" width="19" height="19"><use href="#i-sparkle"/></svg> 精霊同行ツール',
-    toolWings: '<svg class="inline-icon" width="19" height="19"><use href="#i-wing"/></svg> 羽トラッカー',
-    toolCatalog: '精霊ツリー管理',
-    toolRevisit: '<svg class="inline-icon" width="19" height="19"><use href="#i-wing"/></svg> 再訪精霊データベース',
-    toolScore: '楽譜づくり',
-    toolCard: '<svg class="inline-icon" width="19" height="19"><use href="#i-card"/></svg> 星紡ぎカード',
-    toolTransfer: '<svg class="inline-icon" width="19" height="19"><use href="#i-sync"/></svg> データ引継ぎ',
-    toolInfo: '<svg class="inline-icon" width="19" height="19"><use href="#i-settings"/></svg> 設定・クレジット',
     dockAriaLabel: 'クイックメニュー',
-    toolProfile: '<svg class="inline-icon" width="19" height="19"><use href="#i-person"/></svg> 作者プロフィール',
     introText: `Skyの5×3マス（ハープ等）の楽器で演奏できる楽譜を、自由に作成・保存・共有・練習できるツールです。
         <a href="https://sky-music.specy.app/" target="_blank" rel="noopener noreferrer">Sky Music Nightly</a>形式の楽譜ファイルの
         インポート・エクスポートにも対応しているほか、Sky Studio形式の楽譜ファイルの読み込みにも対応しているので、
@@ -1853,21 +1825,7 @@ const I18N = {
     pageTitle: 'Sheet Music Maker - Sky Collection Tracker',
     navTitle: '<svg class="inline-icon" width="19" height="19"><use href="#i-music-note"/></svg> Sheet Music Maker',
     relatedTools: 'Related Tools',
-    toolItem: '<svg class="inline-icon" width="19" height="19"><use href="#i-folder"/></svg> Item Collection',
-    toolEmote: '<svg class="inline-icon" width="19" height="19"><use href="#i-masks"/></svg> Emote Collection',
-    toolShare: '<svg class="inline-icon" width="19" height="19"><use href="#i-pin"/></svg> Creation Manager',
-    toolNomacan: '<svg class="inline-icon" width="19" height="19"><use href="#i-candle"/></svg> Nomacan Calculator',
-    toolStarCandle: '<svg class="inline-icon" width="19" height="19"><use href="#i-star-candle"/></svg> Star Candle Calculator',
-    toolCompanion: '<svg class="inline-icon" width="19" height="19"><use href="#i-sparkle"/></svg> Spirit Companion Tool',
-    toolWings: '<svg class="inline-icon" width="19" height="19"><use href="#i-wing"/></svg> Wing Tracker',
-    toolCatalog: 'Spirit Tree Catalog',
-    toolRevisit: '<svg class="inline-icon" width="19" height="19"><use href="#i-wing"/></svg> Revisit Spirit Database',
-    toolScore: 'Sheet Music Maker',
-    toolCard: '<svg class="inline-icon" width="19" height="19"><use href="#i-card"/></svg> Self-Intro Card Maker',
-    toolTransfer: '<svg class="inline-icon" width="19" height="19"><use href="#i-sync"/></svg> Data Transfer',
-    toolInfo: '<svg class="inline-icon" width="19" height="19"><use href="#i-settings"/></svg> Settings & Credits',
     dockAriaLabel: 'Quick menu',
-    toolProfile: '<svg class="inline-icon" width="19" height="19"><use href="#i-person"/></svg> Creator Profile',
     introText: `A free tool for creating, saving, sharing, and practicing sheet music playable on Sky's 5×3-key
         instruments (Harp, etc). It also supports importing and exporting
         <a href="https://sky-music.specy.app/" target="_blank" rel="noopener noreferrer">Sky Music Nightly</a>-format
@@ -2208,6 +2166,51 @@ function setLang(lang) {
   applyI18n();
   refreshDynamicUI();
   applyThemeToDOM(isDarkMode()); // ダークモードボタンのラベル（言語依存）も追従させる
+  renderSiteLinks(); // サイドバーの「関連ツール」ラベルも言語に追従させる
+}
+
+/* ================================================================
+   🧭 共通「関連ツール」一覧（サイドバー）
+   一覧の元データは1か所だけ: https://taipak5000.github.io/tai-item/site-links.json
+   （itemリポジトリ）。そこを編集すると全サイトのサイドバーに反映される。
+   取得結果は端末にキャッシュし、オフラインでも前回の一覧で表示する。
+   ※反映は各サイトのService Workerのキャッシュ経由のため、編集後1回リロードが遅れることがある
+   ================================================================ */
+const SITE_LINKS_URL = 'https://taipak5000.github.io/tai-item/site-links.json';
+const SITE_LINKS_CACHE_KEY = 'sky_site_links_v1'; // 端末単位・全サイト共通（プロフィールには依存しない）
+let siteLinksData = null;
+
+function siteLinksParse(d) {
+  if (!d || !Array.isArray(d.tools)) return null;
+  const ok = d.tools.filter(t => t && /^[A-Za-z0-9._-]+$/.test(t.path) && /^i-[a-z0-9-]+$/.test(t.icon));
+  return ok.length ? ok : null;
+}
+function siteLinksLoadCached() {
+  try { return siteLinksParse(JSON.parse(localStorage.getItem(SITE_LINKS_CACHE_KEY))); } catch (e) { return null; }
+}
+async function siteLinksRefresh() { // 一覧が変わったらtrue
+  const res = await fetch(SITE_LINKS_URL, { cache: 'no-cache' });
+  if (!res.ok) throw new Error('HTTP ' + res.status);
+  const raw = await res.json();
+  const tools = siteLinksParse(raw);
+  if (!tools) throw new Error('invalid site-links.json');
+  const changed = JSON.stringify(tools) !== JSON.stringify(siteLinksData);
+  siteLinksData = tools;
+  try { localStorage.setItem(SITE_LINKS_CACHE_KEY, JSON.stringify(raw)); } catch (e) {}
+  return changed;
+}
+function siteLinkName(tool, lang) { return tool[lang] || tool.en || tool.ja; }
+
+function renderSiteLinks() {
+  const nav = document.getElementById('siteLinksNav');
+  if (!nav) return;
+  if (!siteLinksData) {
+    nav.innerHTML = '<p style="font-size:12px; color:var(--text-3); padding:9px 12px; margin:0;">ツール一覧を読み込めませんでした / Could not load the tool list</p>';
+    return;
+  }
+  nav.innerHTML = siteLinksData.map(t =>
+    `<a href="https://taipak5000.github.io/${t.path}/" class="sidebar-nav-link"><svg class="inline-icon" width="19" height="19"><use href="#${t.icon}"/></svg>${t.badgeTest ? '<span class="tool-badge-test">test</span> ' : ' '}${escapeHtml(siteLinkName(t, LANG))}</a>`
+  ).join('');
 }
 
 /* ================================================================
@@ -5788,6 +5791,9 @@ function dmConfirmWipe() {
    初期化
    ================================================================ */
 applyI18n();
+siteLinksData = siteLinksLoadCached();
+renderSiteLinks();
+siteLinksRefresh().then(changed => { if (changed) renderSiteLinks(); }).catch(() => renderSiteLinks());
 applyThemeToDOM(isDarkMode());
 populatePitchSelect();
 dmRenderWipeArea();
